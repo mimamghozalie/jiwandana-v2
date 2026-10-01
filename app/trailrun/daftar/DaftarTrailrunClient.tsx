@@ -745,47 +745,6 @@ export default function DaftarTrailrunClient() {
                       </button>
                     </div>
 
-                    {paymentData.is_sandbox && (
-                      <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-900 space-y-2.5">
-                        <div className="flex items-center gap-2 font-bold text-xs">
-                          <span className="material-symbols-outlined text-sm text-amber-600">science</span>
-                          <span>Mode Sandbox Pakasir</span>
-                        </div>
-                        <p className="text-[11px] text-amber-800 leading-relaxed">
-                          Transaksi ini adalah simulasi sandbox (tidak memotong saldo sungguhan). Anda dapat mengetes alur konfirmasi pembayaran dengan tombol di bawah:
-                        </p>
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            setCheckingStatus(true);
-                            try {
-                              await fetch('/api/pakasir/webhook', {
-                                method: 'POST',
-                                headers: {
-                                  'Content-Type': 'application/json',
-                                  'X-Secret': '46ea6cc47b3d104afc55ad3a795ad837',
-                                },
-                                body: JSON.stringify({
-                                  txn_id: paymentData.txn_id,
-                                  order_id: paymentData.order_id,
-                                  status: 'completed',
-                                  amount: paymentData.amount,
-                                }),
-                              });
-                              await checkPaymentStatus(true);
-                            } catch (e) {
-                              console.error(e);
-                            } finally {
-                              setCheckingStatus(false);
-                            }
-                          }}
-                          className="w-full py-2.5 px-3 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-semibold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-sm flex items-center justify-center gap-1.5"
-                        >
-                          <span className="material-symbols-outlined text-sm">check_circle</span>
-                          <span>Simulasikan Pembayaran Berhasil</span>
-                        </button>
-                      </div>
-                    )}
                   </div>
                 )}
               </div>

@@ -38,7 +38,7 @@ export default function TrailrunClient() {
             Kategori Trailrun
           </h2>
           <p className="text-slate-600 text-sm md:text-base max-w-2xl mx-auto">
-            Pilih kategori jarak tempuh sesuai ketahanan fisik Anda. Klik tombol <strong>360 / Profil Elevasi</strong> pada kartu untuk melihat grafik kontur elevasi.
+            Pilih kategori jarak tempuh sesuai ketahanan fisik Anda. Klik tombol <strong>Profil Elevasi</strong> pada kartu untuk melihat grafik kontur elevasi.
           </p>
         </div>
 

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { TrailrunCard } from '@/lib/types';
 
 interface TrailrunCardItemProps {
@@ -112,26 +113,22 @@ export default function TrailrunCardItem({
             </div>
           </div>
 
-          {/* 4. Action Row: "Lihat Fasilitas" + 360 Rotate Button */}
-          <div className="pt-5 flex items-center gap-2">
+          {/* 4. Action Row: "Fasilitas" + "Daftar" */}
+          <div className="pt-5 flex items-center gap-2.5">
             <button
               type="button"
               onClick={onSelectCategory}
-              className="flex-1 bg-[#C9A227] hover:bg-[#b08d20] text-[#0d1c32] font-semibold py-3.5 rounded-xl transition-all transform active:scale-95 shadow-md flex items-center justify-center gap-2 text-xs uppercase tracking-wider cursor-pointer"
+              className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-black/10 font-semibold py-3.5 px-3 rounded-xl transition-all transform active:scale-95 shadow-sm flex items-center justify-center gap-1.5 text-xs uppercase tracking-wider cursor-pointer"
             >
-              <span>Lihat Fasilitas</span>
+              <span>Fasilitas</span>
             </button>
-            <button
-              type="button"
-              onClick={onToggleFlip}
-              className="w-12 h-12 bg-slate-900 hover:bg-[#ff1a5f] text-[#ff1a5f] hover:text-white rounded-xl transition-all shadow-md flex items-center justify-center border border-black/10 hover:border-[#ff1a5f] active:scale-95 shrink-0 group/flipbtn cursor-pointer"
-              title="Putar Kartu (Profil Elevasi)"
-              aria-label="Putar Kartu"
+            <Link
+              href={`/trailrun/daftar?dist=${item.id}`}
+              className="flex-1 bg-[#C9A227] hover:bg-[#b08d20] text-[#0d1c32] font-bold py-3.5 px-3 rounded-xl transition-all transform active:scale-95 shadow-md hover:shadow-lg flex items-center justify-center gap-1.5 text-xs uppercase tracking-wider text-center cursor-pointer"
             >
-              <span className="material-symbols-outlined text-xl group-hover/flipbtn:rotate-180 transition-transform duration-500">
-                360
-              </span>
-            </button>
+              <span>Daftar</span>
+              <span className="material-symbols-outlined text-sm">arrow_forward</span>
+            </Link>
           </div>
         </div>
 
