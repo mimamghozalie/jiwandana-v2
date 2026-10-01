@@ -96,7 +96,7 @@ export default function AdminEventsPage() {
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-white">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
             Kelola Agenda Event
           </h1>
           <p className="text-xs sm:text-sm text-slate-400">
@@ -198,7 +198,7 @@ export default function AdminEventsPage() {
         <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
           <div className="bg-[#12233c] border border-[#e9c176]/30 rounded-3xl p-6 sm:p-8 max-w-lg w-full space-y-6 shadow-2xl my-8">
             <div className="flex justify-between items-center border-b border-white/10 pb-4">
-              <h3 className="text-lg font-serif font-bold text-white">
+              <h3 className="text-lg font-bold text-white">
                 Tambah Event Baru
               </h3>
               <button
@@ -236,7 +236,7 @@ export default function AdminEventsPage() {
                   required
                   value={newEvent.slug}
                   onChange={(e) => setNewEvent({ ...newEvent, slug: e.target.value })}
-                  className="w-full bg-[#0a1424] border border-white/10 rounded-xl p-3 text-slate-400 outline-none font-mono"
+                  className="w-full bg-[#0a1424] border border-white/10 rounded-xl p-3 text-slate-400 outline-none"
                 />
               </div>
 

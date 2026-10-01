@@ -64,7 +64,7 @@ export default function AdminBookingsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-white">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
             Inbox Pemesanan Event
           </h1>
           <p className="text-xs sm:text-sm text-slate-400">
@@ -154,7 +154,7 @@ export default function AdminBookingsPage() {
                       <div className="text-xs text-slate-400">Pemohon: {b.pemohon}</div>
                     </td>
                     <td className="p-4">
-                      <div className="font-mono text-[#e9c176]">{b.contact}</div>
+                      <div className="font-medium text-[#e9c176]">{b.contact}</div>
                       <a
                         href={`https://wa.me/${b.contact.replace(/[^0-9]/g, '')}`}
                         target="_blank"

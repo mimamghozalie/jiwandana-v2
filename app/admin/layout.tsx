@@ -69,7 +69,7 @@ export default function AdminLayout({
   };
 
   return (
-    <div className="min-h-screen bg-[#070e1a] text-slate-100 flex flex-col md:flex-row antialiased">
+    <div className="min-h-screen bg-[#070e1a] text-slate-100 flex flex-col md:flex-row antialiased font-sans">
       {/* Mobile Backdrop Overlay */}
       {sidebarOpen && (
         <div
@@ -92,10 +92,10 @@ export default function AdminLayout({
                 <Image src="/logo.webp" alt="Logo" fill className="object-contain" />
               </div>
               <div>
-                <h2 className="text-sm font-serif font-bold text-[#e9c176]">
+                <h2 className="text-sm font-bold tracking-wide text-[#e9c176]">
                   JIWANDANA
                 </h2>
-                <span className="text-[10px] uppercase tracking-wider text-slate-400 font-sans block">
+                <span className="text-[10px] uppercase tracking-wider text-slate-400 block">
                   Control Panel CMS
                 </span>
               </div>

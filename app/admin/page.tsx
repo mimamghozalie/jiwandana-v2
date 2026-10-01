@@ -87,7 +87,7 @@ export default function AdminDashboardPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-white">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
             Ringkasan Sistem CMS
           </h1>
           <p className="text-xs sm:text-sm text-slate-400">
@@ -121,7 +121,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div className="mt-4">
-            <div className="text-3xl font-serif font-bold text-white group-hover:text-[#e9c176] transition-colors">
+            <div className="text-3xl font-bold text-white group-hover:text-[#e9c176] transition-colors">
               {stats.totalTrailrun}
             </div>
             <div className="text-xs text-emerald-400 flex items-center gap-1 mt-1">
@@ -145,7 +145,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div className="mt-4">
-            <div className="text-3xl font-serif font-bold text-white group-hover:text-[#e9c176] transition-colors">
+            <div className="text-3xl font-bold text-white group-hover:text-[#e9c176] transition-colors">
               {stats.totalBookings}
             </div>
             <div className="text-xs text-amber-400 flex items-center gap-1 mt-1">
@@ -169,7 +169,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div className="mt-4">
-            <div className="text-3xl font-serif font-bold text-white group-hover:text-[#e9c176] transition-colors">
+            <div className="text-3xl font-bold text-white group-hover:text-[#e9c176] transition-colors">
               {stats.totalContacts}
             </div>
             <div className="text-xs text-cyan-300 flex items-center gap-1 mt-1">
@@ -192,7 +192,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div className="mt-4">
-            <div className="text-3xl font-serif font-bold text-white group-hover:text-[#e9c176] transition-colors">
+            <div className="text-3xl font-bold text-white group-hover:text-[#e9c176] transition-colors">
               {stats.totalEvents}
             </div>
             <div className="text-xs text-slate-400 mt-1">
@@ -215,7 +215,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div className="mt-4">
-            <div className="text-3xl font-serif font-bold text-white group-hover:text-[#e9c176] transition-colors">
+            <div className="text-3xl font-bold text-white group-hover:text-[#e9c176] transition-colors">
               {stats.totalPortfolios}
             </div>
             <div className="text-xs text-slate-400 mt-1">
@@ -229,7 +229,7 @@ export default function AdminDashboardPage() {
       <div className="bg-[#12233c] border border-white/10 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl">
         <div className="flex justify-between items-center">
           <div>
-            <h3 className="text-lg font-serif font-bold text-white">
+            <h3 className="text-lg font-bold text-white">
               Pesanan / Booking Event Terbaru
             </h3>
             <p className="text-xs text-slate-400">

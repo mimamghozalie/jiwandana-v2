@@ -75,7 +75,7 @@ function AdminLoginForm() {
           <div className="relative w-7 h-7">
             <Image src="/logo.webp" alt="Logo" fill className="object-contain" />
           </div>
-          <span className="font-serif font-bold text-sm tracking-wider text-[#e9c176] group-hover:text-white transition-colors">
+          <span className="font-bold text-sm tracking-wider text-[#e9c176] group-hover:text-white transition-colors">
             JIWANDANA
           </span>
         </Link>
@@ -97,7 +97,7 @@ function AdminLoginForm() {
             <div className="w-12 h-12 rounded-2xl bg-[#e9c176]/10 border border-[#e9c176]/30 flex items-center justify-center mx-auto text-[#e9c176] shadow-sm">
               <ShieldCheck className="w-6 h-6" />
             </div>
-            <h1 className="text-2xl font-serif font-bold text-white tracking-tight">
+            <h1 className="text-2xl font-bold text-white tracking-tight">
               Login Admin Panel
             </h1>
             <p className="text-xs text-slate-400">

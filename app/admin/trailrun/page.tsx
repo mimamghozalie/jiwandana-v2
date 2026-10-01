@@ -579,7 +579,7 @@ export default function AdminTrailrunPage() {
               <Trophy className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-serif font-bold text-white tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
                 Pendaftar & Pembayaran Trailrun
               </h1>
               <p className="text-xs sm:text-sm text-slate-400">
@@ -903,13 +903,13 @@ export default function AdminTrailrunPage() {
                       className="hover:bg-white/[0.04] transition-colors group cursor-pointer"
                       onClick={() => setSelectedRow(row)}
                     >
-                      <td className="py-3.5 px-4 text-center text-slate-500 font-mono text-[11px]">
+                      <td className="py-3.5 px-4 text-center text-slate-500 text-[11px]">
                         {startIndex + index + 1}
                       </td>
 
                       {/* No. BIB */}
                       {visibleColumns.includes('no_bib') && (
-                        <td className="py-3.5 px-4 font-mono font-bold text-[#e9c176]">
+                        <td className="py-3.5 px-4 font-bold text-[#e9c176]">
                           <span className="px-2 py-0.5 rounded bg-[#e9c176]/10 border border-[#e9c176]/30">
                             {row.no_bib || '-'}
                           </span>
@@ -982,7 +982,7 @@ export default function AdminTrailrunPage() {
 
                       {/* Email */}
                       {visibleColumns.includes('email') && (
-                        <td className="py-3.5 px-4 text-slate-400 whitespace-nowrap font-mono text-[11px]">
+                        <td className="py-3.5 px-4 text-slate-400 whitespace-nowrap text-[11px]">
                           {row.email}
                         </td>
                       )}
@@ -995,7 +995,7 @@ export default function AdminTrailrunPage() {
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className="inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 hover:underline font-mono text-[11px]"
+                            className="inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 hover:underline text-[11px]"
                           >
                             <Phone className="w-3 h-3" />
                             <span>{row.no_hp}</span>
@@ -1061,12 +1061,12 @@ export default function AdminTrailrunPage() {
                         </td>
                       )}
                       {visibleColumns.includes('txn_id') && (
-                        <td className="py-3.5 px-4 font-mono text-[10px] text-slate-400 whitespace-nowrap">
+                        <td className="py-3.5 px-4 text-[10px] text-slate-400 whitespace-nowrap">
                           {row.payment?.txn_id || '-'}
                         </td>
                       )}
                       {visibleColumns.includes('order_id') && (
-                        <td className="py-3.5 px-4 font-mono text-[10px] text-slate-400 whitespace-nowrap">
+                        <td className="py-3.5 px-4 text-[10px] text-slate-400 whitespace-nowrap">
                           {row.payment?.order_id || '-'}
                         </td>
                       )}
@@ -1259,10 +1259,10 @@ export default function AdminTrailrunPage() {
             {/* Modal Header */}
             <div className="flex justify-between items-start border-b border-white/10 pb-4">
               <div>
-                <span className="text-[11px] font-mono font-bold text-[#e9c176] px-2.5 py-1 rounded-full bg-[#e9c176]/10 border border-[#e9c176]/30 inline-block mb-1.5">
+                <span className="text-[11px] font-bold text-[#e9c176] px-2.5 py-1 rounded-full bg-[#e9c176]/10 border border-[#e9c176]/30 inline-block mb-1.5">
                   BIB {selectedRow.no_bib || 'Belum Diatur'}
                 </span>
-                <h3 className="text-xl sm:text-2xl font-bold font-serif text-white">
+                <h3 className="text-xl sm:text-2xl font-bold text-white">
                   {selectedRow.nama}
                 </h3>
                 <p className="text-xs text-slate-400">{selectedRow.kategori}</p>
@@ -1334,7 +1334,7 @@ export default function AdminTrailrunPage() {
                 <div className="space-y-1.5 text-slate-300">
                   <div className="flex justify-between">
                     <span className="text-slate-500">Email:</span>
-                    <span className="font-mono text-white">{selectedRow.email}</span>
+                    <span className="text-white">{selectedRow.email}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-slate-500">WhatsApp:</span>
@@ -1342,7 +1342,7 @@ export default function AdminTrailrunPage() {
                       href={`https://wa.me/${selectedRow.no_hp.replace(/^0/, '62').replace(/[^0-9]/g, '')}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-emerald-400 font-mono flex items-center gap-1 hover:underline"
+                      className="text-emerald-400 flex items-center gap-1 hover:underline"
                     >
                       <Phone className="w-3 h-3" />
                       <span>{selectedRow.no_hp}</span>
@@ -1432,7 +1432,7 @@ export default function AdminTrailrunPage() {
                   </div>
                   <div className="p-2.5 rounded-lg bg-white/5">
                     <span className="text-[10px] text-slate-400 uppercase block">Txn ID</span>
-                    <span className="font-mono text-[11px] text-white truncate block" title={selectedRow.payment?.txn_id}>
+                    <span className="text-[11px] text-white truncate block" title={selectedRow.payment?.txn_id}>
                       {selectedRow.payment?.txn_id || '-'}
                     </span>
                   </div>

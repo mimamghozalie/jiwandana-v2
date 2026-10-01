@@ -55,7 +55,7 @@ export default function AdminContactsPage() {
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-white">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
             Inbox Pesan Kontak
           </h1>
           <p className="text-xs sm:text-sm text-slate-400">
