@@ -5,8 +5,8 @@ import { TrailrunRoute } from '@/lib/types';
 
 interface TrailrunRouteSectionProps {
   routes: Record<string, TrailrunRoute>;
-  activeRouteKey: '5k' | '10k' | '21k' | '38k';
-  onSelectRouteKey: (key: '5k' | '10k' | '21k' | '38k') => void;
+  activeRouteKey: string;
+  onSelectRouteKey: (key: any) => void;
 }
 
 export default function TrailrunRouteSection({
@@ -14,7 +14,11 @@ export default function TrailrunRouteSection({
   activeRouteKey,
   onSelectRouteKey,
 }: TrailrunRouteSectionProps) {
-  const activeRoute = routes[activeRouteKey] || routes['10k'];
+  const routeKeys = Object.keys(routes || {});
+  const safeActiveKey = routeKeys.includes(activeRouteKey) ? activeRouteKey : (routeKeys[0] || '10k');
+  const activeRoute = routes?.[safeActiveKey] || Object.values(routes || {})[0];
+
+  if (!activeRoute) return null;
 
   return (
     <section id="rute" className="py-16 md:py-24 bg-white border-t border-black/10">
@@ -35,13 +39,13 @@ export default function TrailrunRouteSection({
 
         {/* Route Selector Tabs */}
         <div className="flex flex-wrap justify-center gap-3">
-          {(['5k', '10k', '21k', '38k'] as const).map((key) => (
+          {routeKeys.map((key) => (
             <button
               key={key}
               type="button"
               onClick={() => onSelectRouteKey(key)}
               className={`px-6 py-2.5 rounded-full font-medium text-xs sm:text-sm uppercase tracking-wider transition-all duration-300 shadow-sm flex items-center gap-2 cursor-pointer ${
-                activeRouteKey === key
+                safeActiveKey === key
                   ? 'bg-[#C9A227] text-[#0d1c32] font-bold shadow-md'
                   : 'bg-[#f8f8f8] border border-black/10 text-slate-600 hover:border-[#C9A227] hover:text-[#C9A227]'
               }`}

@@ -6,8 +6,8 @@ import { usePathname } from 'next/navigation';
 export default function Footer() {
   const pathname = usePathname();
 
-  // Hide on root page because root page already has its bottom bar matching index.html
-  if (pathname === '/') {
+  // Hide on root page and all admin CMS pages
+  if (pathname === '/' || pathname.startsWith('/admin')) {
     return null;
   }
 

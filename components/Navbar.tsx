@@ -25,8 +25,8 @@ export default function Navbar() {
     return false;
   };
 
-  // Hide Navbar on the root portal page because page.tsx has its own minimal header matching index.html
-  if (pathname === '/') {
+  // Hide Navbar on the root portal page and all admin CMS pages
+  if (pathname === '/' || pathname.startsWith('/admin')) {
     return null;
   }
 

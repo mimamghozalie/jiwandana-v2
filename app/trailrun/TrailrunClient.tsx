@@ -10,7 +10,7 @@ import TrailrunRouteSection from '@/components/trailrun/TrailrunRouteSection';
 
 export default function TrailrunClient() {
   const [selectedCategory, setSelectedCategory] = useState<TrailrunCard | null>(null);
-  const [activeRouteKey, setActiveRouteKey] = useState<'5k' | '10k' | '21k' | '38k'>('10k');
+  const [activeRouteKey, setActiveRouteKey] = useState<string>('10k');
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
 
   const toggleFlip = (id: string) => {
