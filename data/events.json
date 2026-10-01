@@ -1,22 +1,5 @@
 [
   {
-    "id": "1",
-    "slug": "koni-championship-1",
-    "title": "KONI CHAMPIONSHIP I",
-    "category": "perlombaan",
-    "event_date": "14–16 Agustus 2026",
-    "location": "Gor Dinas Pendidikan Kab. Mojokerto",
-    "status": "active",
-    "badge_text": "Aktif Bulan Ini",
-    "poster_url": "/assets/4.jpeg",
-    "description": "Ikuti kejuaraan paling bergengsi tahun ini! KONI CHAMPIONSHIP I menyatukan seluruh atlet berprestasi untuk berkompetisi secara sportif dalam festival kejuaraan berskala regional yang megah. Persiapkan fisik dan tim terbaik Anda untuk memperebutkan gelar juara utama.",
-    "rundown": "Hari 1: Registrasi & Technical Meeting\nHari 2: Babak Penyisihan & Semifinal\nHari 3: Final, Perebutan Juara Umum, & Upacara Penutupan",
-    "juknis_url": "https://drive.google.com/file/d/1bD7qTVXQdKq-8G-kQvh4zZyb5oHBhELH/view?usp=drive_link",
-    "registration_url": "https://www.encurtador.dev/redirecionamento/koni2026",
-    "guide_book_url": "https://drive.google.com/file/d/1CHgeEvCC_vuVHmvGZibmjyS6MN_eXCBj/view?usp=sharing",
-    "rules_url": "https://drive.google.com/file/d/1QNzfIkHpoI8nIIiXYqRX2idmGAZkNXEu/view?usp=drive_link"
-  },
-  {
     "id": "2",
     "slug": "dsc-diponegoro",
     "title": "DSC Diponegoro",
@@ -36,7 +19,7 @@
     "category": "olahraga",
     "event_date": "coming soon.",
     "location": "Kawasan Wisata Candi Majapahit, Mojokerto",
-    "status": "upcoming",
+    "status": "active",
     "badge_text": "Coming Soon",
     "poster_url": "/assets/jiwandana_trailrun_1.jpeg",
     "description": "Kompetisi lari lintas alam bersejarah yang menyuguhkan keindahan panorama situs purbakala Majapahit dengan tantangan alam berkategori 10K & 21K.",
@@ -121,4 +104,3 @@
     "portfolio_url": "/portofolio/koni-1"
   }
 ]
-

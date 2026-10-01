@@ -117,7 +117,7 @@
   ],
   "routes": {
     "5k": {
-      "title": "Rute 5K Candi Fun Trail",
+      "title": "Rute 3K Candi Fun Trail",
       "distance": "5.2 KM",
       "elevation": "+180 m",
       "maxAlt": "210 m dpl",
@@ -313,83 +313,6 @@
         340,
         210,
         140,
-        110
-      ]
-    },
-    "38k": {
-      "title": "Rute 38K Ultra Summit Trail",
-      "distance": "37.25 KM",
-      "elevation": "+1.779 m",
-      "maxAlt": "1.280 m dpl",
-      "cot": "14 Hours",
-      "wsCount": "11 Pos",
-      "surface": {
-        "trail": "85%",
-        "stone": "10%",
-        "road": "5%"
-      },
-      "waypoints": [
-        {
-          "name": "Start Gate - Lapangan Majapahit",
-          "km": "0.0 KM",
-          "elev": "110 m",
-          "type": "Start / Finish"
-        },
-        {
-          "name": "WS 1 - Candi Bajang Ratu",
-          "km": "3.2 KM",
-          "elev": "160 m",
-          "type": "Pos Air"
-        },
-        {
-          "name": "WS 2 - Bukit Selorejo",
-          "km": "8.5 KM",
-          "elev": "420 m",
-          "type": "Pos Air & Medis"
-        },
-        {
-          "name": "WS 3 - Hutan Pinus Krajan",
-          "km": "14.2 KM",
-          "elev": "710 m",
-          "type": "Pos Nutrisi"
-        },
-        {
-          "name": "Summit Point Puncak Mahameru View",
-          "km": "20.8 KM",
-          "elev": "1.280 m",
-          "type": "Puncak Tertinggi"
-        },
-        {
-          "name": "WS 4 - Lembah Kuno Penanggungan",
-          "km": "26.4 KM",
-          "elev": "640 m",
-          "type": "Pos Air & Medis"
-        },
-        {
-          "name": "WS 5 - Candi Brahu & Segaran",
-          "km": "32.1 KM",
-          "elev": "210 m",
-          "type": "Cagar Budaya"
-        },
-        {
-          "name": "Finish Gate - Lapangan Majapahit",
-          "km": "37.25 KM",
-          "elev": "110 m",
-          "type": "Finish"
-        }
-      ],
-      "elevationPoints": [
-        110,
-        220,
-        420,
-        680,
-        920,
-        1280,
-        1100,
-        840,
-        640,
-        420,
-        210,
         110
       ]
     }
