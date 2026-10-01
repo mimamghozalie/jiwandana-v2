@@ -173,8 +173,24 @@ function EventSlider({ items, variant, isActiveSection = false }: EventSliderPro
   );
 }
 
-export default function InformasiEventView() {
-  const events = eventsData as EventItem[];
+import { getEvents } from '@/lib/api';
+
+interface InformasiEventViewProps {
+  initialEvents?: EventItem[];
+}
+
+export default function InformasiEventView({ initialEvents }: InformasiEventViewProps = {}) {
+  const [events, setEvents] = useState<EventItem[]>(initialEvents || (eventsData as unknown as EventItem[]));
+
+  useEffect(() => {
+    // Always refresh client-side to ensure latest Supabase changes are reflected
+    getEvents().then((data) => {
+      if (data && data.length > 0) {
+        setEvents(data);
+      }
+    });
+  }, []);
+
   const activeEvents = events.filter((e) => e.status === 'active');
   const upcomingEvents = events.filter((e) => e.status === 'upcoming');
   const completedEvents = events.filter((e) => e.status === 'completed' || (e.status as string) === 'selesai');

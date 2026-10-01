@@ -6,15 +6,15 @@ export interface EventItem {
   event_date: string;
   location: string;
   status: 'active' | 'upcoming' | 'completed';
-  badge_text?: string;
+  badge_text?: string | null;
   poster_url: string;
   description: string;
-  rundown?: string;
-  juknis_url?: string;
-  registration_url?: string;
-  portfolio_url?: string;
-  guide_book_url?: string;
-  rules_url?: string;
+  rundown?: string | null;
+  juknis_url?: string | null;
+  registration_url?: string | null;
+  portfolio_url?: string | null;
+  guide_book_url?: string | null;
+  rules_url?: string | null;
   created_at?: string;
 }
 

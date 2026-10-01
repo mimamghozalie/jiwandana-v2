@@ -6,25 +6,54 @@ import { EventItem, PortfolioItem, TestimonialItem, ServiceItem, BookingSubmissi
 
 import eventsData from '@/data/events.json';
 
-// ============ EVENTS API (STATIC JSON) ============
-export async function getEvents(): Promise<EventItem[]> {
-  return eventsData as unknown as EventItem[];
-}
-
-export async function getEventBySlug(slug: string): Promise<EventItem | null> {
-  const cleanSlug = (slug || '').replace(/\.html$/, '').toLowerCase().trim();
-  const list = eventsData as unknown as EventItem[];
-  const item = list.find((e) => e.slug.toLowerCase().trim() === cleanSlug);
-  return item || null;
-}
-
-
 // Helper to prevent hanging on network/Supabase timeouts
-async function withTimeout<T>(promise: PromiseLike<T>, timeoutMs = 1200): Promise<T> {
+async function withTimeout<T>(promise: PromiseLike<T>, timeoutMs = 2500): Promise<T> {
   return Promise.race([
     promise,
     new Promise<never>((_, reject) => setTimeout(() => reject(new Error('SUPABASE_TIMEOUT')), timeoutMs)),
   ]);
+}
+
+// ============ EVENTS API (SUPABASE + FALLBACK) ============
+export async function getEvents(): Promise<EventItem[]> {
+  try {
+    const fetchPromise = supabase
+      .from('events')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    const { data, error } = await withTimeout(fetchPromise, 3000);
+
+    if (error || !data || data.length === 0) {
+      return eventsData as unknown as EventItem[];
+    }
+    return data as EventItem[];
+  } catch (err) {
+    console.warn('Using fallback events (JSON):', err);
+    return eventsData as unknown as EventItem[];
+  }
+}
+
+export async function getEventBySlug(slug: string): Promise<EventItem | null> {
+  const cleanSlug = (slug || '').replace(/\.html$/, '').toLowerCase().trim();
+  try {
+    const fetchPromise = supabase
+      .from('events')
+      .select('*')
+      .eq('slug', cleanSlug)
+      .maybeSingle();
+
+    const { data, error } = await withTimeout(fetchPromise, 3000);
+    if (!error && data) {
+      return data as EventItem;
+    }
+  } catch (err) {
+    console.warn('Falling back to local events JSON for slug:', cleanSlug, err);
+  }
+
+  const list = eventsData as unknown as EventItem[];
+  const item = list.find((e) => e.slug.toLowerCase().trim() === cleanSlug);
+  return item || null;
 }
 
 // ============ PORTFOLIO API (STATIC JSON) ============
