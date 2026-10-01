@@ -1,0 +1,397 @@
+{
+  "categories": [
+    {
+      "id": "3k",
+      "categoryName": "3K Hallo Pawitra",
+      "categoryCode": "3K",
+      "badge": "Pemula & Rekreasi",
+      "distance": "3.2 KM",
+      "elevationGain": "+180 m",
+      "cutOffTime": "3 Jam",
+      "waterStations": "1 Pos WS",
+      "bannerImage": "/assets/jiwandana_trailrun_1.jpeg",
+      "prices": {
+        "early": "250k",
+        "presale": "280k",
+        "regular": "340k"
+      },
+      "description": "Kategori ramah pemula dan keluarga yang menyuguhkan pemandangan asri pedesaan Trowulan serta melintasi situs megah Candi Bajang Ratu.",
+      "facilities": [
+        "Jersey Running Premium Dry-Fit Eksklusif",
+        "Medali Finisher Logam Cor Berkualitas Tinggi",
+        "Nomor Dada (BIB) + Digital Timing Chip Tag",
+        "2 Titik Water Station (Buah Segar, Isotonik & Air Mineral)",
+        "Asuransi Perlindungan Kecelakaan Peserta Resmi",
+        "Kupon Makanan Tradisional Majapahit & Goodie Bag",
+        "E-Sertifikat Resmi Waktu Tempuh & Dokumentasi Foto 4K"
+      ],
+      "backStats": {
+        "distance": "3.20 km",
+        "elevation": "+180m",
+        "cutOff": "2.0 Hours",
+        "startTime": "06:30 AM"
+      },
+      "elevationSvgFill": "M 12 180 C 40 170, 70 145, 100 120 C 120 100, 140 70, 160 65 C 180 60, 200 95, 230 140 C 260 170, 285 185, 308 190 L 308 218 L 12 218 Z",
+      "elevationSvgPath": "M 12 180 C 40 170, 70 145, 100 120 C 120 100, 140 70, 160 65 C 180 60, 200 95, 230 140 C 260 170, 285 185, 308 190",
+      "summitPoint": {
+        "x": 160,
+        "y": 65
+      }
+    },
+    {
+      "id": "7K",
+      "categoryName": "7K Junior Pawitra",
+      "categoryCode": "7K",
+      "badge": "Menengah & Kompetitif",
+      "distance": "7.5 KM",
+      "elevationGain": "+420 m",
+      "cutOffTime": "3 Jam",
+      "waterStations": "2 Pos WS",
+      "bannerImage": "/assets/2.jpeg",
+      "prices": {
+        "early": "240k",
+        "presale": "270k",
+        "regular": "330k"
+      },
+      "description": "Kategori tantangan sejati dengan kombinasi jalan setapak bebatuan candi, perbukitan hijau, dan rute single track yang menantang stamina.",
+      "facilities": [
+        "Finisher Jersey Sublimasi Gold Edition (Khusus Finisher)",
+        "Medali Logam Berat Khusus 10K dengan Relief Candi",
+        "Nomor Dada (BIB) + RFID Race Timing Chip System",
+        "4 Titik Water Station Lengkap dengan Gel Energi & Pisang",
+        "Marshall Jalur, Tim Medis Siaga & Ambulans Standby",
+        "Perlindungan Asuransi Penuh Selama Acara Berlangsung",
+        "Peluang Podium Juara Uang Pembinaan & Trofi Prestisius"
+      ],
+      "backStats": {
+        "distance": "10.50 km",
+        "elevation": "+420m",
+        "cutOff": "3.5 Hours",
+        "startTime": "06:00 AM"
+      },
+      "elevationSvgFill": "M 12 175 L 30 160 L 50 140 L 70 115 L 85 125 L 105 85 L 120 52 L 135 60 L 150 45 L 170 75 L 190 115 L 210 150 L 235 185 L 260 195 L 285 185 L 308 195 L 308 218 L 12 218 Z",
+      "elevationSvgPath": "M 12 175 L 30 160 L 50 140 L 70 115 L 85 125 L 105 85 L 120 52 L 135 60 L 150 45 L 170 75 L 190 115 L 210 150 L 235 185 L 260 195 L 285 185 L 308 195",
+      "summitPoint": {
+        "x": 150,
+        "y": 45
+      }
+    },
+    {
+      "id": "12K",
+      "categoryName": "12K Senior Pawitra",
+      "categoryCode": "12K",
+      "badge": "Tantangan Ekstrem",
+      "distance": "21.8 KM",
+      "elevationGain": "+1.150 m",
+      "cutOffTime": "7 Jam",
+      "waterStations": "3 Pos WS",
+      "bannerImage": "/assets/3.jpeg",
+      "prices": {
+        "early": "290k",
+        "presale": "320k",
+        "regular": "380k"
+      },
+      "description": "Half-marathon trail puncak tertinggi yang melintasi 5 candi purbakala, punggungan bukit terjal, serta hutan pinus berkabut tebal.",
+      "facilities": [
+        "Finisher Windbreaker Jacket Anti-Air Eksklusif 21K",
+        "Medali Logam Ukir 3D Majapahit Summit Finisher",
+        "BIB Number RFID Chip Akurasi Milidetik + Tracking Live",
+        "7 Titik Hydration Station & Checkpoint Makanan Berenergi",
+        "Rescue Evakuasi Jalur & Tim Fisioterapi di Garis Finish",
+        "Recovery Meal VIP Hotel & Pijat Relaksasi Otot Atlet",
+        "Poin Peringkat Nasional & Trofi Bergilir JIWANDANA"
+      ],
+      "backStats": {
+        "distance": "21.80 km",
+        "elevation": "+1,150m",
+        "cutOff": "6.0 Hours",
+        "startTime": "05:30 AM"
+      },
+      "elevationSvgFill": "M 12 155 L 25 140 L 38 115 L 50 85 L 62 95 L 75 65 L 88 40 L 98 48 L 110 35 L 122 55 L 135 70 L 150 105 L 165 130 L 180 158 L 195 180 L 215 198 L 240 204 L 265 188 L 285 182 L 308 192 L 308 218 L 12 218 Z",
+      "elevationSvgPath": "M 12 155 L 25 140 L 38 115 L 50 85 L 62 95 L 75 65 L 88 40 L 98 48 L 110 35 L 122 55 L 135 70 L 150 105 L 165 130 L 180 158 L 195 180 L 215 198 L 240 204 L 265 188 L 285 182 L 308 192",
+      "summitPoint": {
+        "x": 110,
+        "y": 35
+      }
+    }
+  ],
+  "routes": {
+    "5k": {
+      "title": "Rute 5K Candi Fun Trail",
+      "distance": "5.2 KM",
+      "elevation": "+180 m",
+      "maxAlt": "210 m dpl",
+      "cot": "2.0 Jam",
+      "wsCount": "2 Pos",
+      "surface": {
+        "trail": "60%",
+        "stone": "25%",
+        "road": "15%"
+      },
+      "waypoints": [
+        {
+          "name": "Start Gate - Lapangan Majapahit",
+          "km": "0.0 KM",
+          "elev": "110 m",
+          "type": "Start / Finish"
+        },
+        {
+          "name": "Candi Bajang Ratu",
+          "km": "1.8 KM",
+          "elev": "145 m",
+          "type": "Cagar Budaya"
+        },
+        {
+          "name": "Water Station 1 (Desa Temon)",
+          "km": "2.8 KM",
+          "elev": "185 m",
+          "type": "Pos Air & Medis"
+        },
+        {
+          "name": "Candi Tikus Pemandian Kuno",
+          "km": "4.1 KM",
+          "elev": "160 m",
+          "type": "Cagar Budaya"
+        },
+        {
+          "name": "Finish Gate - Lapangan Majapahit",
+          "km": "5.2 KM",
+          "elev": "110 m",
+          "type": "Finish"
+        }
+      ],
+      "elevationPoints": [
+        110,
+        125,
+        145,
+        170,
+        185,
+        210,
+        180,
+        160,
+        130,
+        110
+      ]
+    },
+    "10k": {
+      "title": "Rute 10K Heritage Challenge",
+      "distance": "10.5 KM",
+      "elevation": "+420 m",
+      "maxAlt": "460 m dpl",
+      "cot": "3.5 Jam",
+      "wsCount": "4 Pos",
+      "surface": {
+        "trail": "70%",
+        "stone": "20%",
+        "road": "10%"
+      },
+      "waypoints": [
+        {
+          "name": "Start Gate - Lapangan Majapahit",
+          "km": "0.0 KM",
+          "elev": "110 m",
+          "type": "Start / Finish"
+        },
+        {
+          "name": "Candi Bajang Ratu",
+          "km": "2.1 KM",
+          "elev": "150 m",
+          "type": "Cagar Budaya"
+        },
+        {
+          "name": "WS 1 - Punggung Bukit Selorejo",
+          "km": "4.2 KM",
+          "elev": "280 m",
+          "type": "Pos Air & Medis"
+        },
+        {
+          "name": "Puncak View Lembah Majapahit",
+          "km": "6.5 KM",
+          "elev": "460 m",
+          "type": "Puncak Tertinggi"
+        },
+        {
+          "name": "WS 2 - Candi Gentong",
+          "km": "8.4 KM",
+          "elev": "220 m",
+          "type": "Pos Air & Medis"
+        },
+        {
+          "name": "Finish Gate - Lapangan Majapahit",
+          "km": "10.5 KM",
+          "elev": "110 m",
+          "type": "Finish"
+        }
+      ],
+      "elevationPoints": [
+        110,
+        140,
+        200,
+        280,
+        360,
+        460,
+        390,
+        310,
+        220,
+        160,
+        110
+      ]
+    },
+    "21k": {
+      "title": "Rute 21K Majapahit Summit Trail",
+      "distance": "21.8 KM",
+      "elevation": "+1.150 m",
+      "maxAlt": "890 m dpl",
+      "cot": "6.0 Jam",
+      "wsCount": "7 Pos",
+      "surface": {
+        "trail": "80%",
+        "stone": "15%",
+        "road": "5%"
+      },
+      "waypoints": [
+        {
+          "name": "Start Gate - Lapangan Majapahit",
+          "km": "0.0 KM",
+          "elev": "110 m",
+          "type": "Start / Finish"
+        },
+        {
+          "name": "WS 1 - Candi Bajang Ratu",
+          "km": "2.5 KM",
+          "elev": "155 m",
+          "type": "Pos Air"
+        },
+        {
+          "name": "Single Track Hutan Pinus",
+          "km": "6.8 KM",
+          "elev": "420 m",
+          "type": "Jalur Ekstrem"
+        },
+        {
+          "name": "WS 2 & Checkpoint Bukit Gajah Mada",
+          "km": "10.2 KM",
+          "elev": "680 m",
+          "type": "Pos Air & Medis"
+        },
+        {
+          "name": "Summit Point Puncak Mahameru View",
+          "km": "13.5 KM",
+          "elev": "890 m",
+          "type": "Puncak Tertinggi"
+        },
+        {
+          "name": "WS 3 - Desa Wringinlawang",
+          "km": "17.8 KM",
+          "elev": "340 m",
+          "type": "Pos Air & Medis"
+        },
+        {
+          "name": "Candi Brahu & Kolam Segaran",
+          "km": "20.1 KM",
+          "elev": "140 m",
+          "type": "Cagar Budaya"
+        },
+        {
+          "name": "Finish Gate - Lapangan Majapahit",
+          "km": "21.8 KM",
+          "elev": "110 m",
+          "type": "Finish"
+        }
+      ],
+      "elevationPoints": [
+        110,
+        155,
+        260,
+        420,
+        560,
+        680,
+        810,
+        890,
+        720,
+        520,
+        340,
+        210,
+        140,
+        110
+      ]
+    },
+    "38k": {
+      "title": "Rute 38K Ultra Summit Trail",
+      "distance": "37.25 KM",
+      "elevation": "+1.779 m",
+      "maxAlt": "1.280 m dpl",
+      "cot": "14 Hours",
+      "wsCount": "11 Pos",
+      "surface": {
+        "trail": "85%",
+        "stone": "10%",
+        "road": "5%"
+      },
+      "waypoints": [
+        {
+          "name": "Start Gate - Lapangan Majapahit",
+          "km": "0.0 KM",
+          "elev": "110 m",
+          "type": "Start / Finish"
+        },
+        {
+          "name": "WS 1 - Candi Bajang Ratu",
+          "km": "3.2 KM",
+          "elev": "160 m",
+          "type": "Pos Air"
+        },
+        {
+          "name": "WS 2 - Bukit Selorejo",
+          "km": "8.5 KM",
+          "elev": "420 m",
+          "type": "Pos Air & Medis"
+        },
+        {
+          "name": "WS 3 - Hutan Pinus Krajan",
+          "km": "14.2 KM",
+          "elev": "710 m",
+          "type": "Pos Nutrisi"
+        },
+        {
+          "name": "Summit Point Puncak Mahameru View",
+          "km": "20.8 KM",
+          "elev": "1.280 m",
+          "type": "Puncak Tertinggi"
+        },
+        {
+          "name": "WS 4 - Lembah Kuno Penanggungan",
+          "km": "26.4 KM",
+          "elev": "640 m",
+          "type": "Pos Air & Medis"
+        },
+        {
+          "name": "WS 5 - Candi Brahu & Segaran",
+          "km": "32.1 KM",
+          "elev": "210 m",
+          "type": "Cagar Budaya"
+        },
+        {
+          "name": "Finish Gate - Lapangan Majapahit",
+          "km": "37.25 KM",
+          "elev": "110 m",
+          "type": "Finish"
+        }
+      ],
+      "elevationPoints": [
+        110,
+        220,
+        420,
+        680,
+        920,
+        1280,
+        1100,
+        840,
+        640,
+        420,
+        210,
+        110
+      ]
+    }
+  }
+}

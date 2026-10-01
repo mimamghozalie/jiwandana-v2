@@ -1,0 +1,43 @@
+[
+  {
+    "id": "1",
+    "slug": "koni-1",
+    "title": "KONI Championship 1",
+    "category": "perlombaan",
+    "client": "KONI & IPSI Kab. Mojokerto",
+    "event_date": "14–16 Agustus 2026",
+    "location": "GOR Dinas Pendidikan Kab. Mojokerto",
+    "cover_image": "/assets/4.jpeg",
+    "gallery_images": [
+      "/assets/koni-1-2026-web/1.jpg",
+      "/assets/koni-1-2026-web/2.jpg",
+      "/assets/koni-1-2026-web/3.jpg",
+      "/assets/koni-1-2026-web/4.jpg",
+      "/assets/koni-1-2026-web/5.jpg",
+      "/assets/koni-1-2026-web/6.jpg",
+      "/assets/koni-1-2026-web/7.jpg",
+      "/assets/koni-1-2026-web/8.jpg",
+      "/assets/koni-1-2026-web/9.jpg",
+      "/assets/koni-1-2026-web/10.jpg",
+      "/assets/koni-1-2026-web/11.jpg",
+      "/assets/koni-1-2026-web/12.jpg",
+      "/assets/koni-1-2026-web/13.JPG",
+      "/assets/koni-1-2026-web/14.JPG",
+      "/assets/koni-1-2026-web/15.JPG",
+      "/assets/koni-1-2026-web/16.JPG",
+      "/assets/koni-1-2026-web/17.JPG",
+      "/assets/koni-1-2026-web/18.JPG",
+      "/assets/koni-1-2026-web/19.JPG",
+      "/assets/koni-1-2026-web/20.jpg",
+      "/assets/koni-1-2026-web/21.jpg",
+      "/assets/koni-1-2026-web/22.JPG"
+    ],
+    "stats": {
+      "participants": "1.200+ Pesilat",
+      "contingents": "85 Kontingen",
+      "arenas": "3 Gelanggang Resmi",
+      "medals": "120 Set Medali Eksklusif"
+    },
+    "description": "Penyelenggaraan kejuaraan nasional silat spektakuler dengan arena 3 gelanggang tanding full digital scoring, tata panggung pembukaan megah berkonsep kerajaan Majapahit, serta live broadcast multi-kamera berkecepatan tinggi."
+  }
+]
