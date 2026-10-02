@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createPakasirTransaction, parsePriceToNumber } from '@/lib/pakasir';
 import { createClient } from '@supabase/supabase-js';
 import trailrunData from '@/data/trailrun.json';
+import { getActivePricingTier } from '@/lib/pricing';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -31,8 +32,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Use presale price as the default current price
-    const amount = parsePriceToNumber(category.prices.presale);
+    // 1. Count confirmed/paid registrations for this category to enforce early quota
+    let paidCount = 0;
+    try {
+      const { count } = await supabase
+        .from('trailrun_registrations')
+        .select('*', { count: 'exact', head: true })
+        .ilike('kategori', `%${kategori}%`)
+        .in('status', ['paid', 'confirmed']);
+      paidCount = count || 0;
+    } catch (countErr) {
+      console.warn('Could not count registrations, defaulting to 0:', countErr);
+    }
+
+    // 2. Evaluate active pricing tier (Early Bird limit 50, Presale, Regular)
+    const tierEvaluation = getActivePricingTier(kategori, paidCount);
+    const amount = tierEvaluation.amount;
 
     if (amount <= 0) {
       return NextResponse.json(

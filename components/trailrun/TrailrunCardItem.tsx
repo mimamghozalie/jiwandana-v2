@@ -3,12 +3,14 @@
 import React from 'react';
 import Link from 'next/link';
 import { TrailrunCard } from '@/lib/types';
+import type { ActivePricingResult } from '@/lib/pricing';
 
 interface TrailrunCardItemProps {
   item: TrailrunCard;
   isFlipped: boolean;
   onToggleFlip: () => void;
   onSelectCategory: () => void;
+  pricingInfo?: ActivePricingResult | null;
 }
 
 export default function TrailrunCardItem({
@@ -16,6 +18,7 @@ export default function TrailrunCardItem({
   isFlipped,
   onToggleFlip,
   onSelectCategory,
+  pricingInfo,
 }: TrailrunCardItemProps) {
   return (
     <div className="perspective-1000 w-full min-h-[560px]">
@@ -85,29 +88,65 @@ export default function TrailrunCardItem({
               </div>
             </div>
 
-            {/* 3. Price Box (Early, Presale, Regular) */}
+            {/* 3. Price Box (Early, Presale, Regular) with Session Dates & Realtime Quota */}
             <div className="border border-black/10 rounded-xl p-3.5 bg-white space-y-2 shadow-inner">
-              <div className="text-center text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-black/5 pb-1">
-                Price
+              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-black/5 pb-1">
+                <span>Harga Sesi</span>
+                <span className="text-[10px] text-[#C9A227] font-semibold">
+                  {pricingInfo?.tierName ? `Sesi Aktif: ${pricingInfo.tierName}` : '3 Tahapan'}
+                </span>
               </div>
               <div className="grid grid-cols-3 text-center divide-x divide-black/10 pt-1">
-                <div className="px-1">
-                  <span className="text-[10px] text-slate-400 uppercase block font-semibold">
-                    Early
+                {/* Early Bird */}
+                <div className={`px-1 space-y-0.5 rounded-lg transition-colors ${pricingInfo?.tierId === 'early' ? 'bg-rose-50/70 py-1' : ''}`}>
+                  <span className="text-[10px] text-rose-600 uppercase block font-bold">
+                    Early Bird
                   </span>
-                  <span className="text-sm font-bold text-slate-900">{item.prices.early}</span>
-                </div>
-                <div className="px-1">
-                  <span className="text-[10px] text-[#C9A227] uppercase block font-semibold">
-                    Presale
+                  <span className="text-[9px] text-slate-400 block font-medium">04–10 Okt</span>
+                  <span className={`text-sm font-bold block ${pricingInfo?.isEarlyBirdSoldOut ? 'line-through text-slate-400' : 'text-slate-900'}`}>
+                    {item.prices.early}
                   </span>
-                  <span className="text-sm font-bold text-[#C9A227]">{item.prices.presale}</span>
+                  <span className="text-[8px] font-semibold block">
+                    {pricingInfo?.isEarlyBirdSoldOut ? (
+                      <span className="text-rose-600 bg-rose-100 px-1 py-0.5 rounded font-bold">Sold Out</span>
+                    ) : typeof pricingInfo?.quotaRemaining === 'number' ? (
+                      <span className="text-rose-600 font-bold">Sisa {pricingInfo.quotaRemaining} Kuota</span>
+                    ) : (
+                      <span className="text-rose-600">50 Kuota</span>
+                    )}
+                  </span>
                 </div>
-                <div className="px-1">
-                  <span className="text-[10px] text-slate-400 uppercase block font-semibold">
+
+                {/* Pre-Sale */}
+                <div className={`px-1 space-y-0.5 rounded-lg transition-colors ${pricingInfo?.tierId === 'presale' ? 'bg-amber-50/70 py-1' : ''}`}>
+                  <span className="text-[10px] text-[#C9A227] uppercase block font-bold">
+                    Pre-Sale
+                  </span>
+                  <span className="text-[9px] text-amber-600/80 block font-medium">11–21 Okt</span>
+                  <span className="text-sm font-bold text-[#C9A227] block">{item.prices.presale}</span>
+                  <span className="text-[8px] text-slate-400 block">
+                    {pricingInfo?.tierId === 'presale' ? (
+                      <span className="text-amber-700 font-bold">Sedang Aktif</span>
+                    ) : (
+                      'Sesi 2'
+                    )}
+                  </span>
+                </div>
+
+                {/* Regular */}
+                <div className={`px-1 space-y-0.5 rounded-lg transition-colors ${pricingInfo?.tierId === 'regular' ? 'bg-slate-100 py-1' : ''}`}>
+                  <span className="text-[10px] text-slate-600 uppercase block font-bold">
                     Regular
                   </span>
-                  <span className="text-sm font-bold text-slate-700">{item.prices.regular}</span>
+                  <span className="text-[9px] text-slate-400 block font-medium">22 Okt–08 Nov</span>
+                  <span className="text-sm font-bold text-slate-700 block">{item.prices.regular}</span>
+                  <span className="text-[8px] text-slate-400 block">
+                    {pricingInfo?.tierId === 'regular' ? (
+                      <span className="text-slate-800 font-bold">Sedang Aktif</span>
+                    ) : (
+                      'Penutupan'
+                    )}
+                  </span>
                 </div>
               </div>
             </div>

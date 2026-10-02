@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import trailrunData from '@/data/trailrun.json';
 import { trailrunRoutes } from '@/data/routes';
 import { TrailrunCard, TrailrunRoute } from '@/lib/types';
+import type { ActivePricingResult } from '@/lib/pricing';
 import TrailrunHero from '@/components/trailrun/TrailrunHero';
 import TrailrunCardItem from '@/components/trailrun/TrailrunCardItem';
 import TrailrunFacilityModal from '@/components/trailrun/TrailrunFacilityModal';
@@ -13,6 +14,21 @@ export default function TrailrunClient() {
   const [selectedCategory, setSelectedCategory] = useState<TrailrunCard | null>(null);
   const [activeRouteKey, setActiveRouteKey] = useState<string>('3k');
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
+  const [pricingData, setPricingData] = useState<Record<string, ActivePricingResult>>({});
+
+  useEffect(() => {
+    // Fetch live quota & pricing from database
+    fetch('/api/trailrun/pricing')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data) {
+          setPricingData(data);
+        }
+      })
+      .catch((err) => {
+        console.warn('Realtime pricing fetch error:', err);
+      });
+  }, []);
 
   const toggleFlip = (id: string) => {
     setFlippedCards((prev) => ({
@@ -30,7 +46,7 @@ export default function TrailrunClient() {
       <TrailrunHero />
 
       {/* 2. CATEGORIES SECTION (Cards with 3D Flip Elevation Profile) */}
-      <section id="kategori" className="py-16 md:py-24 max-w-7xl mx-auto px-6 space-y-12">
+      <section id="kategori" className="py-12 md:py-16 max-w-7xl mx-auto px-6 space-y-12">
         <div className="text-center space-y-2">
           <span className="text-xs font-bold uppercase tracking-widest text-[#C9A227] block">
             Pilihan Kategori Lomba
@@ -43,12 +59,13 @@ export default function TrailrunClient() {
           </p>
         </div>
 
-        {/* Modular Cards Grid loaded from JSON */}
+        {/* Modular Cards Grid loaded from JSON with Realtime Pricing */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
           {categories.map((item) => (
             <TrailrunCardItem
               key={item.id}
               item={item}
+              pricingInfo={pricingData[item.id] || null}
               isFlipped={!!flippedCards[item.id]}
               onToggleFlip={() => toggleFlip(item.id)}
               onSelectCategory={() => setSelectedCategory(item)}

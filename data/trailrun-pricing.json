@@ -1,0 +1,91 @@
+{
+  "currency": "IDR",
+  "tiers": {
+    "early": {
+      "id": "early",
+      "name": "Early Bird",
+      "badge": "Terbatas 50 Slot / Kategori",
+      "dateDisplay": "04 Oktober - 10 Oktober 2026",
+      "startDate": "2026-10-04T00:00:00+07:00",
+      "endDate": "2026-10-10T23:59:59+07:00",
+      "quotaPerCategory": 50,
+      "description": "*Only 50 kuota / kategori race"
+    },
+    "presale": {
+      "id": "presale",
+      "name": "Pre-Sale",
+      "badge": "Harga Spesial",
+      "dateDisplay": "11 Oktober - 21 Oktober 2026",
+      "startDate": "2026-10-11T00:00:00+07:00",
+      "endDate": "2026-10-21T23:59:59+07:00",
+      "quotaPerCategory": 150,
+      "description": "Periode Pre-Sale sebelum masuk ke harga normal"
+    },
+    "regular": {
+      "id": "regular",
+      "name": "Regular",
+      "badge": "Harga Normal",
+      "dateDisplay": "22 Oktober - 08 November 2026",
+      "startDate": "2026-10-22T00:00:00+07:00",
+      "endDate": "2026-11-08T23:59:59+07:00",
+      "quotaPerCategory": null,
+      "description": "Periode pendaftaran reguler hingga penutupan registrasi"
+    }
+  },
+  "categories": {
+    "3k": {
+      "categoryCode": "3K",
+      "categoryName": "3K Hallo Pawitra",
+      "prices": {
+        "early": {
+          "amount": 2500,
+          "display": "250k"
+        },
+        "presale": {
+          "amount": 2800,
+          "display": "280k"
+        },
+        "regular": {
+          "amount": 3400,
+          "display": "340k"
+        }
+      }
+    },
+    "7k": {
+      "categoryCode": "7K",
+      "categoryName": "7K Junior Pawitra",
+      "prices": {
+        "early": {
+          "amount": 2400,
+          "display": "240k"
+        },
+        "presale": {
+          "amount": 2700,
+          "display": "270k"
+        },
+        "regular": {
+          "amount": 3300,
+          "display": "330k"
+        }
+      }
+    },
+    "12k": {
+      "categoryCode": "12K",
+      "categoryName": "12K Senior Pawitra",
+      "prices": {
+        "early": {
+          "amount": 2900,
+          "display": "290k"
+        },
+        "presale": {
+          "amount": 3200,
+          "display": "320k"
+        },
+        "regular": {
+          "amount": 3800,
+          "display": "380k"
+        }
+      }
+    }
+  }
+}
