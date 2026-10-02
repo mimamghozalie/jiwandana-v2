@@ -35,6 +35,8 @@ interface PaymentData {
   amount: number;
   total_payment: number;
   fee: number;
+  admin_fee?: number;
+  gateway_fee?: number;
   payment_method: string;
   qr_string?: string;
   va_number?: string;
@@ -55,6 +57,16 @@ export default function DaftarTrailrunClient() {
   const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<'idle' | 'pending' | 'completed' | 'error'>('idle');
   const [showSuccess, setShowSuccess] = useState(false);
+  const [pricingInfoMap, setPricingInfoMap] = useState<Record<string, any>>({});
+
+  useEffect(() => {
+    fetch('/api/trailrun/pricing')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data) setPricingInfoMap(data);
+      })
+      .catch((err) => console.warn('Could not fetch pricing in register page:', err));
+  }, []);
 
   const [formData, setFormData] = useState({
     nama: '',
@@ -552,7 +564,7 @@ export default function DaftarTrailrunClient() {
                 </div>
 
                 {/* Review Data Summary */}
-                <div className="bg-slate-950 rounded-xl border border-white/10 p-5 space-y-4 text-white">
+                <div className="bg-[#f8f8f8] rounded-xl border border-black/10 p-5 space-y-4 text-slate-800">
                   <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#C9A227]">
                     <span className="material-symbols-outlined text-sm">fact_check</span>
                     Ringkasan Pendaftaran
@@ -603,8 +615,13 @@ export default function DaftarTrailrunClient() {
                             </div>
                           </div>
                           <div className="text-right">
-                            <span className="text-[10px] text-slate-400 uppercase font-semibold block">Total</span>
-                            <span className="text-lg font-bold text-[#C9A227]">{selectedCategory.prices.presale}</span>
+                            <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">Estimasi Total</span>
+                            <span className="text-lg font-bold text-[#C9A227]">
+                              {pricingInfoMap[selectedCategory.id]?.amount
+                                ? formatCurrency(pricingInfoMap[selectedCategory.id].amount + 5000)
+                                : selectedCategory.prices.early}
+                            </span>
+                            <span className="text-[9px] text-slate-500 block font-medium">+ Biaya Admin Rp 5.000</span>
                           </div>
                         </div>
                       </div>
@@ -667,17 +684,20 @@ export default function DaftarTrailrunClient() {
                       </div>
                     </div>
 
-                    {/* Payment Info */}
-                    <div className="bg-slate-950 rounded-xl border border-white/10 p-5 space-y-4 text-white">
-                      <div className="grid grid-cols-2 gap-3 text-xs">
+                    {/* Payment Info - Light Theme */}
+                    <div className="bg-[#f8f8f8] rounded-2xl border border-black/10 p-5 sm:p-6 space-y-4 text-slate-800 shadow-xs">
+                      <div className="grid grid-cols-2 gap-3 sm:gap-4 text-xs">
                         <SummaryRow label="Order ID" value={paymentData.order_id} />
                         <SummaryRow label="Metode" value={paymentData.payment_method.toUpperCase().replace('_', ' ')} />
                         <SummaryRow label="Subtotal" value={formatCurrency(paymentData.amount)} />
-                        <SummaryRow label="Biaya Admin" value={formatCurrency(paymentData.fee)} />
+                        <SummaryRow
+                          label="Biaya Admin"
+                          value={formatCurrency(paymentData.fee)}
+                        />
                       </div>
-                      <div className="pt-3 border-t border-white/10 flex justify-between items-center">
-                        <span className="text-xs text-slate-400 uppercase font-semibold">Total Bayar</span>
-                        <span className="text-xl font-bold text-[#C9A227]">{formatCurrency(paymentData.total_payment)}</span>
+                      <div className="pt-3 border-t border-black/10 flex justify-between items-center">
+                        <span className="text-xs text-slate-600 uppercase font-bold tracking-wider">Total Bayar</span>
+                        <span className="text-xl sm:text-2xl font-bold text-[#C9A227]">{formatCurrency(paymentData.total_payment)}</span>
                       </div>
                     </div>
 
@@ -908,8 +928,8 @@ export default function DaftarTrailrunClient() {
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <span className="text-[10px] text-slate-400 uppercase font-semibold block">{label}</span>
-      <span className="text-white font-medium">{value || '—'}</span>
+      <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block mb-0.5">{label}</span>
+      <span className="text-slate-900 font-semibold text-xs sm:text-sm">{value || '—'}</span>
     </div>
   );
 }

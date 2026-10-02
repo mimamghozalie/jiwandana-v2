@@ -47,22 +47,26 @@ export async function POST(request: NextRequest) {
 
     // 2. Evaluate active pricing tier (Early Bird limit 50, Presale, Regular)
     const tierEvaluation = getActivePricingTier(kategori, paidCount);
-    const amount = tierEvaluation.amount;
+    const baseAmount = tierEvaluation.amount;
 
-    if (amount <= 0) {
+    if (baseAmount <= 0) {
       return NextResponse.json(
         { error: 'Harga tidak valid.' },
         { status: 400 }
       );
     }
 
+    // Biaya Admin Rp 5.000
+    const ADMIN_FEE = 5000;
+    const amountToPay = baseAmount + ADMIN_FEE;
+
     // Generate unique order ID
     const orderId = `TR-${registration_id.slice(0, 8).toUpperCase()}-${Date.now()}`;
 
-    // Create transaction via Pakasir API v2
+    // Create transaction via Pakasir API v2 with ticket price + admin fee
     const transaction = await createPakasirTransaction(orderId, {
       method: payment_method,
-      amount,
+      amount: amountToPay,
     });
 
     // Default expired_at fallback: 24 hours from now if Pakasir does not return it
@@ -73,13 +77,16 @@ export async function POST(request: NextRequest) {
       (transaction as any).expiry_time ||
       defaultExpiry;
 
+    const gatewayFee = transaction.fee || 0;
+    const totalFee = ADMIN_FEE + gatewayFee;
+
     // Save payment record to Supabase
     await supabase.from('trailrun_payments').insert([{
       registration_id,
       order_id: orderId,
       txn_id: transaction.txn_id,
-      amount: transaction.amount,
-      fee: transaction.fee,
+      amount: baseAmount,
+      fee: totalFee,
       total_payment: transaction.total_payment,
       payment_method: transaction.payment_method,
       qr_string: transaction.qr_string || null,
@@ -101,9 +108,11 @@ export async function POST(request: NextRequest) {
       data: {
         txn_id: transaction.txn_id,
         order_id: orderId,
-        amount: transaction.amount,
+        amount: baseAmount,
         total_payment: transaction.total_payment,
-        fee: transaction.fee,
+        fee: totalFee,
+        admin_fee: ADMIN_FEE,
+        gateway_fee: gatewayFee,
         payment_method: transaction.payment_method,
         qr_string: transaction.qr_string,
         va_number: transaction.va_number,
