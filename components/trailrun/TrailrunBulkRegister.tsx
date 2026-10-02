@@ -522,30 +522,30 @@ export default function TrailrunBulkRegister() {
           {/* 1. Step Guidance & Download Template Banner */}
           <div className="bg-white border border-black/10 rounded-2xl p-6 sm:p-7 shadow-xs space-y-4">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#C9A227] block">
+              <div className="space-y-1.5 flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#C9A227] whitespace-nowrap">
                     Pendaftaran Komunitas / Rombongan
                   </span>
-                  <span className="px-2 py-0.5 rounded-full bg-[#C9A227]/10 text-[#C9A227] border border-[#C9A227]/30 text-[10px] font-bold">
+                  <span className="px-2.5 py-0.5 rounded-full bg-[#C9A227]/10 text-[#C9A227] border border-[#C9A227]/30 text-[10px] font-bold whitespace-nowrap">
                     Minimal 5 Peserta
                   </span>
                 </div>
                 <h3 className="text-lg sm:text-xl font-serif font-bold text-slate-900">
                   Registrasi Kolektif via File Excel
                 </h3>
-                <p className="text-xs text-slate-500 max-w-xl">
+                <p className="text-xs text-slate-500 max-w-xl leading-relaxed">
                   Daftarkan rombongan pelari sekaligus dengan mudah (minimal 5 peserta). Cukup unduh format template resmi (.xlsx), isi data seluruh peserta, lalu upload kembali untuk 1 kali pembayaran kolektif.
                 </p>
               </div>
 
-              {/* Download Button */}
+              {/* Download Button - Gold Primary */}
               <button
                 type="button"
                 onClick={() => downloadTrailrunExcelTemplate(picData.group_name)}
-                className="px-5 py-3 bg-[#12233c] hover:bg-[#0d1c32] text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all transform active:scale-95 shadow-md flex items-center gap-2 cursor-pointer shrink-0"
+                className="px-5 py-3 bg-[#C9A227] hover:bg-[#b08d20] text-[#0d1c32] font-bold text-xs uppercase tracking-wider rounded-xl transition-all transform active:scale-95 shadow-md flex items-center gap-2 cursor-pointer shrink-0"
               >
-                <Download className="w-4 h-4 text-[#C9A227]" />
+                <Download className="w-4 h-4 text-[#0d1c32]" />
                 <span>Unduh Format Template (.xlsx)</span>
               </button>
             </div>

@@ -297,13 +297,13 @@ export default function DaftarTrailrunClient() {
       {/* ===== FORM SECTION ===== */}
       <section className="max-w-3xl mx-auto px-4 sm:px-6 -mt-10 relative z-20 pb-20">
         {/* REGISTRATION TYPE TABS (Individu vs Kolektif/Excel) */}
-        <div className="flex items-center justify-center p-1 rounded-2xl bg-white border border-black/10 shadow-xs mb-6 max-w-sm mx-auto">
+        <div className="flex items-center justify-center p-1 rounded-2xl bg-white border border-black/10 shadow-xs mb-6 max-w-xl mx-auto">
           <button
             type="button"
             onClick={() => setRegisterMode('individual')}
             className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${registerMode === 'individual'
-                ? 'bg-[#C9A227] text-[#0d1c32] shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              ? 'bg-[#C9A227] text-[#0d1c32] shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
           >
             <span className="material-symbols-outlined text-sm">person</span>
@@ -313,8 +313,8 @@ export default function DaftarTrailrunClient() {
             type="button"
             onClick={() => setRegisterMode('bulk')}
             className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${registerMode === 'bulk'
-                ? 'bg-[#C9A227] text-[#0d1c32] shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              ? 'bg-[#C9A227] text-[#0d1c32] shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
           >
             <span className="material-symbols-outlined text-sm">groups</span>
@@ -337,10 +337,10 @@ export default function DaftarTrailrunClient() {
                     <div key={label} className="flex items-center gap-1.5 sm:gap-3 flex-1">
                       <div
                         className={`w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-[10px] sm:text-sm font-bold transition-all duration-300 shrink-0 ${isDone
-                            ? 'bg-emerald-500 text-white'
-                            : isActive
-                              ? 'bg-[#C9A227] text-[#0d1c32] shadow-md'
-                              : 'bg-slate-100 text-slate-400 border border-black/10'
+                          ? 'bg-emerald-500 text-white'
+                          : isActive
+                            ? 'bg-[#C9A227] text-[#0d1c32] shadow-md'
+                            : 'bg-slate-100 text-slate-400 border border-black/10'
                           }`}
                       >
                         {isDone ? (
@@ -514,8 +514,8 @@ export default function DaftarTrailrunClient() {
                             <button key={gd} type="button"
                               onClick={() => setFormData((prev) => ({ ...prev, golongan_darah: gd }))}
                               className={`flex-1 py-3 rounded-xl font-bold text-sm uppercase tracking-wider transition-all duration-200 border cursor-pointer ${formData.golongan_darah === gd
-                                  ? 'bg-[#C9A227] text-[#0d1c32] border-[#C9A227] shadow-md'
-                                  : 'bg-[#f8f8f8] text-slate-600 border-black/10 hover:border-[#C9A227]/50'
+                                ? 'bg-[#C9A227] text-[#0d1c32] border-[#C9A227] shadow-md'
+                                : 'bg-[#f8f8f8] text-slate-600 border-black/10 hover:border-[#C9A227]/50'
                                 }`}>
                               {gd}
                             </button>
@@ -666,8 +666,8 @@ export default function DaftarTrailrunClient() {
                               <button key={pm.id} type="button"
                                 onClick={() => setPaymentMethod(pm.id)}
                                 className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer flex items-center gap-3 ${paymentMethod === pm.id
-                                    ? 'border-[#C9A227] bg-[#C9A227]/5'
-                                    : 'border-black/10 hover:border-[#C9A227]/40'
+                                  ? 'border-[#C9A227] bg-[#C9A227]/5'
+                                  : 'border-black/10 hover:border-[#C9A227]/40'
                                   }`}>
                                 <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${paymentMethod === pm.id ? 'border-[#C9A227] bg-[#C9A227]' : 'border-slate-300'
                                   }`}>
@@ -692,8 +692,8 @@ export default function DaftarTrailrunClient() {
                       <div className="space-y-5">
                         {/* Status Badge */}
                         <div className={`p-4 rounded-xl border flex items-center gap-3 ${paymentStatus === 'completed'
-                            ? 'bg-emerald-50 border-emerald-200'
-                            : 'bg-amber-50 border-amber-200'
+                          ? 'bg-emerald-50 border-emerald-200'
+                          : 'bg-amber-50 border-amber-200'
                           }`}>
                           <span className={`material-symbols-outlined text-xl ${paymentStatus === 'completed' ? 'text-emerald-500' : 'text-amber-500 animate-pulse'
                             }`}>
