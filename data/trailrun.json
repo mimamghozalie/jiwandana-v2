@@ -9,7 +9,7 @@
       "elevationGain": "+180 m",
       "cutOffTime": "3 Jam",
       "waterStations": "1 Pos WS",
-      "bannerImage": "/assets/jiwandana_trailrun_1.jpeg",
+      "bannerImage": "/assets/trailrun/3k.png",
       "prices": {
         "early": "250k",
         "presale": "280k",
@@ -47,7 +47,7 @@
       "elevationGain": "+420 m",
       "cutOffTime": "3.5 Jam",
       "waterStations": "2 Pos WS",
-      "bannerImage": "/assets/2.jpeg",
+      "bannerImage": "/assets/trailrun/7k.png",
       "prices": {
         "early": "240k",
         "presale": "270k",
@@ -85,7 +85,7 @@
       "elevationGain": "+850 m",
       "cutOffTime": "6 Jam",
       "waterStations": "3 Pos WS",
-      "bannerImage": "/assets/3.jpeg",
+      "bannerImage": "/assets/trailrun/12k.png",
       "prices": {
         "early": "290k",
         "presale": "320k",
