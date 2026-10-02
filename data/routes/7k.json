@@ -1,0 +1,67 @@
+{
+  "id": "7k",
+  "routeKey": "7k",
+  "title": "Rute 7K Junior Pawitra Heritage Trail",
+  "distance": "7.5 KM",
+  "elevation": "+420 m",
+  "maxAlt": "460 m dpl",
+  "cot": "3.5 Jam",
+  "wsCount": "2 Pos WS",
+  "gpxFile": "/routes/7k.gpx",
+  "surface": {
+    "trail": "70%",
+    "stone": "20%",
+    "road": "10%"
+  },
+  "waypoints": [
+    {
+      "name": "Start Gate - Lapangan Majapahit",
+      "km": "0.0 KM",
+      "elev": "110 m",
+      "type": "Start / Finish"
+    },
+    {
+      "name": "Gapura Candi Bajang Ratu",
+      "km": "1.5 KM",
+      "elev": "150 m",
+      "type": "Cagar Budaya"
+    },
+    {
+      "name": "WS 1 - Kaki Bukit Selorejo",
+      "km": "3.2 KM",
+      "elev": "260 m",
+      "type": "Pos Air & Medis"
+    },
+    {
+      "name": "Puncak View Lembah Pawitra",
+      "km": "4.8 KM",
+      "elev": "460 m",
+      "type": "Puncak Tertinggi"
+    },
+    {
+      "name": "WS 2 - Situs Candi Gentong",
+      "km": "6.0 KM",
+      "elev": "220 m",
+      "type": "Pos Air & Medis"
+    },
+    {
+      "name": "Finish Gate - Lapangan Majapahit",
+      "km": "7.5 KM",
+      "elev": "110 m",
+      "type": "Finish"
+    }
+  ],
+  "elevationPoints": [
+    110,
+    140,
+    200,
+    260,
+    360,
+    460,
+    390,
+    310,
+    220,
+    160,
+    110
+  ]
+}

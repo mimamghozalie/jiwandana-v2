@@ -1,0 +1,74 @@
+{
+  "id": "12k",
+  "routeKey": "12k",
+  "title": "Rute 12K Senior Pawitra Summit Challenge",
+  "distance": "12.5 KM",
+  "elevation": "+850 m",
+  "maxAlt": "780 m dpl",
+  "cot": "6.0 Jam",
+  "wsCount": "3 Pos WS",
+  "gpxFile": "/routes/12k.gpx",
+  "surface": {
+    "trail": "80%",
+    "stone": "15%",
+    "road": "5%"
+  },
+  "waypoints": [
+    {
+      "name": "Start Gate - Lapangan Majapahit",
+      "km": "0.0 KM",
+      "elev": "110 m",
+      "type": "Start / Finish"
+    },
+    {
+      "name": "WS 1 - Candi Bajang Ratu",
+      "km": "2.0 KM",
+      "elev": "155 m",
+      "type": "Pos Air"
+    },
+    {
+      "name": "Single Track Lembah Pinus Pawitra",
+      "km": "4.5 KM",
+      "elev": "380 m",
+      "type": "Jalur Hutan"
+    },
+    {
+      "name": "WS 2 - Pos Checkpoint Pertapaan",
+      "km": "7.0 KM",
+      "elev": "580 m",
+      "type": "Pos Air & Medis"
+    },
+    {
+      "name": "Ridge View Puncak Pawitra",
+      "km": "8.8 KM",
+      "elev": "780 m",
+      "type": "Puncak Tertinggi"
+    },
+    {
+      "name": "WS 3 - Candi Brahu & Petirtaan",
+      "km": "10.5 KM",
+      "elev": "240 m",
+      "type": "Pos Air & Medis"
+    },
+    {
+      "name": "Finish Gate - Lapangan Majapahit",
+      "km": "12.5 KM",
+      "elev": "110 m",
+      "type": "Finish"
+    }
+  ],
+  "elevationPoints": [
+    110,
+    155,
+    260,
+    380,
+    520,
+    680,
+    780,
+    620,
+    420,
+    240,
+    160,
+    110
+  ]
+}

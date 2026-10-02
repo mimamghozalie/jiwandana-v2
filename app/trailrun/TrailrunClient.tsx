@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import trailrunData from '@/data/trailrun.json';
+import { trailrunRoutes } from '@/data/routes';
 import { TrailrunCard, TrailrunRoute } from '@/lib/types';
 import TrailrunHero from '@/components/trailrun/TrailrunHero';
 import TrailrunCardItem from '@/components/trailrun/TrailrunCardItem';
@@ -10,7 +11,7 @@ import TrailrunRouteSection from '@/components/trailrun/TrailrunRouteSection';
 
 export default function TrailrunClient() {
   const [selectedCategory, setSelectedCategory] = useState<TrailrunCard | null>(null);
-  const [activeRouteKey, setActiveRouteKey] = useState<string>('10k');
+  const [activeRouteKey, setActiveRouteKey] = useState<string>('3k');
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
 
   const toggleFlip = (id: string) => {
@@ -21,7 +22,7 @@ export default function TrailrunClient() {
   };
 
   const categories = trailrunData.categories as TrailrunCard[];
-  const routes = trailrunData.routes as unknown as Record<string, TrailrunRoute>;
+  const routes = trailrunRoutes as unknown as Record<string, TrailrunRoute>;
 
   return (
     <main className="min-h-screen bg-[#f8f8f8] text-slate-800 selection:bg-[#C9A227] selection:text-[#0d1c32]">

@@ -89,12 +89,15 @@ export interface TrailrunWaypoint {
 }
 
 export interface TrailrunRoute {
+  id?: string;
+  routeKey?: string;
   title: string;
   distance: string;
   elevation: string;
   maxAlt: string;
   cot: string;
   wsCount: string;
+  gpxFile?: string;
   surface: {
     trail: string;
     stone: string;

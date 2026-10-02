@@ -1,7 +1,20 @@
 'use client';
 
 import React from 'react';
+import dynamic from 'next/dynamic';
 import { TrailrunRoute } from '@/lib/types';
+
+const TrailrunGpxMap = dynamic(() => import('@/components/trailrun/TrailrunGpxMap'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[400px] sm:h-[480px] bg-slate-950 flex flex-col items-center justify-center text-slate-400 gap-3">
+      <div className="w-8 h-8 border-2 border-[#C9A227] border-t-transparent rounded-full animate-spin" />
+      <span className="text-xs uppercase tracking-wider font-semibold text-slate-300">
+        Menyiapkan Peta Leaflet GPS...
+      </span>
+    </div>
+  ),
+});
 
 interface TrailrunRouteSectionProps {
   routes: Record<string, TrailrunRoute>;
@@ -15,10 +28,11 @@ export default function TrailrunRouteSection({
   onSelectRouteKey,
 }: TrailrunRouteSectionProps) {
   const routeKeys = Object.keys(routes || {});
-  const safeActiveKey = routeKeys.includes(activeRouteKey) ? activeRouteKey : (routeKeys[0] || '10k');
+  const safeActiveKey = routeKeys.includes(activeRouteKey) ? activeRouteKey : (routeKeys[0] || '3k');
   const activeRoute = routes?.[safeActiveKey] || Object.values(routes || {})[0];
 
   if (!activeRoute) return null;
+  const currentKey = safeActiveKey.toLowerCase();
 
   return (
     <section id="rute" className="py-16 md:py-24 bg-white border-t border-black/10">
@@ -84,116 +98,15 @@ export default function TrailrunRouteSection({
             </div>
           </div>
 
-          {/* Interactive Visual Map Canvas / SVG */}
-          <div className="relative h-[380px] sm:h-[450px] w-full bg-[#0a1424] overflow-hidden flex items-center justify-center">
-            {/* Stylized Topographic Grid Lines */}
-            <svg
-              className="absolute inset-0 w-full h-full opacity-20 pointer-events-none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <defs>
-                <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#C9A227" strokeWidth="0.5" />
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#grid)" />
-            </svg>
-
-            {/* Dynamic Animated Route Path */}
-            <svg
-              viewBox="0 0 800 400"
-              className="w-full h-full max-w-4xl p-8 transition-all duration-700"
-            >
-              <defs>
-                <linearGradient id="routeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#C9A227" />
-                  <stop offset="50%" stopColor="#f59e0b" />
-                  <stop offset="100%" stopColor="#10b981" />
-                </linearGradient>
-              </defs>
-
-              {/* Trail line */}
-              {activeRouteKey === '5k' && (
-                <path
-                  d="M 100 280 C 180 180, 260 220, 360 140 C 460 80, 560 220, 680 200 C 600 320, 300 360, 100 280 Z"
-                  fill="none"
-                  stroke="url(#routeGradient)"
-                  strokeWidth="5"
-                  strokeLinecap="round"
-                  strokeDasharray="8 4"
-                  className="drop-shadow-lg"
-                />
-              )}
-
-              {activeRouteKey === '10k' && (
-                <path
-                  d="M 80 320 C 150 140, 280 260, 400 80 C 520 60, 640 180, 720 120 C 750 260, 500 360, 320 340 C 180 380, 100 350, 80 320 Z"
-                  fill="none"
-                  stroke="url(#routeGradient)"
-                  strokeWidth="5"
-                  strokeLinecap="round"
-                  strokeDasharray="8 4"
-                  className="drop-shadow-lg"
-                />
-              )}
-
-              {activeRouteKey === '21k' && (
-                <path
-                  d="M 60 340 C 120 120, 200 80, 320 60 C 420 40, 500 160, 620 40 C 740 60, 780 260, 700 340 C 580 380, 420 300, 300 370 C 160 380, 80 360, 60 340 Z"
-                  fill="none"
-                  stroke="url(#routeGradient)"
-                  strokeWidth="5"
-                  strokeLinecap="round"
-                  strokeDasharray="8 4"
-                  className="drop-shadow-lg"
-                />
-              )}
-
-              {activeRouteKey === '38k' && (
-                <path
-                  d="M 60 340 C 100 100, 220 50, 340 40 C 460 30, 540 120, 660 30 C 760 50, 790 280, 690 350 C 560 390, 400 310, 280 380 C 150 390, 70 370, 60 340 Z"
-                  fill="none"
-                  stroke="url(#routeGradient)"
-                  strokeWidth="5"
-                  strokeLinecap="round"
-                  strokeDasharray="8 4"
-                  className="drop-shadow-lg"
-                />
-              )}
-
-              {/* Waypoint Markers */}
-              <circle cx="100" cy="280" r="8" fill="#10b981" stroke="#ffffff" strokeWidth="2" />
-              <text x="115" y="285" fill="#10b981" fontSize="12" fontWeight="bold">
-                START / FINISH
-              </text>
-
-              <circle cx="360" cy="140" r="7" fill="#C9A227" stroke="#ffffff" strokeWidth="2" />
-              <text x="375" y="145" fill="#C9A227" fontSize="11" fontWeight="bold">
-                WS 1 (Candi Bajang Ratu)
-              </text>
-
-              <circle cx="560" cy="220" r="7" fill="#f59e0b" stroke="#ffffff" strokeWidth="2" />
-              <text x="575" y="225" fill="#f59e0b" fontSize="11" fontWeight="bold">
-                WS 2 (Candi Tikus)
-              </text>
-            </svg>
-
-            {/* Map Floating Legend */}
-            <div className="absolute bottom-4 left-4 p-3 rounded-xl bg-slate-900/90 backdrop-blur-md border border-white/10 text-[11px] space-y-1 text-slate-300">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                <span>Start & Finish Arena (GOR / Lapangan)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#C9A227]" />
-                <span>Pos Minum (Water Station) & Medis</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                <span>Situs Purbakala Kerajaan Majapahit</span>
-              </div>
-            </div>
-          </div>
+          {/* Real Interactive Leaflet GPX Map */}
+          <TrailrunGpxMap
+            key={currentKey}
+            gpxUrl={activeRoute.gpxFile || `/routes/${currentKey}.gpx`}
+            routeTitle={activeRoute.title}
+            routeDistance={activeRoute.distance}
+            routeElevation={activeRoute.elevation}
+            waypoints={activeRoute.waypoints}
+          />
 
           {/* Waypoints Sequence List */}
           <div className="p-6 bg-slate-900/95 border-t border-white/10">
@@ -324,24 +237,22 @@ export default function TrailrunRouteSection({
               <span className="material-symbols-outlined text-2xl text-[#C9A227]">download_for_offline</span>
               <div>
                 <h5 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
-                  File Navigasi GPS (.GPX)
+                  File Navigasi GPS (.GPX) - {activeRoute.title}
                 </h5>
                 <p className="text-[11px] text-slate-500">
-                  Kompatibel dengan jam Garmin, Suunto, Coros, serta aplikasi Strava.
+                  Kompatibel dengan jam Garmin, Suunto, Coros, serta aplikasi Strava &amp; Komoot.
                 </p>
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                alert(`File GPX untuk ${activeRoute.title} akan segera dirilis menjelang technical meeting.`);
-              }}
-              className="w-full sm:w-auto px-5 py-2.5 bg-slate-900 hover:bg-black text-[#C9A227] rounded-xl font-semibold text-xs uppercase tracking-wider transition-colors shadow-sm shrink-0 flex items-center justify-center gap-1.5 cursor-pointer"
+            <a
+              href={activeRoute.gpxFile || `/routes/pawitra-trailrun-${currentKey}.gpx`}
+              download={`pawitra-trailrun-${currentKey}.gpx`}
+              className="w-full sm:w-auto px-5 py-2.5 bg-slate-900 hover:bg-black text-[#C9A227] rounded-xl font-semibold text-xs uppercase tracking-wider transition-colors shadow-sm shrink-0 flex items-center justify-center gap-1.5 cursor-pointer no-underline"
             >
               <span className="material-symbols-outlined text-sm">download</span>
-              <span>Unduh File GPX</span>
-            </button>
+              <span>Unduh File GPX ({safeActiveKey.toUpperCase()})</span>
+            </a>
           </div>
         </div>
       </div>

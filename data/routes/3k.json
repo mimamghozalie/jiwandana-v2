@@ -1,0 +1,60 @@
+{
+  "id": "3k",
+  "routeKey": "3k",
+  "title": "Rute 3K Hallo Pawitra Candi Fun Trail",
+  "distance": "3.2 KM",
+  "elevation": "+180 m",
+  "maxAlt": "210 m dpl",
+  "cot": "3.0 Jam",
+  "wsCount": "1 Pos WS",
+  "gpxFile": "/routes/3k.gpx",
+  "surface": {
+    "trail": "60%",
+    "stone": "25%",
+    "road": "15%"
+  },
+  "waypoints": [
+    {
+      "name": "Start Gate - Lapangan Majapahit",
+      "km": "0.0 KM",
+      "elev": "110 m",
+      "type": "Start / Finish"
+    },
+    {
+      "name": "Gapura Candi Bajang Ratu",
+      "km": "1.2 KM",
+      "elev": "145 m",
+      "type": "Cagar Budaya"
+    },
+    {
+      "name": "Water Station 1 (Desa Temon)",
+      "km": "1.8 KM",
+      "elev": "185 m",
+      "type": "Pos Air & Medis"
+    },
+    {
+      "name": "Petirtaan Kuno Candi Tikus",
+      "km": "2.5 KM",
+      "elev": "160 m",
+      "type": "Cagar Budaya"
+    },
+    {
+      "name": "Finish Gate - Lapangan Majapahit",
+      "km": "3.2 KM",
+      "elev": "110 m",
+      "type": "Finish"
+    }
+  ],
+  "elevationPoints": [
+    110,
+    125,
+    145,
+    170,
+    185,
+    210,
+    180,
+    160,
+    130,
+    110
+  ]
+}
