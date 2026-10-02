@@ -7,9 +7,9 @@ import { TrailrunRoute } from '@/lib/types';
 const TrailrunGpxMap = dynamic(() => import('@/components/trailrun/TrailrunGpxMap'), {
   ssr: false,
   loading: () => (
-    <div className="h-[400px] sm:h-[480px] bg-slate-950 flex flex-col items-center justify-center text-slate-400 gap-3">
+    <div className="h-[400px] sm:h-[480px] bg-slate-50 flex flex-col items-center justify-center text-slate-500 gap-3">
       <div className="w-8 h-8 border-2 border-[#C9A227] border-t-transparent rounded-full animate-spin" />
-      <span className="text-xs uppercase tracking-wider font-semibold text-slate-300">
+      <span className="text-xs uppercase tracking-wider font-semibold text-slate-600">
         Menyiapkan Peta Leaflet GPS...
       </span>
     </div>
@@ -71,28 +71,28 @@ export default function TrailrunRouteSection({
         </div>
 
         {/* BOX 1: MAPS (Interactive visual map + waypoint list) */}
-        <div className="border border-black/10 rounded-2xl overflow-hidden bg-slate-950 text-white shadow-xl">
+        <div className="border border-black/10 rounded-2xl overflow-hidden bg-white text-slate-800 shadow-sm">
           {/* Map Header Bar */}
-          <div className="px-6 py-4 bg-slate-900 border-b border-white/10 flex flex-wrap justify-between items-center gap-3">
+          <div className="px-6 py-4 bg-slate-50 border-b border-black/10 flex flex-wrap justify-between items-center gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-[#C9A227]/20 border border-[#C9A227] flex items-center justify-center text-[#C9A227]">
+              <div className="w-8 h-8 rounded-lg bg-[#C9A227]/15 border border-[#C9A227]/40 flex items-center justify-center text-[#C9A227]">
                 <span className="material-symbols-outlined text-lg">map</span>
               </div>
               <div>
-                <h4 className="text-sm font-bold text-white tracking-wide">
+                <h4 className="text-sm font-bold text-slate-900 tracking-wide font-sans">
                   MAPS: {activeRoute.title}
                 </h4>
-                <span className="text-[11px] text-slate-400">
+                <span className="text-[11px] text-slate-500">
                   Satelit & Topografi Jalur Lintas Candi Majapahit
                 </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 text-xs text-slate-300">
-              <span className="px-2.5 py-1 rounded bg-white/10 border border-white/15">
-                Total Jarak: <strong>{activeRoute.distance}</strong>
+            <div className="flex items-center gap-2 text-xs">
+              <span className="px-3 py-1.5 rounded-lg bg-white border border-black/10 text-slate-700 shadow-xs">
+                Total Jarak: <strong className="text-slate-900">{activeRoute.distance}</strong>
               </span>
-              <span className="px-2.5 py-1 rounded bg-[#C9A227]/20 text-[#C9A227] border border-[#C9A227]/40">
+              <span className="px-3 py-1.5 rounded-lg bg-[#C9A227]/10 text-[#a37f17] border border-[#C9A227]/30 font-bold shadow-xs">
                 Elevasi: <strong>{activeRoute.elevation}</strong>
               </span>
             </div>
@@ -109,19 +109,19 @@ export default function TrailrunRouteSection({
           />
 
           {/* Waypoints Sequence List */}
-          <div className="p-6 bg-slate-900/95 border-t border-white/10">
-            <span className="text-xs font-semibold uppercase tracking-wider text-[#C9A227] block mb-3">
+          <div className="p-6 bg-slate-50/70 border-t border-black/10">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#C9A227] block mb-3">
               Titik Lintasan & Pos Pantau:
             </span>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {activeRoute.waypoints.map((wp, i) => (
                 <div
                   key={i}
-                  className="p-3 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between text-xs"
+                  className="p-3.5 rounded-xl bg-white border border-black/10 flex items-center justify-between text-xs shadow-xs hover:border-[#C9A227]/40 transition-colors"
                 >
                   <div className="space-y-0.5">
-                    <strong className="text-white block font-medium">{wp.name}</strong>
-                    <span className="text-slate-400 text-[11px]">{wp.type}</span>
+                    <strong className="text-slate-900 block font-semibold">{wp.name}</strong>
+                    <span className="text-slate-500 text-[11px]">{wp.type}</span>
                   </div>
                   <div className="text-right shrink-0 ml-2">
                     <span className="text-[#C9A227] font-bold block">{wp.km}</span>

@@ -343,15 +343,15 @@ export default function TrailrunGpxMap({
   };
 
   return (
-    <div className="relative w-full h-[400px] sm:h-[480px] bg-slate-950 overflow-hidden font-sans">
+    <div className="relative w-full h-[400px] sm:h-[480px] bg-slate-100 overflow-hidden font-sans">
       {/* Leaflet Map DOM Container */}
       <div ref={mapContainerRef} className="w-full h-full z-0" />
 
       {/* Loading Overlay */}
       {loading && (
-        <div className="absolute inset-0 z-20 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center gap-3 text-white">
+        <div className="absolute inset-0 z-20 bg-white/85 backdrop-blur-sm flex flex-col items-center justify-center gap-3 text-slate-800">
           <Loader2 className="w-8 h-8 text-[#C9A227] animate-spin" />
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-300">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-600">
             Memuat peta navigasi GPS ({routeTitle})...
           </p>
         </div>
@@ -359,14 +359,14 @@ export default function TrailrunGpxMap({
 
       {/* Error Overlay */}
       {error && !loading && (
-        <div className="absolute inset-0 z-20 bg-slate-950/90 flex flex-col items-center justify-center p-6 text-center text-white">
-          <AlertCircle className="w-10 h-10 text-rose-400 mb-2" />
-          <h4 className="text-sm font-bold text-white mb-1">Peta GPX Belum Dapat Ditampilkan</h4>
-          <p className="text-xs text-slate-400 max-w-md mb-4">{error}</p>
+        <div className="absolute inset-0 z-20 bg-white/95 flex flex-col items-center justify-center p-6 text-center text-slate-800">
+          <AlertCircle className="w-10 h-10 text-rose-500 mb-2" />
+          <h4 className="text-sm font-bold text-slate-900 mb-1">Peta GPX Belum Dapat Ditampilkan</h4>
+          <p className="text-xs text-slate-500 max-w-md mb-4">{error}</p>
           <a
             href={gpxUrl}
             download
-            className="px-4 py-2 bg-[#C9A227] text-[#0d1c32] rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-[#d1a751] transition-colors"
+            className="px-4 py-2 bg-[#C9A227] text-[#0d1c32] rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-[#b08d20] transition-colors"
           >
             Unduh File GPX Langsung
           </a>
@@ -376,14 +376,14 @@ export default function TrailrunGpxMap({
       {/* Floating Map Controls Top Bar */}
       <div className="absolute top-4 left-4 right-4 z-10 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
         {/* Layer Switcher (Top Left) */}
-        <div className="bg-slate-900/90 backdrop-blur-md border border-white/15 rounded-xl p-1 flex items-center gap-1 shadow-xl pointer-events-auto">
+        <div className="bg-white/95 backdrop-blur-md border border-black/10 rounded-xl p-1 flex items-center gap-1 shadow-md pointer-events-auto">
           <button
             type="button"
             onClick={() => switchLayer('topo')}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
               activeLayer === 'topo'
-                ? 'bg-[#C9A227] text-[#0d1c32] font-bold shadow-md'
-                : 'text-slate-300 hover:text-white hover:bg-white/10'
+                ? 'bg-[#C9A227] text-[#0d1c32] font-bold shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
             🏔️ Topografi
@@ -393,8 +393,8 @@ export default function TrailrunGpxMap({
             onClick={() => switchLayer('satellite')}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
               activeLayer === 'satellite'
-                ? 'bg-[#C9A227] text-[#0d1c32] font-bold shadow-md'
-                : 'text-slate-300 hover:text-white hover:bg-white/10'
+                ? 'bg-[#C9A227] text-[#0d1c32] font-bold shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
             🛰️ Satelit
@@ -404,8 +404,8 @@ export default function TrailrunGpxMap({
             onClick={() => switchLayer('osm')}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
               activeLayer === 'osm'
-                ? 'bg-[#C9A227] text-[#0d1c32] font-bold shadow-md'
-                : 'text-slate-300 hover:text-white hover:bg-white/10'
+                ? 'bg-[#C9A227] text-[#0d1c32] font-bold shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
             🗺️ Street
@@ -417,7 +417,7 @@ export default function TrailrunGpxMap({
           <button
             type="button"
             onClick={handleResetView}
-            className="p-2 rounded-xl bg-slate-900/90 backdrop-blur-md border border-white/15 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors shadow-xl text-xs flex items-center gap-1.5"
+            className="p-2 rounded-xl bg-white/95 backdrop-blur-md border border-black/10 text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition-colors shadow-md text-xs flex items-center gap-1.5 cursor-pointer"
             title="Pusatkan Rute"
           >
             <RefreshCw className="w-3.5 h-3.5 text-[#C9A227]" />
@@ -428,21 +428,21 @@ export default function TrailrunGpxMap({
 
       {/* Floating Map Legend (Bottom Left) */}
       <div className="absolute bottom-4 left-4 z-10 pointer-events-none hidden sm:block">
-        <div className="bg-slate-900/90 backdrop-blur-md border border-white/15 rounded-xl p-3 text-[11px] text-slate-300 space-y-1.5 shadow-xl pointer-events-auto">
+        <div className="bg-white/95 backdrop-blur-md border border-black/10 rounded-xl p-3 text-[11px] text-slate-600 space-y-1.5 shadow-md pointer-events-auto">
           <div className="flex items-center gap-2">
             <span className="w-4 h-1.5 rounded-full bg-[#C9A227]" />
-            <span className="font-semibold text-white">Jalur Lintasan Lomba</span>
+            <span className="font-semibold text-slate-900">Jalur Lintasan Lomba</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-            <span>Start Gate</span>
+            <span className="text-slate-700">Start Gate</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
-            <span>Finish Gate</span>
+            <span className="text-slate-700">Finish Gate</span>
           </div>
           {stats && stats.maxEle > 0 && (
-            <div className="pt-1 border-t border-white/10 text-[10px] text-slate-400">
+            <div className="pt-1 border-t border-black/10 text-[10px] text-slate-500">
               Elevasi: {stats.minEle}m - {stats.maxEle}m dpl ({stats.pointCount} titik GPS)
             </div>
           )}
