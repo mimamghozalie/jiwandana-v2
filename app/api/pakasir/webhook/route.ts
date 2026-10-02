@@ -102,10 +102,12 @@ export async function POST(request: NextRequest) {
         console.log('✅ trailrun_payments status updated to completed');
       }
 
-      // 3b. Ambil registration_id untuk update tabel trailrun_registrations
-      let regId = updatedPayments?.[0]?.registration_id;
+      // 3b. Ambil SEMUA registration_id yang terhubung dengan transaksi ini
+      let regIds: string[] = (updatedPayments || [])
+        .map((p: any) => p.registration_id)
+        .filter(Boolean);
 
-      if (!regId) {
+      if (regIds.length === 0) {
         // Fallback: cari langsung dari tabel trailrun_payments
         let findQuery = supabase.from('trailrun_payments').select('registration_id');
         if (txnId) {
@@ -113,21 +115,21 @@ export async function POST(request: NextRequest) {
         } else {
           findQuery = findQuery.eq('order_id', orderId);
         }
-        const { data: found } = await findQuery.single();
-        regId = found?.registration_id;
+        const { data: foundList } = await findQuery;
+        regIds = (foundList || []).map((f: any) => f.registration_id).filter(Boolean);
       }
 
-      // 3c. Update status registrasi peserta menjadi "paid"
-      if (regId) {
+      // 3c. Update status registrasi seluruh peserta terkait menjadi "paid"
+      if (regIds.length > 0) {
         const { error: regError } = await supabase
           .from('trailrun_registrations')
           .update({ status: 'paid' })
-          .eq('id', regId);
+          .in('id', regIds);
 
         if (regError) {
           console.error('❌ Gagal update status registrasi:', regError);
         } else {
-          console.log(`🎉 Peserta registration_id: ${regId} berhasil di-update menjadi PAID!`);
+          console.log(`🎉 Berhasil update ${regIds.length} peserta menjadi PAID untuk order: ${orderId || txnId}!`);
         }
       }
     } else if (status === 'canceled' || status === 'expired' || status === 'failed') {
