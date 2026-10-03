@@ -42,17 +42,15 @@ export default function StepKategoriLomba({
               key={cat.id}
               type="button"
               onClick={() => onSelect(cat.id)}
-              className={`w-full text-left p-4 sm:p-5 rounded-xl border-2 transition-all duration-300 cursor-pointer group ${
-                isSelected
+              className={`w-full text-left p-4 sm:p-5 rounded-xl border-2 transition-all duration-300 cursor-pointer group ${isSelected
                   ? 'border-[#C9A227] bg-[#C9A227]/5 shadow-md'
                   : 'border-black/10 bg-white hover:border-[#C9A227]/40 hover:bg-[#f8f8f8]'
-              }`}
+                }`}
             >
               <div className="flex items-center gap-4">
                 <div
-                  className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
-                    isSelected ? 'border-[#C9A227] bg-[#C9A227]' : 'border-slate-300 group-hover:border-[#C9A227]/50'
-                  }`}
+                  className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${isSelected ? 'border-[#C9A227] bg-[#C9A227]' : 'border-slate-300 group-hover:border-[#C9A227]/50'
+                    }`}
                 >
                   {isSelected && <span className="material-symbols-outlined text-white text-sm">check</span>}
                 </div>
@@ -74,10 +72,10 @@ export default function StepKategoriLomba({
                       <span className="material-symbols-outlined text-xs text-[#C9A227]">route</span>
                       {cat.distance}
                     </span>
-                    <span className="flex items-center gap-1">
+                    {/* <span className="flex items-center gap-1">
                       <span className="material-symbols-outlined text-xs text-[#C9A227]">landscape</span>
                       {cat.elevationGain}
-                    </span>
+                    </span> */}
                     <span className="flex items-center gap-1">
                       <span className="material-symbols-outlined text-xs text-[#C9A227]">timer</span>
                       {cat.cutOffTime}
