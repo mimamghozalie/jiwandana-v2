@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import * as XLSX from 'xlsx';
 import { supabase } from '@/lib/supabaseClient';
 import {
   Trophy,
@@ -10,6 +11,7 @@ import {
   Filter,
   SlidersHorizontal,
   Download,
+  FileSpreadsheet,
   RefreshCw,
   Eye,
   Check,
@@ -470,6 +472,95 @@ export default function AdminTrailrunPage() {
     return { total, paidCount, pendingCount, totalRevenue };
   }, [data]);
 
+  // Export to Excel (.xlsx)
+  const handleExportExcel = () => {
+    if (filteredData.length === 0) return;
+
+    const headers = [
+      'No',
+      'No. BIB',
+      'Nama Peserta',
+      'Kategori',
+      'Status Pembayaran',
+      'Total Bayar (Rp)',
+      'Metode Bayar',
+      'Email',
+      'WhatsApp / HP',
+      'Jenis Kelamin',
+      'Tanggal Lahir',
+      'Kewarganegaraan',
+      'Komunitas / Klub',
+      'Kota',
+      'Provinsi',
+      'Alamat Lengkap',
+      'Golongan Darah',
+      'Riwayat Medis',
+      'Kontak Darurat',
+      'ID Transaksi',
+      'Order ID',
+      'Waktu Pendaftaran',
+    ];
+
+    const dataRows = filteredData.map((row, idx) => [
+      idx + 1,
+      row.no_bib || '-',
+      row.nama || '-',
+      row.kategori || '-',
+      row.status === 'paid' ? 'Lunas (Paid)' : row.status === 'confirmed' ? 'Dikonfirmasi' : 'Menunggu Bayar',
+      row.payment?.total_payment || row.payment?.amount || 0,
+      row.payment?.payment_method?.toUpperCase() || '-',
+      row.email || '-',
+      row.no_hp || '-',
+      row.jenis_kelamin || '-',
+      row.tanggal_lahir || '-',
+      row.kewarganegaraan || 'Indonesia',
+      row.nama_komunitas || '-',
+      row.kota || '-',
+      row.provinsi || '-',
+      row.alamat || '-',
+      row.golongan_darah || '-',
+      row.riwayat_medis || '-',
+      row.kontak_darurat || '-',
+      row.payment?.txn_id || '-',
+      row.payment?.order_id || '-',
+      row.created_at ? new Date(row.created_at).toLocaleString('id-ID') : '-',
+    ]);
+
+    const worksheetData = [headers, ...dataRows];
+    const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+
+    ws['!cols'] = [
+      { wch: 6 },   // No
+      { wch: 14 },  // No. BIB
+      { wch: 26 },  // Nama Peserta
+      { wch: 14 },  // Kategori
+      { wch: 20 },  // Status Pembayaran
+      { wch: 18 },  // Total Bayar
+      { wch: 16 },  // Metode Bayar
+      { wch: 28 },  // Email
+      { wch: 18 },  // WhatsApp / HP
+      { wch: 14 },  // Jenis Kelamin
+      { wch: 14 },  // Tanggal Lahir
+      { wch: 16 },  // Kewarganegaraan
+      { wch: 22 },  // Komunitas / Klub
+      { wch: 16 },  // Kota
+      { wch: 16 },  // Provinsi
+      { wch: 32 },  // Alamat Lengkap
+      { wch: 12 },  // Golongan Darah
+      { wch: 24 },  // Riwayat Medis
+      { wch: 20 },  // Kontak Darurat
+      { wch: 22 },  // ID Transaksi
+      { wch: 22 },  // Order ID
+      { wch: 22 },  // Waktu Pendaftaran
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Peserta Trailrun');
+
+    const dateStr = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(wb, `peserta-trailrun-${dateStr}.xlsx`);
+  };
+
   // Export to CSV
   const handleExportCSV = () => {
     if (filteredData.length === 0) return;
@@ -590,7 +681,7 @@ export default function AdminTrailrunPage() {
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-2.5 self-start md:self-auto">
+        <div className="flex items-center gap-2.5 self-start md:self-auto flex-wrap">
           <button
             type="button"
             onClick={fetchData}
@@ -604,8 +695,18 @@ export default function AdminTrailrunPage() {
 
           <button
             type="button"
+            onClick={handleExportExcel}
+            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-md transition-all cursor-pointer border border-emerald-500/30"
+            title="Download file Excel (.xlsx)"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-100" />
+            <span>Export Excel (.xlsx)</span>
+          </button>
+
+          <button
+            type="button"
             onClick={handleExportCSV}
-            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-md transition-all cursor-pointer"
+            className="px-3.5 py-2.5 bg-white/5 hover:bg-white/10 text-slate-300 rounded-xl border border-white/10 text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer"
             title="Download file CSV"
           >
             <Download className="w-3.5 h-3.5" />
