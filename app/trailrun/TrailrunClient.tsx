@@ -81,11 +81,11 @@ export default function TrailrunClient() {
       />
 
       {/* 4. ROUTE & ELEVATION SECTION (Interactive Map & Altitude Curve) */}
-      <TrailrunRouteSection
+      {/* <TrailrunRouteSection
         routes={routes}
         activeRouteKey={activeRouteKey}
         onSelectRouteKey={setActiveRouteKey}
-      />
+      /> */}
     </main>
   );
 }

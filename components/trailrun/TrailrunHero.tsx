@@ -54,13 +54,13 @@ export default function TrailrunHero() {
             <span className="material-symbols-outlined text-base">directions_run</span>
             <span>Pilih Kategori</span>
           </a>
-          <a
+          {/* <a
             href="#rute"
             className="px-6 py-3.5 bg-white/10 hover:bg-white/20 border border-white/30 text-white font-semibold text-xs sm:text-sm uppercase tracking-wider rounded-xl transition-all backdrop-blur-sm flex items-center gap-2 cursor-pointer"
           >
             <span className="material-symbols-outlined text-base">alt_route</span>
             <span>Navigasi Lintasan & Elevasi</span>
-          </a>
+          </a> */}
         </div>
       </div>
     </section>
