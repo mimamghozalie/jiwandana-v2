@@ -237,12 +237,12 @@ export default function TrailrunRouteSection({
             </div>
 
             <a
-              href={activeRoute.gpxFile || `/routes/pawitra-trailrun-${currentKey}.gpx`}
+              // href={activeRoute.gpxFile || `/routes/pawitra-trailrun-${currentKey}.gpx`}
               download={`pawitra-trailrun-${currentKey}.gpx`}
               className="w-full sm:w-auto px-5 py-2.5 bg-slate-900 hover:bg-black text-[#C9A227] rounded-xl font-semibold text-xs uppercase tracking-wider transition-colors shadow-sm shrink-0 flex items-center justify-center gap-1.5 cursor-pointer no-underline"
             >
               <span className="material-symbols-outlined text-sm">download</span>
-              <span>Unduh File GPX ({safeActiveKey.toUpperCase()})</span>
+              <span>Coming Soon ({safeActiveKey.toUpperCase()})</span>
             </a>
           </div>
         </div>

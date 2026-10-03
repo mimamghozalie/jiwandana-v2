@@ -29,7 +29,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const cleanBib = bibParam.trim();
+    const cleanBib = bibParam.trim().toUpperCase();
+
+    // Enforce exactly 7 characters: F-XXXXX or M-XXXXX
+    if (cleanBib.length !== 7 || !/^[FM]-\d{5}$/.test(cleanBib)) {
+      return NextResponse.json({
+        available: false,
+        bib: cleanBib,
+        message: 'Nomor BIB harus tepat 7 karakter dengan format F-XXXXX atau M-XXXXX (contoh: M-00001, F-00001).',
+      });
+    }
 
     // Query trailrun_registrations for any registration with matching no_bib (case-insensitive)
     const queryPromise = supabase

@@ -462,14 +462,42 @@ export default function AdminTrailrunPage() {
     const total = data.length;
     const paidRows = data.filter((r) => r.status === 'paid');
     const paidCount = paidRows.length;
-    const pendingCount = data.filter((r) => r.status === 'pending' || r.status === 'confirmed').length;
+    const pendingRows = data.filter((r) => r.status === 'pending' || r.status === 'confirmed');
+    const pendingCount = pendingRows.length;
 
-    const totalRevenue = paidRows.reduce((acc, r) => {
-      const val = r.payment?.total_payment || r.payment?.amount || 0;
-      return acc + val;
-    }, 0);
+    // Deduplicate transaction amounts if multiple participants share the same txn_id / order_id (bulk registration)
+    const seenPaidTxn = new Set<string>();
+    let totalRevenue = 0;
+    for (const r of paidRows) {
+      const txnKey = r.payment?.txn_id || r.payment?.order_id;
+      if (txnKey) {
+        if (!seenPaidTxn.has(txnKey)) {
+          seenPaidTxn.add(txnKey);
+          totalRevenue += (r.payment?.total_payment || r.payment?.amount || 0);
+        }
+      } else {
+        totalRevenue += (r.payment?.total_payment || r.payment?.amount || 0);
+      }
+    }
 
-    return { total, paidCount, pendingCount, totalRevenue };
+    // Calculate total unpaid / pending revenue
+    const seenPendingTxn = new Set<string>();
+    let pendingRevenue = 0;
+    for (const r of pendingRows) {
+      const txnKey = r.payment?.txn_id || r.payment?.order_id;
+      if (txnKey) {
+        if (!seenPendingTxn.has(txnKey)) {
+          seenPendingTxn.add(txnKey);
+          pendingRevenue += (r.payment?.total_payment || r.payment?.amount || 0);
+        }
+      } else {
+        const cat = (r.kategori || '').toLowerCase();
+        const fallbackPrice = cat.includes('12') ? 290000 : cat.includes('7') ? 240000 : 250000;
+        pendingRevenue += (r.payment?.total_payment || r.payment?.amount || fallbackPrice);
+      }
+    }
+
+    return { total, paidCount, pendingCount, totalRevenue, pendingRevenue };
   }, [data]);
 
   // Export to Excel (.xlsx)
@@ -716,46 +744,88 @@ export default function AdminTrailrunPage() {
       </div>
 
       {/* 2. Metrics Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="p-4 sm:p-5 rounded-2xl bg-[#0a1424] border border-white/10 space-y-1.5 shadow-sm">
-          <span className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold block">
-            Total Pendaftar
-          </span>
-          <div className="text-2xl sm:text-3xl font-bold text-white">{metrics.total}</div>
-          <span className="text-[11px] text-slate-500 block">Semua formulir masuk</span>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {/* Card 1: Total Pendaftar */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-[#0a1424] border border-white/10 space-y-2 shadow-sm flex flex-col justify-between">
+          <div>
+            <span className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold block">
+              Total Pendaftar
+            </span>
+            <div className="text-2xl sm:text-3xl font-bold text-white mt-1">{metrics.total}</div>
+          </div>
+          <span className="text-[11px] text-slate-500 block pt-2 border-t border-white/10">Semua formulir masuk</span>
         </div>
 
-        <div className="p-4 sm:p-5 rounded-2xl bg-[#0a1424] border border-emerald-500/20 space-y-1.5 shadow-sm">
-          <span className="text-[11px] uppercase tracking-wider text-emerald-400 font-semibold flex items-center gap-1.5">
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            Sudah Bayar (Lunas)
-          </span>
-          <div className="text-2xl sm:text-3xl font-bold text-emerald-400">{metrics.paidCount}</div>
-          <span className="text-[11px] text-slate-500 block">
+        {/* Card 2: Sudah Bayar (Lunas) */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-[#0a1424] border border-emerald-500/20 space-y-2 shadow-sm flex flex-col justify-between">
+          <div>
+            <span className="text-[11px] uppercase tracking-wider text-emerald-400 font-semibold flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              Sudah Bayar (Lunas)
+            </span>
+            <div className="text-2xl sm:text-3xl font-bold text-emerald-400 mt-1">{metrics.paidCount}</div>
+          </div>
+          <span className="text-[11px] text-slate-400 block pt-2 border-t border-white/10">
             {metrics.total > 0
               ? `${Math.round((metrics.paidCount / metrics.total) * 100)}% dari total pendaftar`
-              : '0%'}
+              : '0% dari total'}
           </span>
         </div>
 
-        <div className="p-4 sm:p-5 rounded-2xl bg-[#0a1424] border border-amber-500/20 space-y-1.5 shadow-sm">
-          <span className="text-[11px] uppercase tracking-wider text-amber-400 font-semibold flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5" />
-            Menunggu Pembayaran
-          </span>
-          <div className="text-2xl sm:text-3xl font-bold text-amber-400">{metrics.pendingCount}</div>
-          <span className="text-[11px] text-slate-500 block">Pending / Belum bayar</span>
-        </div>
-
-        <div className="p-4 sm:p-5 rounded-2xl bg-[#0a1424] border border-[#e9c176]/20 space-y-1.5 shadow-sm">
-          <span className="text-[11px] uppercase tracking-wider text-[#e9c176] font-semibold flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5" />
-            Total Penerimaan
-          </span>
-          <div className="text-xl sm:text-2xl font-bold text-[#e9c176] truncate">
-            {formatCurrency(metrics.totalRevenue)}
+        {/* Card 3: Menunggu Pembayaran */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-[#0a1424] border border-amber-500/30 space-y-2 shadow-sm flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] uppercase tracking-wider text-amber-400 font-semibold flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5" />
+              Menunggu Pembayaran
+            </span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+              Belum Bayar
+            </span>
           </div>
-          <span className="text-[11px] text-slate-500 block">Dari pendaftar lunas</span>
+          <div>
+            <span className="text-[11px] text-slate-400 block font-medium">Total Belum Dibayar:</span>
+            <div className="text-xl sm:text-2xl font-bold text-amber-400 truncate mt-0.5">
+              {formatCurrency(metrics.pendingRevenue)}
+            </div>
+          </div>
+          <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[11px]">
+            <span className="text-slate-400 flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span>Peserta Belum Bayar:</span>
+            </span>
+            <strong className="text-amber-400 font-bold font-mono">
+              {metrics.pendingCount} Peserta
+            </strong>
+          </div>
+        </div>
+
+        {/* Card 4: Total Penerimaan */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-[#0a1424] border border-[#e9c176]/30 space-y-2 shadow-sm flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] uppercase tracking-wider text-[#e9c176] font-semibold flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5" />
+              Total Penerimaan
+            </span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              Sudah Dibayar
+            </span>
+          </div>
+          <div>
+            <span className="text-[11px] text-slate-400 block font-medium">Total Sudah Dibayar:</span>
+            <div className="text-xl sm:text-2xl font-bold text-[#e9c176] truncate mt-0.5">
+              {formatCurrency(metrics.totalRevenue)}
+            </div>
+          </div>
+          <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[11px]">
+            <span className="text-slate-400 flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span>Pendaftaran Lunas:</span>
+            </span>
+            <strong className="text-emerald-400 font-bold font-mono">
+              {metrics.paidCount} Peserta
+            </strong>
+          </div>
         </div>
       </div>
 

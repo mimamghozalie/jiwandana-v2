@@ -247,9 +247,12 @@ export default function TrailrunBulkRegister() {
       return;
     }
 
-    const missingBib = participants.some((p) => !p.no_bib?.trim());
-    if (missingBib) {
-      setSubmitError('Ada peserta yang belum memiliki nomor BIB. Silakan klik "Generate Ulang BIB".');
+    const invalidBib = participants.some((p) => {
+      const b = (p.no_bib || '').trim().toUpperCase();
+      return !b || b.length !== 7 || !/^[FM]-\d{5}$/.test(b);
+    });
+    if (invalidBib) {
+      setSubmitError('Ada peserta yang nomor BIB-nya kosong atau tidak sesuai ketentuan (harus tepat 7 karakter, contoh: M-00001, F-00001). Silakan klik "Generate Ulang BIB".');
       return;
     }
 

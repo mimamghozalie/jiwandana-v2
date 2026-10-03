@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
     const insertPayload = evaluatedParticipants.map((p) => ({
       nama: p.nama,
       email: p.email,
-      no_bib: (p.no_bib || '').trim() || null,
+      no_bib: (p.no_bib || '').trim().toUpperCase() || null,
       no_hp: p.no_hp,
       alamat: p.alamat,
       kota: p.kota,

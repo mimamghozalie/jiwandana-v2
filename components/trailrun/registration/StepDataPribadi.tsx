@@ -27,8 +27,10 @@ export default function StepDataPribadi({
   onGenerateBib,
   generatingBib = false,
 }: StepDataPribadiProps) {
-  const catCode = selectedCategory?.categoryCode || '7K';
-  const expectedPrefix = catCode.includes('12') ? '12-' : catCode.includes('3') ? '3-' : '7-';
+  const isFemale = formData.jenis_kelamin === 'Perempuan';
+  const hasGender = !!formData.jenis_kelamin;
+  const genderPrefix = isFemale ? 'F-' : 'M-';
+  const genderLabel = isFemale ? 'Perempuan (F-)' : formData.jenis_kelamin === 'Laki-laki' ? 'Laki-laki (M-)' : 'F-/M-';
 
   return (
     <div className="p-6 sm:p-8 space-y-5 animate-[fadeIn_0.4s_ease-out]">
@@ -66,137 +68,175 @@ export default function StepDataPribadi({
         </div>
       )}
 
-      <div className="space-y-1.5">
-        <label htmlFor="nama" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
-          Nama Lengkap <span className="text-rose-500">*</span>
-        </label>
-        <input
-          type="text"
-          id="nama"
-          name="nama"
-          required
-          value={formData.nama}
-          onChange={onChange}
-          placeholder="Masukkan nama lengkap sesuai KTP"
-          className="w-full bg-[#f8f8f8] border border-black/10 focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227] text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3.5 transition-all text-sm outline-none"
-        />
-      </div>
-
-      <div className="space-y-1.5">
-        <label htmlFor="email" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
-          Email <span className="text-rose-500">*</span>
-        </label>
-        <input
-          type="email"
-          id="email"
-          name="email"
-          required
-          value={formData.email}
-          onChange={onChange}
-          placeholder="email@example.com"
-          className="w-full bg-[#f8f8f8] border border-black/10 focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227] text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3.5 transition-all text-sm outline-none"
-        />
-      </div>
-
+      {/* 1. Nama Lengkap & Jenis Kelamin (Diisi duluan untuk menentukan prefix BIB F- / M-) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* No. BIB (Wajib, Sesuai Kategori & Unique) */}
         <div className="space-y-1.5">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5">
-              <label htmlFor="no_bib" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                No. BIB <span className="text-rose-500">*</span>
-              </label>
-              <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#C9A227]/10 text-[#C9A227] font-bold border border-[#C9A227]/30">
-                {catCode}
-              </span>
-            </div>
+          <label htmlFor="nama" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+            Nama Lengkap <span className="text-rose-500">*</span>
+          </label>
+          <input
+            type="text"
+            id="nama"
+            name="nama"
+            required
+            value={formData.nama}
+            onChange={onChange}
+            placeholder="Masukkan nama lengkap sesuai KTP"
+            className="w-full bg-[#f8f8f8] border border-black/10 focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227] text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3.5 transition-all text-sm outline-none"
+          />
+        </div>
 
-            {/* Tombol Generate BIB */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <label htmlFor="jenis_kelamin" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+              Jenis Kelamin <span className="text-rose-500">*</span>
+            </label>
+            <span className="text-[10px] text-amber-600 font-semibold">
+              {hasGender ? `Prefix BIB: ${genderPrefix}` : 'Pilih untuk kode BIB'}
+            </span>
+          </div>
+          <div className="relative">
+            <select
+              id="jenis_kelamin"
+              name="jenis_kelamin"
+              required
+              value={formData.jenis_kelamin}
+              onChange={onChange}
+              className="w-full bg-[#f8f8f8] border border-black/10 focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227] text-slate-800 rounded-xl px-4 py-3.5 transition-all text-sm outline-none appearance-none cursor-pointer font-medium"
+            >
+              <option value="" disabled>Pilih Jenis Kelamin...</option>
+              <option value="Laki-laki">Laki-laki (Prefix M-)</option>
+              <option value="Perempuan">Perempuan (Prefix F-)</option>
+            </select>
+            <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-lg">
+              keyboard_arrow_down
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. No. BIB (Otomatis F- / M- + 5 Angka, tepat 7 karakter, contoh F-00001, M-00001) */}
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <label htmlFor="no_bib" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+              No. BIB <span className="text-rose-500">*</span>
+            </label>
+            <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#C9A227]/10 text-[#C9A227] font-bold border border-[#C9A227]/30">
+              {hasGender ? `Format: ${genderPrefix} + 5 Angka (Tepat 7 Karakter)` : 'Format: F- / M- + 5 Angka (Tepat 7 Karakter)'}
+            </span>
+            {formData.no_bib.length > 0 && formData.no_bib.length !== 7 && (
+              <span className="text-[10px] text-rose-500 font-semibold">
+                ({formData.no_bib.length}/7 karakter)
+              </span>
+            )}
+          </div>
+
+          {/* Tombol Generate BIB */}
+          {onGenerateBib && (
+            <button
+              type="button"
+              onClick={onGenerateBib}
+              disabled={generatingBib}
+              className="inline-flex items-center gap-1 text-[11px] font-bold text-[#0d1c32] bg-[#C9A227] hover:bg-[#b08d20] px-2.5 py-1 rounded-lg transition-all shadow-xs active:scale-95 cursor-pointer disabled:opacity-50"
+              title={`Generate nomor BIB otomatis format ${hasGender ? genderPrefix : 'F-/M-'} + 5 angka (tepat 7 karakter)`}
+            >
+              <span className={`material-symbols-outlined text-xs ${generatingBib ? 'animate-spin' : ''}`}>
+                {generatingBib ? 'progress_activity' : 'auto_fix_high'}
+              </span>
+              <span>{generatingBib ? 'Mengenerate...' : 'Generate BIB'}</span>
+            </button>
+          )}
+        </div>
+
+        <div className="relative">
+          <input
+            type="text"
+            id="no_bib"
+            name="no_bib"
+            required
+            minLength={7}
+            maxLength={7}
+            value={formData.no_bib}
+            onChange={onChange}
+            placeholder={hasGender ? `Contoh: ${genderPrefix}00001` : 'Pilih jenis kelamin untuk auto BIB'}
+            className={`w-full bg-[#f8f8f8] border text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3.5 pr-18 transition-all text-sm outline-none font-mono font-bold tracking-wider ${
+              bibStatus === 'taken' || (formData.no_bib.length > 0 && formData.no_bib.length !== 7)
+                ? 'border-rose-500 focus:border-rose-600 focus:ring-1 focus:ring-rose-500'
+                : bibStatus === 'available'
+                ? 'border-emerald-500 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-500'
+                : 'border-black/10 focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227]'
+            }`}
+          />
+          {onCheckBib && (
+            <button
+              type="button"
+              onClick={onCheckBib}
+              disabled={!formData.no_bib.trim() || formData.no_bib.length !== 7 || bibStatus === 'checking'}
+              className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider rounded-lg bg-black/5 hover:bg-[#C9A227] hover:text-[#0d1c32] text-slate-700 transition-colors disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+            >
+              {bibStatus === 'checking' ? '...' : 'Cek'}
+            </button>
+          )}
+        </div>
+
+        {/* Feedback & Status Indicators */}
+        {bibStatus === 'checking' && (
+          <p className="text-[11px] text-amber-600 font-medium flex items-center gap-1 animate-pulse">
+            <span className="material-symbols-outlined text-xs animate-spin">progress_activity</span>
+            Mengecek ketersediaan BIB...
+          </p>
+        )}
+
+        {bibStatus === 'taken' && (
+          <div className="flex items-center justify-between text-[11px] text-rose-600">
+            <span className="flex items-center gap-1">
+              <span className="material-symbols-outlined text-xs">error</span>
+              {bibMessage || `Nomor BIB "${formData.no_bib}" sudah digunakan peserta lain.`}
+            </span>
             {onGenerateBib && (
               <button
                 type="button"
                 onClick={onGenerateBib}
-                disabled={generatingBib}
-                className="inline-flex items-center gap-1 text-[11px] font-bold text-[#0d1c32] bg-[#C9A227] hover:bg-[#b08d20] px-2.5 py-1 rounded-lg transition-all shadow-xs active:scale-95 cursor-pointer disabled:opacity-50"
-                title={`Generate nomor BIB otomatis format ${expectedPrefix}XXXX`}
+                className="font-bold underline hover:text-rose-800 cursor-pointer ml-1"
               >
-                <span className={`material-symbols-outlined text-xs ${generatingBib ? 'animate-spin' : ''}`}>
-                  {generatingBib ? 'progress_activity' : 'auto_fix_high'}
-                </span>
-                <span>{generatingBib ? 'Mengenerate...' : 'Generate BIB'}</span>
+                Generate Lain
               </button>
             )}
           </div>
+        )}
 
-          <div className="relative">
-            <input
-              type="text"
-              id="no_bib"
-              name="no_bib"
-              required
-              value={formData.no_bib}
-              onChange={onChange}
-              placeholder={`Contoh: ${expectedPrefix}0001 (Wajib & unik)`}
-              className={`w-full bg-[#f8f8f8] border text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3.5 pr-18 transition-all text-sm outline-none font-mono font-medium ${
-                bibStatus === 'taken'
-                  ? 'border-rose-500 focus:border-rose-600 focus:ring-1 focus:ring-rose-500'
-                  : bibStatus === 'available'
-                  ? 'border-emerald-500 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-500'
-                  : 'border-black/10 focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227]'
-              }`}
-            />
-            {onCheckBib && (
-              <button
-                type="button"
-                onClick={onCheckBib}
-                disabled={!formData.no_bib.trim() || bibStatus === 'checking'}
-                className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider rounded-lg bg-black/5 hover:bg-[#C9A227] hover:text-[#0d1c32] text-slate-700 transition-colors disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
-              >
-                {bibStatus === 'checking' ? '...' : 'Cek'}
-              </button>
-            )}
-          </div>
+        {bibStatus === 'available' && (
+          <p className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
+            <span className="material-symbols-outlined text-xs">verified</span>
+            {bibMessage || `Nomor BIB "${formData.no_bib}" tersedia dan dapat digunakan.`}
+          </p>
+        )}
 
-          {/* Feedback & Status Indicators */}
-          {bibStatus === 'checking' && (
-            <p className="text-[11px] text-amber-600 font-medium flex items-center gap-1 animate-pulse">
-              <span className="material-symbols-outlined text-xs animate-spin">progress_activity</span>
-              Mengecek ketersediaan BIB...
-            </p>
-          )}
+        {bibStatus === 'idle' && (
+          <p className="text-[10px] text-slate-500">
+            Format BIB otomatis: <strong>{genderLabel} + 5 angka</strong> (tepat 7 karakter, contoh: <strong>M-00001</strong> untuk laki-laki, <strong>F-00001</strong> untuk perempuan). Klik <em>Generate BIB</em> atau ketik nomor Anda.
+          </p>
+        )}
+      </div>
 
-          {bibStatus === 'taken' && (
-            <div className="flex items-center justify-between text-[11px] text-rose-600">
-              <span className="flex items-center gap-1">
-                <span className="material-symbols-outlined text-xs">error</span>
-                {bibMessage || `Nomor BIB "${formData.no_bib}" sudah digunakan peserta lain.`}
-              </span>
-              {onGenerateBib && (
-                <button
-                  type="button"
-                  onClick={onGenerateBib}
-                  className="font-bold underline hover:text-rose-800 cursor-pointer ml-1"
-                >
-                  Generate Lain
-                </button>
-              )}
-            </div>
-          )}
-
-          {bibStatus === 'available' && (
-            <p className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
-              <span className="material-symbols-outlined text-xs">verified</span>
-              {bibMessage || `Nomor BIB "${formData.no_bib}" tersedia dan dapat digunakan.`}
-            </p>
-          )}
-
-          {bibStatus === 'idle' && (
-            <p className="text-[10px] text-slate-500">
-              Format otomatis {catCode}: <strong>{expectedPrefix}XXXX</strong> (contoh: {expectedPrefix}0001). Klik <em>Generate BIB</em> atau ketik nomor Anda.
-            </p>
-          )}
+      {/* 3. Kontak: Email & No. HP */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <label htmlFor="email" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+            Email <span className="text-rose-500">*</span>
+          </label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            required
+            value={formData.email}
+            onChange={onChange}
+            placeholder="email@example.com"
+            className="w-full bg-[#f8f8f8] border border-black/10 focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227] text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3.5 transition-all text-sm outline-none"
+          />
         </div>
-
 
         <div className="space-y-1.5">
           <label htmlFor="no_hp" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
@@ -215,6 +255,7 @@ export default function StepDataPribadi({
         </div>
       </div>
 
+      {/* 4. Tanggal Lahir & Komunitas */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <label htmlFor="tanggal_lahir" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
@@ -230,43 +271,21 @@ export default function StepDataPribadi({
             className="w-full bg-[#f8f8f8] border border-black/10 focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227] text-slate-800 rounded-xl px-4 py-3.5 transition-all text-sm outline-none"
           />
         </div>
-        <div className="space-y-1.5">
-          <label htmlFor="jenis_kelamin" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
-            Jenis Kelamin <span className="text-rose-500">*</span>
-          </label>
-          <div className="relative">
-            <select
-              id="jenis_kelamin"
-              name="jenis_kelamin"
-              required
-              value={formData.jenis_kelamin}
-              onChange={onChange}
-              className="w-full bg-[#f8f8f8] border border-black/10 focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227] text-slate-800 rounded-xl px-4 py-3.5 transition-all text-sm outline-none appearance-none cursor-pointer"
-            >
-              <option value="" disabled>Pilih...</option>
-              <option value="Laki-laki">Laki-laki</option>
-              <option value="Perempuan">Perempuan</option>
-            </select>
-            <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-lg">
-              keyboard_arrow_down
-            </span>
-          </div>
-        </div>
-      </div>
 
-      <div className="space-y-1.5">
-        <label htmlFor="nama_komunitas" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
-          Nama Komunitas / Club
-        </label>
-        <input
-          type="text"
-          id="nama_komunitas"
-          name="nama_komunitas"
-          value={formData.nama_komunitas}
-          onChange={onChange}
-          placeholder="Opsional — nama running club / komunitas"
-          className="w-full bg-[#f8f8f8] border border-black/10 focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227] text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3.5 transition-all text-sm outline-none"
-        />
+        <div className="space-y-1.5">
+          <label htmlFor="nama_komunitas" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+            Nama Komunitas / Club
+          </label>
+          <input
+            type="text"
+            id="nama_komunitas"
+            name="nama_komunitas"
+            value={formData.nama_komunitas}
+            onChange={onChange}
+            placeholder="Opsional — nama running club / komunitas"
+            className="w-full bg-[#f8f8f8] border border-black/10 focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227] text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3.5 transition-all text-sm outline-none"
+          />
+        </div>
       </div>
     </div>
   );

@@ -366,6 +366,7 @@ export default function TrailrunGpxMap({
           <a
             href={gpxUrl}
             download
+
             className="px-4 py-2 bg-[#C9A227] text-[#0d1c32] rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-[#b08d20] transition-colors"
           >
             Unduh File GPX Langsung
@@ -380,33 +381,30 @@ export default function TrailrunGpxMap({
           <button
             type="button"
             onClick={() => switchLayer('topo')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-              activeLayer === 'topo'
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${activeLayer === 'topo'
                 ? 'bg-[#C9A227] text-[#0d1c32] font-bold shadow-sm'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-            }`}
+              }`}
           >
             🏔️ Topografi
           </button>
           <button
             type="button"
             onClick={() => switchLayer('satellite')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-              activeLayer === 'satellite'
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${activeLayer === 'satellite'
                 ? 'bg-[#C9A227] text-[#0d1c32] font-bold shadow-sm'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-            }`}
+              }`}
           >
             🛰️ Satelit
           </button>
           <button
             type="button"
             onClick={() => switchLayer('osm')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-              activeLayer === 'osm'
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${activeLayer === 'osm'
                 ? 'bg-[#C9A227] text-[#0d1c32] font-bold shadow-sm'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-            }`}
+              }`}
           >
             🗺️ Street
           </button>

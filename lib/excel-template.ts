@@ -28,12 +28,12 @@ export function downloadTrailrunExcelTemplate(communityName = '') {
   const headers = [
     'No',
     'Nama Lengkap *',
-    'No. BIB (Opsional / Kosongkan untuk Otomatis)',
+    'Jenis Kelamin (Laki-laki / Perempuan) *',
+    'No. BIB (Opsional / Otomatis F- / M- + 5 Angka, cth: M-00001, F-00001)',
     'Email *',
     'No WhatsApp *',
     'Kategori Race (3K / 7K / 12K) *',
     'Tgl Lahir (YYYY-MM-DD) *',
-    'Jenis Kelamin (Laki-laki / Perempuan) *',
     'Golongan Darah (A / B / AB / O)',
     'Alamat Lengkap *',
     'Kota *',
@@ -52,12 +52,12 @@ export function downloadTrailrunExcelTemplate(communityName = '') {
   ws['!cols'] = [
     { wch: 6 },  // No
     { wch: 25 }, // Nama Lengkap
-    { wch: 36 }, // No. BIB
+    { wch: 32 }, // Jenis Kelamin
+    { wch: 56 }, // No. BIB
     { wch: 28 }, // Email
     { wch: 18 }, // No WhatsApp
     { wch: 30 }, // Kategori
     { wch: 24 }, // Tgl Lahir
-    { wch: 32 }, // Jenis Kelamin
     { wch: 26 }, // Golongan Darah
     { wch: 35 }, // Alamat
     { wch: 18 }, // Kota
@@ -224,12 +224,28 @@ export async function parseTrailrunExcelFile(
       normalizedBlood = bUpper;
     }
 
+    // BIB validation (if provided manually in Excel)
+    let cleanBib = rawBib ? rawBib.trim().toUpperCase() : '';
+    if (/^[FM]\d{5}$/.test(cleanBib)) {
+      cleanBib = `${cleanBib[0]}-${cleanBib.slice(1)}`;
+    }
+    if (cleanBib) {
+      if (cleanBib.length !== 7 || !/^[FM]-\d{5}$/.test(cleanBib)) {
+        errors.push(`Nomor BIB "${cleanBib}" harus tepat 7 karakter (format F-XXXXX atau M-XXXXX). Kosongkan jika ingin dibuat otomatis.`);
+      } else if (normalizedGender) {
+        const expectedPref = normalizedGender === 'Perempuan' ? 'F-' : 'M-';
+        if (!cleanBib.startsWith(expectedPref)) {
+          errors.push(`Nomor BIB "${cleanBib}" tidak sesuai jenis kelamin (${normalizedGender} harus "${expectedPref}").`);
+        }
+      }
+    }
+
     const isValid = errors.length === 0;
 
     participants.push({
       nama,
       email,
-      no_bib: rawBib ? rawBib.trim().toUpperCase() : '',
+      no_bib: cleanBib,
       no_hp,
       kategori: normalizedCat || rawKategori || '7k',
       tanggal_lahir: normalizedDate,

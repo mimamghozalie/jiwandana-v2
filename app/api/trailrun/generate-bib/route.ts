@@ -7,12 +7,12 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 export const dynamic = 'force-dynamic';
 
-function getCategoryPrefix(category?: string | null): string {
-  const cat = (category || '').toLowerCase().trim();
-  if (cat.includes('12')) return '12-';
-  if (cat.includes('7')) return '7-';
-  if (cat.includes('3')) return '3-';
-  return '7-';
+function getGenderPrefix(gender?: string | null): string {
+  const g = (gender || '').toLowerCase().trim();
+  if (g.startsWith('p') || g.startsWith('f') || g.includes('wanita') || g.includes('female')) {
+    return 'F-';
+  }
+  return 'M-'; // 'M-' for Male / Laki-laki
 }
 
 async function withTimeout<T>(promise: PromiseLike<T>, timeoutMs = 3500): Promise<T> {
@@ -27,9 +27,12 @@ async function withTimeout<T>(promise: PromiseLike<T>, timeoutMs = 3500): Promis
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    const genderParam = searchParams.get('gender') || searchParams.get('jenis_kelamin');
     const categoryParam = searchParams.get('kategori') || searchParams.get('category');
     const currentParam = searchParams.get('current')?.trim() || '';
-    const prefix = getCategoryPrefix(categoryParam);
+
+    // Prefix based on gender: 'M-' (Male / Laki-laki) or 'F-' (Female / Perempuan)
+    const prefix = getGenderPrefix(genderParam);
 
     // Fetch existing registrations matching prefix
     const queryPromise = supabase
@@ -48,10 +51,10 @@ export async function GET(request: NextRequest) {
         const clean = item.no_bib.trim().toUpperCase();
         existingBibs.add(clean);
 
-        if (clean.startsWith(prefix.toUpperCase())) {
+        if (clean.startsWith(prefix)) {
           const numPart = clean.slice(prefix.length).replace(/\D/g, '');
           const num = parseInt(numPart, 10);
-          if (!isNaN(num) && num > maxNumber && num < 10000) {
+          if (!isNaN(num) && num > maxNumber && num < 100000) {
             maxNumber = num;
           }
         }
@@ -60,7 +63,7 @@ export async function GET(request: NextRequest) {
 
     // Determine start number
     let startNumber = 1;
-    if (currentParam && currentParam.toUpperCase().startsWith(prefix.toUpperCase())) {
+    if (currentParam && currentParam.toUpperCase().startsWith(prefix)) {
       const currentNumPart = currentParam.slice(prefix.length).replace(/\D/g, '');
       const parsedCurrent = parseInt(currentNumPart, 10);
       if (!isNaN(parsedCurrent) && parsedCurrent >= 1) {
@@ -70,16 +73,16 @@ export async function GET(request: NextRequest) {
       startNumber = maxNumber + 1;
     }
 
-    // Find first available number
+    // Find first available number (5 digits with '-' separator, e.g. F-00001, M-00001)
     let candidateNum = startNumber;
-    let candidateBib = `${prefix}${String(candidateNum).padStart(4, '0')}`;
+    let candidateBib = `${prefix}${String(candidateNum).padStart(5, '0')}`;
 
-    // Loop until we find a non-existing bib (up to 9999, then wrap to 1)
+    // Loop until we find a non-existing bib (up to 99999, then wrap to 1)
     let attempts = 0;
-    while (existingBibs.has(candidateBib.toUpperCase()) && attempts < 9999) {
+    while (existingBibs.has(candidateBib.toUpperCase()) && attempts < 99999) {
       candidateNum++;
-      if (candidateNum > 9999) candidateNum = 1;
-      candidateBib = `${prefix}${String(candidateNum).padStart(4, '0')}`;
+      if (candidateNum > 99999) candidateNum = 1;
+      candidateBib = `${prefix}${String(candidateNum).padStart(5, '0')}`;
       attempts++;
     }
 
@@ -89,14 +92,14 @@ export async function GET(request: NextRequest) {
       prefix,
       number: candidateNum,
       category: categoryParam || '',
+      gender: genderParam || (prefix.startsWith('F') ? 'Perempuan' : 'Laki-laki'),
     });
   } catch (err: any) {
     console.error('Error generating BIB in route:', err);
-    const prefix = getCategoryPrefix(null);
     return NextResponse.json({
       success: true,
-      bib: `${prefix}0001`,
-      prefix,
+      bib: 'M-00001',
+      prefix: 'M-',
       number: 1,
     });
   }

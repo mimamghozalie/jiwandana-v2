@@ -110,9 +110,17 @@ export default function DaftarTrailrunClient() {
   }, [formData.no_bib]);
 
   const handleManualCheckBib = async () => {
-    const bib = formData.no_bib.trim();
+    const bib = formData.no_bib.trim().toUpperCase();
     if (!bib) {
       setErrorMsg('Nomor BIB wajib diisi terlebih dahulu.');
+      return;
+    }
+
+    if (bib.length !== 7 || !/^[FM]-\d{5}$/.test(bib)) {
+      setBibStatus('taken');
+      const msg = 'Nomor BIB harus tepat 7 karakter dengan format F-XXXXX atau M-XXXXX (contoh: M-00001, F-00001).';
+      setBibMessage(msg);
+      setErrorMsg(msg);
       return;
     }
 
@@ -141,21 +149,37 @@ export default function DaftarTrailrunClient() {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
     if (name === 'no_bib') {
+      let upperVal = value.toUpperCase();
+      // If user typed F12345 or M12345 without hyphen, auto-insert hyphen
+      if (/^[FM]\d+$/.test(upperVal)) {
+        upperVal = `${upperVal[0]}-${upperVal.slice(1)}`;
+      }
+      upperVal = upperVal.slice(0, 7);
+      setFormData((prev) => ({ ...prev, no_bib: upperVal }));
       setBibStatus('idle');
       setBibMessage('');
+      if (errorMsg) setErrorMsg('');
+      return;
     }
+
+    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    if (name === 'jenis_kelamin') {
+      // Regenerate BIB when gender is selected or changed
+      handleGenerateBib(formData.kategori, false, value);
+    }
+
     if (errorMsg) setErrorMsg('');
   };
 
-  const handleGenerateBib = async (kategoriId?: string, forceNext = false) => {
+  const handleGenerateBib = async (kategoriId?: string, forceNext = false, customGender?: string) => {
     const targetCat = kategoriId || formData.kategori;
-    if (!targetCat) return;
+    const targetGender = customGender !== undefined ? customGender : formData.jenis_kelamin;
 
     setGeneratingBib(true);
     try {
-      const res = await generateAutoBib(targetCat, forceNext ? formData.no_bib : undefined);
+      const res = await generateAutoBib(targetCat, forceNext ? formData.no_bib : undefined, targetGender);
       if (res.success && res.bib) {
         setFormData((prev) => ({ ...prev, no_bib: res.bib }));
         setBibStatus('available');
@@ -171,43 +195,27 @@ export default function DaftarTrailrunClient() {
     }
   };
 
-  // Auto-generate BIB when reaching Step 2 if empty or if category prefix mismatches
+  // Auto-generate BIB when reaching Step 2 if empty or if gender prefix mismatches
   useEffect(() => {
-    if (currentStep === 2 && formData.kategori) {
-      const is3k = formData.kategori.toLowerCase().includes('3');
-      const is7k = formData.kategori.toLowerCase().includes('7');
-      const is12k = formData.kategori.toLowerCase().includes('12');
-      const currentBib = formData.no_bib.trim();
+    if (currentStep === 2) {
+      const currentBib = formData.no_bib.trim().toUpperCase();
+      const expectedPrefix = formData.jenis_kelamin === 'Perempuan' ? 'F-' : 'M-';
 
       const mismatch =
         !currentBib ||
-        (is3k && !currentBib.startsWith('3-')) ||
-        (is7k && !currentBib.startsWith('7-')) ||
-        (is12k && !currentBib.startsWith('12-'));
+        (formData.jenis_kelamin && !currentBib.startsWith(expectedPrefix));
 
       if (mismatch) {
-        handleGenerateBib(formData.kategori, false);
+        handleGenerateBib(formData.kategori, false, formData.jenis_kelamin);
       }
     }
-  }, [currentStep, formData.kategori]);
+  }, [currentStep, formData.jenis_kelamin]);
 
   const handleSelectCategory = (catId: string) => {
-    setFormData((prev) => {
-      const is3k = catId.toLowerCase().includes('3');
-      const is7k = catId.toLowerCase().includes('7');
-      const is12k = catId.toLowerCase().includes('12');
-      let shouldClear = false;
-      if (prev.no_bib) {
-        if (is3k && !prev.no_bib.startsWith('3-')) shouldClear = true;
-        if (is7k && !prev.no_bib.startsWith('7-')) shouldClear = true;
-        if (is12k && !prev.no_bib.startsWith('12-')) shouldClear = true;
-      }
-      return {
-        ...prev,
-        kategori: catId,
-        ...(shouldClear ? { no_bib: '' } : {}),
-      };
-    });
+    setFormData((prev) => ({
+      ...prev,
+      kategori: catId,
+    }));
     if (errorMsg) setErrorMsg('');
   };
 
@@ -223,14 +231,22 @@ export default function DaftarTrailrunClient() {
         return true;
       case 2:
         if (!formData.nama.trim()) return fail('Nama lengkap wajib diisi.');
+        if (!formData.jenis_kelamin) return fail('Jenis kelamin wajib dipilih terlebih dahulu.');
+        if (!formData.no_bib.trim()) return fail('Nomor BIB wajib diisi.');
+        const bibClean = formData.no_bib.trim().toUpperCase();
+        if (bibClean.length !== 7 || !/^[FM]-\d{5}$/.test(bibClean)) {
+          return fail('Nomor BIB harus tepat 7 karakter dengan format F-XXXXX atau M-XXXXX (contoh: M-00001, F-00001).');
+        }
+        const expectedPrefix = formData.jenis_kelamin === 'Perempuan' ? 'F-' : 'M-';
+        if (!bibClean.startsWith(expectedPrefix)) {
+          return fail(`Nomor BIB untuk ${formData.jenis_kelamin} harus diawali dengan prefix "${expectedPrefix}".`);
+        }
         if (!formData.email.trim() || !formData.email.includes('@'))
           return fail('Email tidak valid.');
-        if (!formData.no_bib.trim()) return fail('Nomor BIB wajib diisi.');
-        if (bibStatus === 'taken')
-          return fail(bibMessage || `Nomor BIB "${formData.no_bib}" sudah digunakan oleh peserta lain.`);
         if (!formData.no_hp.trim()) return fail('No. telepon/WhatsApp wajib diisi.');
         if (!formData.tanggal_lahir) return fail('Tanggal lahir wajib diisi.');
-        if (!formData.jenis_kelamin) return fail('Jenis kelamin wajib dipilih.');
+        if (bibStatus === 'taken')
+          return fail(bibMessage || `Nomor BIB "${formData.no_bib}" sudah digunakan oleh peserta lain.`);
         return true;
       case 3:
         if (!formData.alamat.trim()) return fail('Alamat wajib diisi.');

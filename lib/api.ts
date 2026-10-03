@@ -230,11 +230,14 @@ export async function checkBibAvailability(
 }
 
 export async function generateAutoBib(
-  kategori: string,
-  currentBib?: string
+  kategori?: string,
+  currentBib?: string,
+  gender?: string
 ): Promise<{ success: boolean; bib: string; prefix?: string }> {
   try {
-    const params = new URLSearchParams({ kategori: kategori || '' });
+    const params = new URLSearchParams();
+    if (kategori) params.set('kategori', kategori);
+    if (gender) params.set('gender', gender);
     if (currentBib) params.set('current', currentBib);
     const res = await fetch(`/api/trailrun/generate-bib?${params.toString()}`);
     const data = await res.json();
@@ -242,22 +245,33 @@ export async function generateAutoBib(
       return { success: true, bib: data.bib, prefix: data.prefix };
     }
   } catch (err) {
-    console.warn('generateAutoBib error, fallback to category prefix:', err);
+    console.warn('generateAutoBib error, fallback:', err);
   }
 
-  // Graceful fallback
-  const cat = (kategori || '').toLowerCase();
-  const prefix = cat.includes('12') ? '12-' : cat.includes('7') ? '7-' : '3-';
-  return { success: true, bib: `${prefix}0001`, prefix };
+  // Graceful fallback: 'F-' for Female/Perempuan, 'M-' for Male/Laki-laki
+  const isFemale =
+    (gender || '').toLowerCase().startsWith('p') ||
+    (gender || '').toLowerCase().startsWith('f') ||
+    (gender || '').toLowerCase().includes('wanita');
+  const prefix = isFemale ? 'F-' : 'M-';
+  return { success: true, bib: `${prefix}00001`, prefix };
 }
 
 export async function submitTrailrunRegistration(
   formData: Omit<TrailrunRegistration, 'id' | 'status' | 'created_at'>
 ): Promise<{ success: boolean; registration_id?: string; error?: string }> {
   try {
-    const cleanBib = (formData.no_bib || '').trim();
+    const cleanBib = (formData.no_bib || '').trim().toUpperCase();
     if (!cleanBib) {
       return { success: false, error: 'Nomor BIB wajib diisi.' };
+    }
+
+    // Enforce exactly 7 characters: F-XXXXX or M-XXXXX
+    if (cleanBib.length !== 7 || !/^[FM]-\d{5}$/.test(cleanBib)) {
+      return {
+        success: false,
+        error: 'Nomor BIB harus tepat 7 karakter dengan format F-XXXXX atau M-XXXXX (contoh: M-00001, F-00001).',
+      };
     }
 
     // Uniqueness pre-check right before insert
