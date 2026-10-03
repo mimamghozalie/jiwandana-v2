@@ -41,6 +41,35 @@ export default async function EventDetailPage({ params }: EventPageProps) {
     notFound();
   }
 
+  // Dokumen pendukung diambil murni dari Supabase (disembunyikan jika tidak ada agar tidak miss info)
+  const rawJuknis = event.juknis_url || (event as any).juknis || '';
+  const juknisUrl =
+    rawJuknis && rawJuknis.trim() !== '' && rawJuknis !== '#'
+      ? rawJuknis.trim()
+      : null;
+
+  const rawPedoman =
+    event.guide_book_url ||
+    (event as any).guidebook_url ||
+    (event as any).pedoman ||
+    (event as any).buku_pedoman ||
+    (event as any).pedoman_url ||
+    '';
+  const guideBookUrl =
+    rawPedoman && rawPedoman.trim() !== '' && rawPedoman !== '#'
+      ? rawPedoman.trim()
+      : null;
+
+  const rawRules =
+    event.rules_url ||
+    (event as any).peraturan ||
+    (event as any).peraturan_url ||
+    '';
+  const rulesUrl =
+    rawRules && rawRules.trim() !== '' && rawRules !== '#'
+      ? rawRules.trim()
+      : null;
+
   return (
     <main className="pt-20 bg-[#f8f8f8]">
       <section className="py-16 md:py-24 bg-[#f8f8f8] min-h-screen text-slate-800">
@@ -120,74 +149,77 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                 </div>
               </div>
 
-              {/* Actions Block */}
-              <div className="bg-white border border-black/10 rounded-2xl p-6 space-y-4 shadow-sm">
-                <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-500 text-center lg:text-left">
-                  Aksi Pendaftaran & Panduan
-                </h3>
-                <div className="flex flex-col sm:flex-row gap-4">
-                  {event.status === 'completed' ? (
-                    <Link
-                      href={event.portfolio_url || `/portofolio/${event.slug}`}
-                      className="flex-1 bg-[#C9A227] hover:bg-[#b08d20] text-[#0d1c32] font-semibold py-4 rounded-xl text-center shadow-md transition-all transform active:scale-95 text-sm uppercase tracking-wider flex items-center justify-center gap-2"
-                    >
-                      <span className="material-symbols-outlined text-md">photo_library</span>
-                      <span>Lihat Dokumentasi</span>
-                    </Link>
-                  ) : (
-                    <a
-                      href={event.registration_url || `/booking-event?category=${event.category}`}
-                      target={event.registration_url?.startsWith('http') ? '_blank' : undefined}
-                      rel={event.registration_url?.startsWith('http') ? 'noopener noreferrer' : undefined}
-                      className="flex-1 bg-[#C9A227] hover:bg-[#b08d20] text-[#0d1c32] font-semibold py-4 rounded-xl text-center shadow-md transition-all transform active:scale-95 text-sm uppercase tracking-wider flex items-center justify-center gap-2"
-                    >
-                      <span className="material-symbols-outlined text-md">assignment</span>
-                      <span>Daftar Sekarang</span>
-                    </a>
-                  )}
+              {/* Actions & Documents Section */}
+              <div className="space-y-4">
+                {/* Actions Block */}
+                <div className="bg-white border border-black/10 rounded-2xl p-6 space-y-4 shadow-sm">
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-500 text-center lg:text-left">
+                    Aksi Pendaftaran & Panduan
+                  </h3>
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    {event.status === 'completed' ? (
+                      <Link
+                        href={event.portfolio_url || `/portofolio/${event.slug}`}
+                        className="flex-1 bg-[#C9A227] hover:bg-[#b08d20] text-[#0d1c32] font-semibold py-4 rounded-xl text-center shadow-md transition-all transform active:scale-95 text-sm uppercase tracking-wider flex items-center justify-center gap-2"
+                      >
+                        <span className="material-symbols-outlined text-md">photo_library</span>
+                        <span>Lihat Dokumentasi</span>
+                      </Link>
+                    ) : (
+                      <a
+                        href={event.registration_url || `/booking-event?category=${event.category}`}
+                        target={event.registration_url?.startsWith('http') ? '_blank' : undefined}
+                        rel={event.registration_url?.startsWith('http') ? 'noopener noreferrer' : undefined}
+                        className="flex-1 bg-[#C9A227] hover:bg-[#b08d20] text-[#0d1c32] font-semibold py-4 rounded-xl text-center shadow-md transition-all transform active:scale-95 text-sm uppercase tracking-wider flex items-center justify-center gap-2"
+                      >
+                        <span className="material-symbols-outlined text-md">assignment</span>
+                        <span>Daftar Sekarang</span>
+                      </a>
+                    )}
 
-                  {event.juknis_url && event.juknis_url !== '#' && (
+                    {juknisUrl && juknisUrl !== '#' && (
+                      <a
+                        href={juknisUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 border border-[#C9A227] text-[#C9A227] hover:bg-[#C9A227] hover:text-[#0d1c32] font-semibold py-4 rounded-xl text-center transition-all transform active:scale-95 text-sm uppercase tracking-wider flex items-center justify-center gap-2 bg-white shadow-sm"
+                      >
+                        <span className="material-symbols-outlined text-md">download</span>
+                        <span>Unduh Juknis</span>
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                {/* Guidebook Button */}
+                {guideBookUrl && guideBookUrl !== '#' && (
+                  <div>
                     <a
-                      href={event.juknis_url}
+                      href={guideBookUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-1 border border-[#C9A227] text-[#C9A227] hover:bg-[#C9A227] hover:text-[#0d1c32] font-semibold py-4 rounded-xl text-center transition-all transform active:scale-95 text-sm uppercase tracking-wider flex items-center justify-center gap-2 bg-white shadow-sm"
+                      className="w-full border border-[#C9A227] text-[#C9A227] hover:bg-[#C9A227] hover:text-[#0d1c32] font-semibold py-4 rounded-xl text-center transition-all transform active:scale-95 text-sm uppercase tracking-wider flex items-center justify-center gap-2 bg-white shadow-sm"
                     >
-                      <span className="material-symbols-outlined text-md">download</span>
-                      <span>Unduh Juknis</span>
+                      Buku Pedoman
                     </a>
-                  )}
-                </div>
+                  </div>
+                )}
+
+                {/* Rules Button with Glow Animation */}
+                {rulesUrl && rulesUrl !== '#' && (
+                  <div>
+                    <a
+                      href={rulesUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="glow-btn w-full border border-[#C9A227] text-[#C9A227] hover:bg-[#C9A227] hover:text-[#0d1c32] font-semibold py-4 rounded-xl text-center transition-all transform active:scale-95 text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm"
+                    >
+                      <span className="material-symbols-outlined text-md">gavel</span>
+                      <span>Peraturan</span>
+                    </a>
+                  </div>
+                )}
               </div>
-
-              {/* Guidebook Button if exists */}
-              {event.guide_book_url && (
-                <div>
-                  <a
-                    href={event.guide_book_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full border border-[#C9A227] text-[#C9A227] hover:bg-[#C9A227] hover:text-[#0d1c32] font-semibold py-4 rounded-xl text-center transition-all transform active:scale-95 text-sm uppercase tracking-wider flex items-center justify-center gap-2 bg-white shadow-sm"
-                  >
-                    Buku Pedoman Silat bebas
-                  </a>
-                </div>
-              )}
-
-              {/* Rules Button with Glow Animation if exists */}
-              {event.rules_url && (
-                <div>
-                  <a
-                    href={event.rules_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="glow-btn w-full border border-[#C9A227] text-[#C9A227] hover:bg-[#C9A227] hover:text-[#0d1c32] font-semibold py-4 rounded-xl text-center transition-all transform active:scale-95 text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm"
-                  >
-                    <span className="material-symbols-outlined text-md">gavel</span>
-                    <span>Peraturan Terbaru Pencak Silat 2026</span>
-                  </a>
-                </div>
-              )}
 
               {/* Rundown if exists */}
               {event.rundown && (

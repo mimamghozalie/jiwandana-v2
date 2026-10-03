@@ -1,10 +1,8 @@
 import { supabase } from './supabaseClient';
 import portfoliosData from '@/data/portfolios.json';
-import { initialEvents, initialPortfolios, initialTestimonials, initialServices } from './data';
+import { initialPortfolios, initialTestimonials, initialServices } from './data';
 
 import { EventItem, PortfolioItem, TestimonialItem, ServiceItem, BookingSubmission, ContactSubmission, TrailrunRegistration } from './types';
-
-import eventsData from '@/data/events.json';
 
 // Helper to prevent hanging on network/Supabase timeouts
 async function withTimeout<T>(promise: PromiseLike<T>, timeoutMs = 2500): Promise<T> {
@@ -14,7 +12,7 @@ async function withTimeout<T>(promise: PromiseLike<T>, timeoutMs = 2500): Promis
   ]);
 }
 
-// ============ EVENTS API (SUPABASE + FALLBACK) ============
+// ============ EVENTS API (SUPABASE) ============
 export async function getEvents(): Promise<EventItem[]> {
   try {
     const fetchPromise = supabase
@@ -24,13 +22,14 @@ export async function getEvents(): Promise<EventItem[]> {
 
     const { data, error } = await withTimeout(fetchPromise, 3000);
 
-    if (error || !data || data.length === 0) {
-      return eventsData as unknown as EventItem[];
+    if (error || !data) {
+      console.warn('Error fetching events from Supabase:', error);
+      return [];
     }
     return data as EventItem[];
   } catch (err) {
-    console.warn('Using fallback events (JSON):', err);
-    return eventsData as unknown as EventItem[];
+    console.error('Failed to load events from Supabase:', err);
+    return [];
   }
 }
 
@@ -47,13 +46,22 @@ export async function getEventBySlug(slug: string): Promise<EventItem | null> {
     if (!error && data) {
       return data as EventItem;
     }
+
+    // Alias fallback for koni-championship-1 -> koni-1
+    if (cleanSlug === 'koni-championship-1') {
+      const aliasPromise = supabase
+        .from('events')
+        .select('*')
+        .eq('slug', 'koni-1')
+        .maybeSingle();
+      const { data: aliasData } = await withTimeout(aliasPromise, 3000);
+      if (aliasData) return aliasData as EventItem;
+    }
   } catch (err) {
-    console.warn('Falling back to local events JSON for slug:', cleanSlug, err);
+    console.warn('Error fetching event from Supabase for slug:', cleanSlug, err);
   }
 
-  const list = eventsData as unknown as EventItem[];
-  const item = list.find((e) => e.slug.toLowerCase().trim() === cleanSlug);
-  return item || null;
+  return null;
 }
 
 // ============ PORTFOLIO API (STATIC JSON) ============

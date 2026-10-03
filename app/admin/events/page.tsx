@@ -19,6 +19,7 @@ import {
   RefreshCw,
   Search,
   Link as LinkIcon,
+  FileText,
 } from 'lucide-react';
 
 export default function AdminEventsPage() {
@@ -48,6 +49,9 @@ export default function AdminEventsPage() {
     registration_url: '',
     portfolio_url: '',
     rundown: '',
+    juknis_url: '',
+    guide_book_url: '',
+    rules_url: '',
   };
 
   const [newEvent, setNewEvent] = useState(defaultNewEvent);
@@ -55,8 +59,31 @@ export default function AdminEventsPage() {
 
   const loadEvents = async () => {
     try {
-      const data = await getEvents();
-      setEvents(data);
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.warn('Error fetching events directly, trying fallback:', error);
+        const fallbackData = await getEvents();
+        const mapped = (fallbackData || []).map((item: any) => ({
+          ...item,
+          juknis_url: item.juknis_url || item.juknis || '',
+          guide_book_url: item.guide_book_url || item.guidebook_url || item.pedoman || item.buku_pedoman || item.pedoman_url || '',
+          rules_url: item.rules_url || item.peraturan || item.peraturan_url || '',
+        }));
+        setEvents(mapped);
+        return;
+      }
+
+      const mapped = (data || []).map((item: any) => ({
+        ...item,
+        juknis_url: item.juknis_url || item.juknis || '',
+        guide_book_url: item.guide_book_url || item.guidebook_url || item.pedoman || item.buku_pedoman || item.pedoman_url || '',
+        rules_url: item.rules_url || item.peraturan || item.peraturan_url || '',
+      }));
+      setEvents(mapped);
     } catch (err: any) {
       console.error('Failed to load events:', err);
     } finally {
@@ -87,7 +114,11 @@ export default function AdminEventsPage() {
     setSubmitting(true);
     setMessage(null);
 
-    const payload = {
+    const juknisVal = newEvent.juknis_url?.trim() || null;
+    const guideBookVal = newEvent.guide_book_url?.trim() || null;
+    const rulesVal = newEvent.rules_url?.trim() || null;
+
+    let payload: any = {
       title: newEvent.title.trim(),
       slug: newEvent.slug.trim(),
       category: newEvent.category,
@@ -100,30 +131,52 @@ export default function AdminEventsPage() {
       registration_url: newEvent.registration_url.trim() || null,
       portfolio_url: newEvent.portfolio_url.trim() || null,
       rundown: newEvent.rundown.trim() || null,
+      juknis_url: juknisVal,
+      guide_book_url: guideBookVal,
+      rules_url: rulesVal,
     };
 
     try {
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('events')
         .insert([payload])
         .select('*');
 
-      if (error) {
-        console.warn('Supabase insert warning:', error);
+      // If column schema mismatch (e.g. columns named juknis, pedoman, peraturan)
+      if (error && (error.message?.includes('column') || error.code === 'PGRST204' || error.message?.includes('schema cache'))) {
+        const altPayload = { ...payload, juknis: juknisVal, pedoman: guideBookVal, peraturan: rulesVal };
+        delete altPayload.juknis_url;
+        delete altPayload.guide_book_url;
+        delete altPayload.rules_url;
+        const altRes = await supabase.from('events').insert([altPayload]).select('*');
+        if (!altRes.error) {
+          data = altRes.data;
+          error = null;
+        } else {
+          throw error;
+        }
+      } else if (error) {
+        throw error;
       }
 
       const createdItem: EventItem = data && data[0]
-        ? data[0]
+        ? {
+            ...data[0],
+            juknis_url: data[0].juknis_url ?? data[0].juknis ?? juknisVal,
+            guide_book_url: data[0].guide_book_url ?? data[0].pedoman ?? guideBookVal,
+            rules_url: data[0].rules_url ?? data[0].peraturan ?? rulesVal,
+          }
         : {
             id: String(Date.now()),
             ...payload,
           };
 
-      setEvents((prev) => [createdItem, ...prev.filter((e) => e.slug !== createdItem.slug)]);
+      setEvents((prev) => [createdItem, ...prev.filter((item) => item.slug !== createdItem.slug)]);
 
       setMessage({ type: 'success', text: `Event "${payload.title}" berhasil ditambahkan ke Supabase & CMS!` });
       setIsCreateModalOpen(false);
       setNewEvent(defaultNewEvent);
+      await loadEvents();
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message || 'Gagal menyimpan event ke database.' });
     } finally {
@@ -132,8 +185,25 @@ export default function AdminEventsPage() {
   };
 
   // OPEN EDIT MODAL
-  const openEditModal = (evt: EventItem) => {
-    setEditingEvent({ ...evt });
+  const openEditModal = (evt: any) => {
+    setEditingEvent({
+      ...evt,
+      title: evt.title || '',
+      slug: evt.slug || '',
+      category: evt.category || 'perlombaan',
+      event_date: evt.event_date || '',
+      location: evt.location || '',
+      status: evt.status || 'active',
+      badge_text: evt.badge_text || '',
+      poster_url: evt.poster_url || '/assets/4.jpeg',
+      description: evt.description || '',
+      registration_url: evt.registration_url || '',
+      portfolio_url: evt.portfolio_url || '',
+      rundown: evt.rundown || '',
+      juknis_url: evt.juknis_url || evt.juknis || '',
+      guide_book_url: evt.guide_book_url || evt.guidebook_url || evt.pedoman || evt.buku_pedoman || evt.pedoman_url || '',
+      rules_url: evt.rules_url || evt.peraturan || evt.peraturan_url || '',
+    });
     setIsEditModalOpen(true);
   };
 
@@ -145,7 +215,11 @@ export default function AdminEventsPage() {
     setSubmitting(true);
     setMessage(null);
 
-    const updatePayload = {
+    const juknisVal = editingEvent.juknis_url?.trim() || null;
+    const guideBookVal = editingEvent.guide_book_url?.trim() || null;
+    const rulesVal = editingEvent.rules_url?.trim() || null;
+
+    let updatePayload: any = {
       title: editingEvent.title.trim(),
       slug: editingEvent.slug.trim(),
       category: editingEvent.category,
@@ -157,26 +231,68 @@ export default function AdminEventsPage() {
       description: editingEvent.description?.trim() || '',
       registration_url: editingEvent.registration_url?.trim() || null,
       portfolio_url: editingEvent.portfolio_url?.trim() || null,
+      rundown: editingEvent.rundown?.trim() || null,
+      juknis_url: juknisVal,
+      guide_book_url: guideBookVal,
+      rules_url: rulesVal,
     };
 
     try {
-      // Update by id if exists, or by slug
-      let query = supabase.from('events').update(updatePayload);
-      if (editingEvent.id) {
-        query = query.eq('id', editingEvent.id);
-      } else {
-        query = query.eq('slug', editingEvent.slug);
+      // 1. Try update by id or by slug
+      let { data, error } = await (editingEvent.id
+        ? supabase.from('events').update(updatePayload).eq('id', editingEvent.id).select('*')
+        : supabase.from('events').update(updatePayload).eq('slug', editingEvent.slug).select('*'));
+
+      // If id didn't match any row, fallback to updating by slug
+      if (!error && (!data || data.length === 0) && editingEvent.slug) {
+        const slugRes = await supabase.from('events').update(updatePayload).eq('slug', editingEvent.slug).select('*');
+        data = slugRes.data;
+        error = slugRes.error;
       }
 
-      const { error } = await query;
-      if (error) {
-        console.warn('Supabase update warning:', error);
+      // 2. If column schema mismatch (e.g. columns in DB are named juknis, pedoman, peraturan)
+      if (error && (error.message?.includes('column') || error.code === 'PGRST204' || error.message?.includes('schema cache'))) {
+        const altPayload = {
+          ...updatePayload,
+          juknis: juknisVal,
+          pedoman: guideBookVal,
+          peraturan: rulesVal,
+        };
+        delete altPayload.juknis_url;
+        delete altPayload.guide_book_url;
+        delete altPayload.rules_url;
+
+        let altRes = await (editingEvent.id
+          ? supabase.from('events').update(altPayload).eq('id', editingEvent.id).select('*')
+          : supabase.from('events').update(altPayload).eq('slug', editingEvent.slug).select('*'));
+
+        if (!altRes.error && (!altRes.data || altRes.data.length === 0) && editingEvent.slug) {
+          altRes = await supabase.from('events').update(altPayload).eq('slug', editingEvent.slug).select('*');
+        }
+
+        if (!altRes.error && altRes.data && altRes.data.length > 0) {
+          data = altRes.data;
+          error = null;
+        } else if (altRes.error) {
+          throw error;
+        }
+      } else if (error) {
+        throw error;
       }
 
+      const updatedRow = data && data[0] ? data[0] : null;
+
+      // Update state locally immediately
       setEvents((prev) =>
         prev.map((item): EventItem =>
           item.id === editingEvent.id || item.slug === editingEvent.slug
-            ? { ...item, ...updatePayload }
+            ? {
+                ...item,
+                ...(updatedRow || updatePayload),
+                juknis_url: updatedRow?.juknis_url ?? updatedRow?.juknis ?? juknisVal,
+                guide_book_url: updatedRow?.guide_book_url ?? updatedRow?.pedoman ?? guideBookVal,
+                rules_url: updatedRow?.rules_url ?? updatedRow?.peraturan ?? rulesVal,
+              }
             : item
         )
       );
@@ -184,6 +300,7 @@ export default function AdminEventsPage() {
       setMessage({ type: 'success', text: `Event "${updatePayload.title}" berhasil diperbarui!` });
       setIsEditModalOpen(false);
       setEditingEvent(null);
+      await loadEvents();
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message || 'Gagal memperbarui event.' });
     } finally {
@@ -407,6 +524,71 @@ export default function AdminEventsPage() {
                   <p className="text-xs text-slate-400 line-clamp-2 pt-1">
                     {evt.description}
                   </p>
+
+                  {/* Dokumen Acara (Juknis, Pedoman, Peraturan) */}
+                  <div className="pt-2.5 border-t border-white/5 space-y-1.5">
+                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">
+                      Dokumen Acara:
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {evt.juknis_url ? (
+                        <a
+                          href={evt.juknis_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-300 hover:bg-amber-500/20 transition-colors flex items-center gap-1 text-[10px] font-medium"
+                          title={evt.juknis_url}
+                        >
+                          <FileText className="w-3 h-3 text-amber-400" />
+                          <span>Juknis</span>
+                          <ExternalLink className="w-2.5 h-2.5 opacity-70" />
+                        </a>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/5 text-slate-500 flex items-center gap-1 text-[10px]">
+                          <FileText className="w-3 h-3 text-slate-600" />
+                          <span>Juknis: -</span>
+                        </span>
+                      )}
+
+                      {evt.guide_book_url ? (
+                        <a
+                          href={evt.guide_book_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-2 py-0.5 rounded-md bg-blue-500/10 border border-blue-500/30 text-blue-300 hover:bg-blue-500/20 transition-colors flex items-center gap-1 text-[10px] font-medium"
+                          title={evt.guide_book_url}
+                        >
+                          <FileText className="w-3 h-3 text-blue-400" />
+                          <span>Pedoman</span>
+                          <ExternalLink className="w-2.5 h-2.5 opacity-70" />
+                        </a>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/5 text-slate-500 flex items-center gap-1 text-[10px]">
+                          <FileText className="w-3 h-3 text-slate-600" />
+                          <span>Pedoman: -</span>
+                        </span>
+                      )}
+
+                      {evt.rules_url ? (
+                        <a
+                          href={evt.rules_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-2 py-0.5 rounded-md bg-purple-500/10 border border-purple-500/30 text-purple-300 hover:bg-purple-500/20 transition-colors flex items-center gap-1 text-[10px] font-medium"
+                          title={evt.rules_url}
+                        >
+                          <FileText className="w-3 h-3 text-purple-400" />
+                          <span>Peraturan</span>
+                          <ExternalLink className="w-2.5 h-2.5 opacity-70" />
+                        </a>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/5 text-slate-500 flex items-center gap-1 text-[10px]">
+                          <FileText className="w-3 h-3 text-slate-600" />
+                          <span>Peraturan: -</span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -575,6 +757,50 @@ export default function AdminEventsPage() {
                 </div>
               </div>
 
+              {/* Dokumen Pendukung (Juknis, Buku Pedoman, Peraturan) */}
+              <div className="bg-[#0a1424]/80 border border-white/10 rounded-2xl p-4 space-y-3">
+                <div className="flex items-center gap-2 text-white font-semibold">
+                  <FileText className="w-4 h-4 text-[#e9c176]" />
+                  <span>Dokumen Pendukung Event (Juknis, Pedoman & Peraturan)</span>
+                </div>
+                <p className="text-slate-400 text-[11px] leading-relaxed">
+                  Masukkan URL berkas (Google Drive / direct PDF link). Jika kolom dikosongkan, tombol unduh dokumen tersebut akan otomatis disembunyikan pada halaman publik event.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                  <div>
+                    <label className="block text-slate-300 mb-1 font-semibold text-[11px]">Link Juknis (PDF/Drive)</label>
+                    <input
+                      type="text"
+                      value={newEvent.juknis_url}
+                      onChange={(e) => setNewEvent({ ...newEvent, juknis_url: e.target.value })}
+                      placeholder="https://drive.google.com/..."
+                      className="w-full bg-[#12233c] border border-white/10 rounded-xl p-3 text-white outline-none focus:border-[#e9c176]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-300 mb-1 font-semibold text-[11px]">Buku Pedoman</label>
+                    <input
+                      type="text"
+                      value={newEvent.guide_book_url}
+                      onChange={(e) => setNewEvent({ ...newEvent, guide_book_url: e.target.value })}
+                      placeholder="https://drive.google.com/..."
+                      className="w-full bg-[#12233c] border border-white/10 rounded-xl p-3 text-white outline-none focus:border-[#e9c176]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-300 mb-1 font-semibold text-[11px]">Peraturan</label>
+                    <input
+                      type="text"
+                      value={newEvent.rules_url}
+                      onChange={(e) => setNewEvent({ ...newEvent, rules_url: e.target.value })}
+                      placeholder="https://drive.google.com/..."
+                      className="w-full bg-[#12233c] border border-white/10 rounded-xl p-3 text-white outline-none focus:border-[#e9c176]"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-slate-300 mb-1 font-semibold">Deskripsi Singkat</label>
                 <textarea
@@ -733,6 +959,50 @@ export default function AdminEventsPage() {
                     onChange={(e) => setEditingEvent({ ...editingEvent, poster_url: e.target.value })}
                     className="w-full bg-[#0a1424] border border-white/10 rounded-xl p-3 text-white outline-none focus:border-[#e9c176]"
                   />
+                </div>
+              </div>
+
+              {/* Dokumen Pendukung (Juknis, Buku Pedoman, Peraturan) */}
+              <div className="bg-[#0a1424]/80 border border-white/10 rounded-2xl p-4 space-y-3">
+                <div className="flex items-center gap-2 text-white font-semibold">
+                  <FileText className="w-4 h-4 text-[#e9c176]" />
+                  <span>Dokumen Pendukung Event (Juknis, Pedoman & Peraturan)</span>
+                </div>
+                <p className="text-slate-400 text-[11px] leading-relaxed">
+                  Masukkan URL berkas (Google Drive / direct PDF link). Jika kolom dikosongkan, tombol unduh dokumen tersebut akan otomatis disembunyikan pada halaman publik event.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                  <div>
+                    <label className="block text-slate-300 mb-1 font-semibold text-[11px]">Link Juknis (PDF/Drive)</label>
+                    <input
+                      type="text"
+                      value={editingEvent.juknis_url || ''}
+                      onChange={(e) => setEditingEvent({ ...editingEvent, juknis_url: e.target.value })}
+                      placeholder="https://drive.google.com/..."
+                      className="w-full bg-[#12233c] border border-white/10 rounded-xl p-3 text-white outline-none focus:border-[#e9c176]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-300 mb-1 font-semibold text-[11px]">Buku Pedoman</label>
+                    <input
+                      type="text"
+                      value={editingEvent.guide_book_url || ''}
+                      onChange={(e) => setEditingEvent({ ...editingEvent, guide_book_url: e.target.value })}
+                      placeholder="https://drive.google.com/..."
+                      className="w-full bg-[#12233c] border border-white/10 rounded-xl p-3 text-white outline-none focus:border-[#e9c176]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-300 mb-1 font-semibold text-[11px]">Peraturan</label>
+                    <input
+                      type="text"
+                      value={editingEvent.rules_url || ''}
+                      onChange={(e) => setEditingEvent({ ...editingEvent, rules_url: e.target.value })}
+                      placeholder="https://drive.google.com/..."
+                      className="w-full bg-[#12233c] border border-white/10 rounded-xl p-3 text-white outline-none focus:border-[#e9c176]"
+                    />
+                  </div>
                 </div>
               </div>
 

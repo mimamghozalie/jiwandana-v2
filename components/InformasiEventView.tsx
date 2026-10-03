@@ -2,7 +2,6 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
-import eventsData from '@/data/events.json';
 import { EventItem } from '@/lib/types';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -180,7 +179,7 @@ interface InformasiEventViewProps {
 }
 
 export default function InformasiEventView({ initialEvents }: InformasiEventViewProps = {}) {
-  const [events, setEvents] = useState<EventItem[]>(initialEvents || (eventsData as unknown as EventItem[]));
+  const [events, setEvents] = useState<EventItem[]>(initialEvents || []);
 
   useEffect(() => {
     // Always refresh client-side to ensure latest Supabase changes are reflected

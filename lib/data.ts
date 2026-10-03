@@ -1,8 +1,6 @@
 import { EventItem, PortfolioItem, TestimonialItem, ServiceItem } from './types';
 import portfoliosData from '@/data/portfolios.json';
-import eventsData from '@/data/events.json';
-
-export const initialEvents: EventItem[] = eventsData as unknown as EventItem[];
+export const initialEvents: EventItem[] = [];
 
 
 export const initialPortfolios: PortfolioItem[] = portfoliosData as unknown as PortfolioItem[];
