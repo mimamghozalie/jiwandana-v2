@@ -93,7 +93,11 @@ export async function POST(request: NextRequest) {
     // 3. Biaya Admin Rp 2.000 per orang untuk pendaftaran kelompok Excel
     const ADMIN_FEE_PER_PERSON = 2000;
     const ADMIN_FEE = evaluatedParticipants.length * ADMIN_FEE_PER_PERSON;
-    const amountToPay = subtotalTickets + ADMIN_FEE;
+    const targetTotalPayment = subtotalTickets + ADMIN_FEE;
+
+    // Tx fee gateway: 0.7% + Rp 300
+    const estimatedTxFee = Math.round(targetTotalPayment * 0.007 + 300);
+    const amountToSend = Math.max(1000, Math.round((targetTotalPayment - 300) / 1.007));
 
     // 4. Generate unique Bulk Order ID
     const orderId = `TR-BULK-${Date.now().toString().slice(-6)}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
@@ -101,7 +105,7 @@ export async function POST(request: NextRequest) {
     // 5. Create Pakasir transaction for the entire group
     const transaction = await createPakasirTransaction(orderId, {
       method: (payment_method || 'qris') as any,
-      amount: amountToPay,
+      amount: amountToSend,
     });
 
     const defaultExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
@@ -111,8 +115,9 @@ export async function POST(request: NextRequest) {
       (transaction as any).expiry_time ||
       defaultExpiry;
 
-    const gatewayFee = transaction.fee || 0;
-    const totalFee = ADMIN_FEE + gatewayFee;
+    const gatewayFee = transaction.fee || estimatedTxFee;
+    const adminProfit = Math.max(0, ADMIN_FEE - gatewayFee);
+    const finalTotalPayment = transaction.total_payment || targetTotalPayment;
 
     // 6. Batch Insert participants into trailrun_registrations
     const insertPayload = evaluatedParticipants.map((p) => ({
@@ -153,8 +158,8 @@ export async function POST(request: NextRequest) {
       order_id: orderId,
       txn_id: transaction.txn_id,
       amount: subtotalTickets,
-      fee: totalFee,
-      total_payment: transaction.total_payment,
+      fee: ADMIN_FEE,
+      total_payment: finalTotalPayment,
       payment_method: transaction.payment_method,
       qr_string: transaction.qr_string || null,
       va_number: transaction.va_number || null,
@@ -162,19 +167,26 @@ export async function POST(request: NextRequest) {
       expired_at: expiredAt,
       is_sandbox: transaction.is_sandbox ?? true,
       status: 'pending',
+      admin_fee: ADMIN_FEE,
+      gateway_fee: gatewayFee,
+      admin_profit: adminProfit,
     }));
 
     // If batch mapping fails, insert at least 1 record with firstRegId
     if (paymentRecords.length > 0) {
-      await supabase.from('trailrun_payments').insert(paymentRecords);
+      const { error: insErr } = await supabase.from('trailrun_payments').insert(paymentRecords);
+      if (insErr) {
+        const baseRecords = paymentRecords.map(({ admin_fee, gateway_fee, admin_profit, ...rest }) => rest);
+        await supabase.from('trailrun_payments').insert(baseRecords);
+      }
     } else {
-      await supabase.from('trailrun_payments').insert([{
+      const singleRecord = {
         registration_id: firstRegId,
         order_id: orderId,
         txn_id: transaction.txn_id,
         amount: subtotalTickets,
-        fee: totalFee,
-        total_payment: transaction.total_payment,
+        fee: ADMIN_FEE,
+        total_payment: finalTotalPayment,
         payment_method: transaction.payment_method,
         qr_string: transaction.qr_string || null,
         va_number: transaction.va_number || null,
@@ -182,7 +194,8 @@ export async function POST(request: NextRequest) {
         expired_at: expiredAt,
         is_sandbox: transaction.is_sandbox ?? true,
         status: 'pending',
-      }]);
+      };
+      await supabase.from('trailrun_payments').insert([singleRecord]);
     }
 
     return NextResponse.json({
@@ -195,8 +208,9 @@ export async function POST(request: NextRequest) {
         admin_fee_per_person: ADMIN_FEE_PER_PERSON,
         admin_fee: ADMIN_FEE,
         gateway_fee: gatewayFee,
-        fee: totalFee,
-        total_payment: transaction.total_payment,
+        admin_profit: adminProfit,
+        fee: ADMIN_FEE,
+        total_payment: finalTotalPayment,
         payment_method: transaction.payment_method,
         qr_string: transaction.qr_string,
         va_number: transaction.va_number,

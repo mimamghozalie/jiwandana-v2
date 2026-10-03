@@ -56,17 +56,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Biaya Admin Rp 5.000
+    // Biaya Admin Flat Rp 5.000 ke peserta
     const ADMIN_FEE = 5000;
-    const amountToPay = baseAmount + ADMIN_FEE;
+    const targetTotalPayment = baseAmount + ADMIN_FEE; // Contoh: 240.000 + 5.000 = 245.000
+
+    // Biaya transaksi gateway: 0.7% + Rp 300
+    // Agar Pakasir menghasilkan QRIS/VA dengan nominal pas targetTotalPayment (245.000),
+    // kirim amount bersih ke Pakasir jika gateway menambahkan fee
+    const estimatedTxFee = Math.round(targetTotalPayment * 0.007 + 300);
+    const amountToSend = Math.max(1000, Math.round((targetTotalPayment - 300) / 1.007));
 
     // Generate unique order ID
     const orderId = `TR-${registration_id.slice(0, 8).toUpperCase()}-${Date.now()}`;
 
-    // Create transaction via Pakasir API v2 with ticket price + admin fee
+    // Create transaction via Pakasir API v2
     const transaction = await createPakasirTransaction(orderId, {
       method: payment_method,
-      amount: amountToPay,
+      amount: amountToSend,
     });
 
     // Default expired_at fallback: 24 hours from now if Pakasir does not return it
@@ -77,17 +83,23 @@ export async function POST(request: NextRequest) {
       (transaction as any).expiry_time ||
       defaultExpiry;
 
-    const gatewayFee = transaction.fee || 0;
-    const totalFee = ADMIN_FEE + gatewayFee;
+    // Tx fee riil gateway (atau fallback estimasi 0.7% + 300)
+    const gatewayFee = transaction.fee || estimatedTxFee;
 
-    // Save payment record to Supabase
-    await supabase.from('trailrun_payments').insert([{
+    // Keuntungan fee admin bersih (Rp 5.000 - tx fee)
+    const adminProfit = Math.max(0, ADMIN_FEE - gatewayFee);
+
+    // Total bayar final yang dibayar peserta: flat subtotal + admin fee Rp 5.000
+    const finalTotalPayment = transaction.total_payment || targetTotalPayment;
+
+    // Base payment record
+    const basePaymentRecord = {
       registration_id,
       order_id: orderId,
       txn_id: transaction.txn_id,
       amount: baseAmount,
-      fee: totalFee,
-      total_payment: transaction.total_payment,
+      fee: ADMIN_FEE, // Flat Rp 5.000
+      total_payment: finalTotalPayment,
       payment_method: transaction.payment_method,
       qr_string: transaction.qr_string || null,
       va_number: transaction.va_number || null,
@@ -95,7 +107,22 @@ export async function POST(request: NextRequest) {
       expired_at: expiredAt,
       is_sandbox: transaction.is_sandbox ?? true,
       status: 'pending',
-    }]);
+    };
+
+    // Extended record dengan pencatatan profit admin & fee gateway
+    const extendedPaymentRecord = {
+      ...basePaymentRecord,
+      admin_fee: ADMIN_FEE,
+      gateway_fee: gatewayFee,
+      admin_profit: adminProfit,
+    };
+
+    // Save payment record to Supabase (dengan graceful fallback jika kolom profit belum ada)
+    const { error: insertError } = await supabase.from('trailrun_payments').insert([extendedPaymentRecord]);
+    if (insertError) {
+      console.warn('Fallback insert without extra columns:', insertError.message);
+      await supabase.from('trailrun_payments').insert([basePaymentRecord]);
+    }
 
     // Update registration status
     await supabase
@@ -109,10 +136,11 @@ export async function POST(request: NextRequest) {
         txn_id: transaction.txn_id,
         order_id: orderId,
         amount: baseAmount,
-        total_payment: transaction.total_payment,
-        fee: totalFee,
+        total_payment: finalTotalPayment,
+        fee: ADMIN_FEE, // Flat Rp 5.000
         admin_fee: ADMIN_FEE,
         gateway_fee: gatewayFee,
+        admin_profit: adminProfit,
         payment_method: transaction.payment_method,
         qr_string: transaction.qr_string,
         va_number: transaction.va_number,

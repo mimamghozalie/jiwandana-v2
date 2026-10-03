@@ -139,26 +139,82 @@ export function getActivePricingTier(
 }
 
 /**
- * Converts a numeric price amount to a short display string (e.g. 320000 -> "320k", 250000 -> "250k", 1500000 -> "1.5M").
+ * Converts a numeric price amount to a short display string (e.g. 240000 -> "240k", 320000 -> "320k", 1500000 -> "1.5M").
  * Menghilangkan keharusan input ganda antara "amount" dan "display".
  */
 export function formatAmountToDisplay(amount: number): string {
   if (!amount || isNaN(amount)) return '0';
-  if (amount >= 1000000) {
-    const m = amount / 1000000;
+  let val = amount;
+  // Fallback pengaman jika tidak sengaja terinput angka dalam skala ratusan/ribuan (misal 2400):
+  if (val >= 100 && val < 1000) {
+    val = val * 1000;
+  } else if (val >= 1000 && val < 10000 && val % 100 === 0) {
+    val = val * 100;
+  }
+
+  if (val >= 1000000) {
+    const m = val / 1000000;
     return `${Number.isInteger(m) ? m : m.toFixed(1).replace(/\.0$/, '')}M`;
   }
-  if (amount >= 1000) {
-    const k = amount / 1000;
+  if (val >= 1000) {
+    const k = val / 1000;
     return `${Number.isInteger(k) ? k : k.toFixed(1).replace(/\.0$/, '')}k`;
   }
-  return String(amount);
+  return String(val);
 }
 
 /**
- * Alias fungsi untuk konversi amount ke display (contoh: 320000 -> "320k")
+ * Alias fungsi untuk konversi amount ke display (contoh: 240000 -> "240k")
  */
 export const convertAmountToDisplay = formatAmountToDisplay;
+
+/**
+ * Mengambil harga awal (Mulai / Starting price) untuk kategori dari data/trailrun-pricing.json
+ * Mengonversi amount (misal 240000) ke format ringkas (misal "240k").
+ */
+export function getCategoryStartingPrice(categoryInput: string, pricingInfo?: any): string {
+  // Jika ada data sesi aktif dari pricingInfoMap
+  if (pricingInfo?.display) {
+    return pricingInfo.display;
+  }
+  if (pricingInfo?.amount) {
+    return formatAmountToDisplay(pricingInfo.amount);
+  }
+
+  const catKey = normalizeCategoryKey(categoryInput);
+  const catData = pricingConfig.categories[catKey];
+  if (!catData?.prices) return '240k';
+
+  // Mengambil harga early bird sebagai acuan harga mulai
+  const earlyAmount = (catData.prices.early as any)?.amount;
+  if (earlyAmount) {
+    return formatAmountToDisplay(earlyAmount);
+  }
+
+  return '240k';
+}
+
+/**
+ * Mengambil seluruh tier prices untuk kategori langsung dari data/trailrun-pricing.json
+ * Output: { early: "240k", presale: "270k", regular: "330k" }
+ */
+export function getCategoryPricesFromConfig(categoryInput: string): {
+  early: string;
+  presale: string;
+  regular: string;
+} {
+  const catKey = normalizeCategoryKey(categoryInput);
+  const catData = pricingConfig.categories[catKey];
+  if (!catData?.prices) {
+    return { early: '240k', presale: '270k', regular: '330k' };
+  }
+
+  return {
+    early: formatAmountToDisplay((catData.prices.early as any)?.amount ?? 0),
+    presale: formatAmountToDisplay((catData.prices.presale as any)?.amount ?? 0),
+    regular: formatAmountToDisplay((catData.prices.regular as any)?.amount ?? 0),
+  };
+}
 
 /**
  * Formats a numeric price amount into standard Rupiah currency (e.g. 320000 -> "Rp 320.000")

@@ -300,7 +300,11 @@ export default function DaftarTrailrunClient() {
   };
 
   const goBack = () => {
-    if (currentStep === 4 && paymentStatus === 'pending') return;
+    if (currentStep === 4) {
+      if (paymentStatus === 'completed') return;
+      setPaymentData(null);
+      setPaymentStatus('idle');
+    }
     setCurrentStep((prev) => Math.max(prev - 1, 1) as FormStep);
     setErrorMsg('');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -487,11 +491,10 @@ export default function DaftarTrailrunClient() {
           <button
             type="button"
             onClick={() => setRegisterMode('individual')}
-            className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
-              registerMode === 'individual'
+            className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${registerMode === 'individual'
                 ? 'bg-[#C9A227] text-[#0d1c32] shadow-xs'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-            }`}
+              }`}
           >
             <span className="material-symbols-outlined text-sm">person</span>
             <span>Individu</span>
@@ -499,11 +502,10 @@ export default function DaftarTrailrunClient() {
           <button
             type="button"
             onClick={() => setRegisterMode('bulk')}
-            className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
-              registerMode === 'bulk'
+            className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${registerMode === 'bulk'
                 ? 'bg-[#C9A227] text-[#0d1c32] shadow-xs'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-            }`}
+              }`}
           >
             <span className="material-symbols-outlined text-sm">groups</span>
             <span>Kolektif / Grup (Min. 5)</span>
@@ -534,6 +536,7 @@ export default function DaftarTrailrunClient() {
                     categories={categories}
                     selectedKategori={formData.kategori}
                     onSelect={handleSelectCategory}
+                    pricingInfoMap={pricingInfoMap}
                   />
                 )}
 
@@ -577,6 +580,7 @@ export default function DaftarTrailrunClient() {
                       setPaymentData(null);
                       setPaymentStatus('idle');
                     }}
+                    onBack={goBack}
                     formatCurrency={formatCurrency}
                     formatExpiry={formatExpiry}
                   />
@@ -584,16 +588,21 @@ export default function DaftarTrailrunClient() {
 
                 {/* ===== FOOTER NAVIGATION ===== */}
                 <div className="px-6 sm:px-8 py-5 bg-[#f8f8f8] border-t border-black/5 flex items-center justify-between gap-3">
-                  {currentStep > 1 && currentStep < 4 ? (
-                    <button
-                      type="button"
-                      onClick={goBack}
-                      className="px-5 py-3 bg-white border border-black/10 text-slate-700 rounded-xl font-semibold text-xs uppercase tracking-wider hover:border-[#C9A227] hover:text-[#C9A227] transition-all flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <span className="material-symbols-outlined text-sm">arrow_back</span>
-                      <span>Kembali</span>
-                    </button>
-                  ) : currentStep === 1 ? (
+                  {currentStep > 1 ? (
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={goBack}
+                        disabled={paymentStatus === 'completed'}
+                        className="px-5 py-3 bg-white border border-black/10 text-slate-700 rounded-xl font-semibold text-xs uppercase tracking-wider hover:border-[#C9A227] hover:text-[#C9A227] transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      >
+                        <span className="material-symbols-outlined text-sm">arrow_back</span>
+                        <span>{currentStep === 4 && paymentData ? 'Kembali ke Formulir' : 'Kembali'}</span>
+                      </button>
+
+
+                    </div>
+                  ) : (
                     <Link
                       href="/trailrun"
                       className="px-5 py-3 bg-white border border-black/10 text-slate-700 rounded-xl font-semibold text-xs uppercase tracking-wider hover:border-[#C9A227] hover:text-[#C9A227] transition-all flex items-center gap-1.5"
@@ -601,20 +610,6 @@ export default function DaftarTrailrunClient() {
                       <span className="material-symbols-outlined text-sm">arrow_back</span>
                       <span>Halaman Trailrun</span>
                     </Link>
-                  ) : currentStep === 4 && paymentData && paymentStatus !== 'completed' ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setPaymentData(null);
-                        setPaymentStatus('idle');
-                      }}
-                      className="px-5 py-3 bg-white border border-black/10 text-slate-700 rounded-xl font-semibold text-xs uppercase tracking-wider hover:border-[#C9A227] hover:text-[#C9A227] transition-all flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <span className="material-symbols-outlined text-sm">swap_horiz</span>
-                      <span>Ganti Metode</span>
-                    </button>
-                  ) : (
-                    <div />
                   )}
 
                   {currentStep < 3 && (

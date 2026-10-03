@@ -58,6 +58,9 @@ interface TrailrunRow {
     order_id?: string;
     amount?: number;
     fee?: number;
+    admin_fee?: number;
+    gateway_fee?: number;
+    admin_profit?: number;
     total_payment?: number;
     payment_method?: string;
     status?: string;
@@ -65,6 +68,35 @@ interface TrailrunRow {
     is_sandbox?: boolean;
   };
 }
+
+/**
+ * Helper untuk menghitung rincian finansial per pendaftar:
+ * - totalPayment: Total yang dibayar peserta (misal 245.000)
+ * - adminFee: Biaya admin flat ke peserta (Rp 5.000)
+ * - gatewayFee: Biaya potongan transaksi gateway (0.7% + Rp 300)
+ * - adminProfit: Keuntungan bersih fee admin (adminFee - gatewayFee)
+ * - baseAmount: Harga tiket dasar (totalPayment - adminFee)
+ */
+const getRowFinancials = (row: TrailrunRow) => {
+  const totalPayment = row.payment?.total_payment || row.payment?.amount || 0;
+  const adminFee = row.payment?.admin_fee ?? (row.payment?.fee ?? 5000);
+  
+  // Jika gateway_fee belum tersimpan, hitung rumus gateway: 0.7% + Rp 300
+  const gatewayFee =
+    row.payment?.gateway_fee ??
+    (totalPayment > 0 ? Math.round(totalPayment * 0.007 + 300) : 0);
+
+  // Profit fee admin = adminFee - gatewayFee
+  const adminProfit =
+    row.payment?.admin_profit ??
+    Math.max(0, adminFee - gatewayFee);
+
+  const baseAmount =
+    row.payment?.amount ??
+    Math.max(0, totalPayment - adminFee);
+
+  return { totalPayment, adminFee, gatewayFee, adminProfit, baseAmount };
+};
 
 interface ColumnConfig {
   key: string;
@@ -79,10 +111,13 @@ const ALL_COLUMNS: ColumnConfig[] = [
   { key: 'kategori', label: 'Kategori', category: 'Utama', defaultVisible: true },
   { key: 'status', label: 'Status Bayar', category: 'Pembayaran', defaultVisible: true },
   { key: 'total_payment', label: 'Nominal Bayar', category: 'Pembayaran', defaultVisible: true },
+  { key: 'admin_profit', label: 'Profit Fee Admin', category: 'Pembayaran', defaultVisible: true },
   { key: 'payment_method', label: 'Metode Bayar', category: 'Pembayaran', defaultVisible: true },
   { key: 'email', label: 'Email', category: 'Profil & Kontak', defaultVisible: true },
   { key: 'no_hp', label: 'WhatsApp / HP', category: 'Profil & Kontak', defaultVisible: true },
   { key: 'created_at', label: 'Waktu Daftar', category: 'Utama', defaultVisible: true },
+  { key: 'admin_fee', label: 'Biaya Admin', category: 'Pembayaran', defaultVisible: false },
+  { key: 'gateway_fee', label: 'Biaya Tx Gateway', category: 'Pembayaran', defaultVisible: false },
   { key: 'jenis_kelamin', label: 'Gender', category: 'Profil & Kontak', defaultVisible: false },
   { key: 'tanggal_lahir', label: 'Tgl Lahir', category: 'Profil & Kontak', defaultVisible: false },
   { key: 'nama_komunitas', label: 'Komunitas / Klub', category: 'Profil & Kontak', defaultVisible: false },
@@ -121,9 +156,12 @@ const SAMPLE_TRAILRUN_DATA: TrailrunRow[] = [
     payment: {
       txn_id: 'TXN-7K-001',
       order_id: 'ORD-TR-7K-0142',
-      amount: 270000,
-      fee: 2500,
-      total_payment: 272500,
+      amount: 240000,
+      fee: 5000,
+      admin_fee: 5000,
+      gateway_fee: 2015,
+      admin_profit: 2985,
+      total_payment: 245000,
       payment_method: 'qris',
       status: 'completed',
       completed_at: new Date(Date.now() - 3600000 * 1.8).toISOString(),
@@ -153,8 +191,11 @@ const SAMPLE_TRAILRUN_DATA: TrailrunRow[] = [
       txn_id: 'TXN-3K-002',
       order_id: 'ORD-TR-3K-0089',
       amount: 280000,
-      fee: 4000,
-      total_payment: 284000,
+      fee: 5000,
+      admin_fee: 5000,
+      gateway_fee: 2295,
+      admin_profit: 2705,
+      total_payment: 285000,
       payment_method: 'bri_va',
       status: 'completed',
       completed_at: new Date(Date.now() - 3600000 * 4.5).toISOString(),
@@ -183,9 +224,12 @@ const SAMPLE_TRAILRUN_DATA: TrailrunRow[] = [
     payment: {
       txn_id: 'TXN-7K-003',
       order_id: 'ORD-TR-7K-0205',
-      amount: 270000,
-      fee: 2500,
-      total_payment: 272500,
+      amount: 240000,
+      fee: 5000,
+      admin_fee: 5000,
+      gateway_fee: 2015,
+      admin_profit: 2985,
+      total_payment: 245000,
       payment_method: 'qris',
       status: 'pending',
       is_sandbox: false,
@@ -214,8 +258,11 @@ const SAMPLE_TRAILRUN_DATA: TrailrunRow[] = [
       txn_id: 'TXN-3K-004',
       order_id: 'ORD-TR-3K-0012',
       amount: 280000,
-      fee: 4000,
-      total_payment: 284000,
+      fee: 5000,
+      admin_fee: 5000,
+      gateway_fee: 2295,
+      admin_profit: 2705,
+      total_payment: 285000,
       payment_method: 'mandiri_va',
       status: 'pending',
       is_sandbox: false,
@@ -468,15 +515,27 @@ export default function AdminTrailrunPage() {
     // Deduplicate transaction amounts if multiple participants share the same txn_id / order_id (bulk registration)
     const seenPaidTxn = new Set<string>();
     let totalRevenue = 0;
+    let totalAdminProfit = 0;
+    let totalAdminFee = 0;
+    let totalGatewayFee = 0;
+
     for (const r of paidRows) {
       const txnKey = r.payment?.txn_id || r.payment?.order_id;
+      const fin = getRowFinancials(r);
+
       if (txnKey) {
         if (!seenPaidTxn.has(txnKey)) {
           seenPaidTxn.add(txnKey);
-          totalRevenue += (r.payment?.total_payment || r.payment?.amount || 0);
+          totalRevenue += fin.totalPayment;
+          totalAdminProfit += fin.adminProfit;
+          totalAdminFee += fin.adminFee;
+          totalGatewayFee += fin.gatewayFee;
         }
       } else {
-        totalRevenue += (r.payment?.total_payment || r.payment?.amount || 0);
+        totalRevenue += fin.totalPayment;
+        totalAdminProfit += fin.adminProfit;
+        totalAdminFee += fin.adminFee;
+        totalGatewayFee += fin.gatewayFee;
       }
     }
 
@@ -492,12 +551,21 @@ export default function AdminTrailrunPage() {
         }
       } else {
         const cat = (r.kategori || '').toLowerCase();
-        const fallbackPrice = cat.includes('12') ? 290000 : cat.includes('7') ? 240000 : 250000;
+        const fallbackPrice = (cat.includes('12') ? 290000 : cat.includes('7') ? 240000 : 250000) + 5000;
         pendingRevenue += (r.payment?.total_payment || r.payment?.amount || fallbackPrice);
       }
     }
 
-    return { total, paidCount, pendingCount, totalRevenue, pendingRevenue };
+    return {
+      total,
+      paidCount,
+      pendingCount,
+      totalRevenue,
+      pendingRevenue,
+      totalAdminProfit,
+      totalAdminFee,
+      totalGatewayFee,
+    };
   }, [data]);
 
   // Export to Excel (.xlsx)
@@ -510,6 +578,10 @@ export default function AdminTrailrunPage() {
       'Nama Peserta',
       'Kategori',
       'Status Pembayaran',
+      'Harga Tiket (Rp)',
+      'Biaya Admin (Rp)',
+      'Biaya Tx Gateway (Rp)',
+      'Profit Fee Admin (Rp)',
       'Total Bayar (Rp)',
       'Metode Bayar',
       'Email',
@@ -529,30 +601,37 @@ export default function AdminTrailrunPage() {
       'Waktu Pendaftaran',
     ];
 
-    const dataRows = filteredData.map((row, idx) => [
-      idx + 1,
-      row.no_bib || '-',
-      row.nama || '-',
-      row.kategori || '-',
-      row.status === 'paid' ? 'Lunas (Paid)' : row.status === 'confirmed' ? 'Dikonfirmasi' : 'Menunggu Bayar',
-      row.payment?.total_payment || row.payment?.amount || 0,
-      row.payment?.payment_method?.toUpperCase() || '-',
-      row.email || '-',
-      row.no_hp || '-',
-      row.jenis_kelamin || '-',
-      row.tanggal_lahir || '-',
-      row.kewarganegaraan || 'Indonesia',
-      row.nama_komunitas || '-',
-      row.kota || '-',
-      row.provinsi || '-',
-      row.alamat || '-',
-      row.golongan_darah || '-',
-      row.riwayat_medis || '-',
-      row.kontak_darurat || '-',
-      row.payment?.txn_id || '-',
-      row.payment?.order_id || '-',
-      row.created_at ? new Date(row.created_at).toLocaleString('id-ID') : '-',
-    ]);
+    const dataRows = filteredData.map((row, idx) => {
+      const fin = getRowFinancials(row);
+      return [
+        idx + 1,
+        row.no_bib || '-',
+        row.nama || '-',
+        row.kategori || '-',
+        row.status === 'paid' ? 'Lunas (Paid)' : row.status === 'confirmed' ? 'Dikonfirmasi' : 'Menunggu Bayar',
+        fin.baseAmount,
+        fin.adminFee,
+        fin.gatewayFee,
+        fin.adminProfit,
+        fin.totalPayment,
+        row.payment?.payment_method?.toUpperCase() || '-',
+        row.email || '-',
+        row.no_hp || '-',
+        row.jenis_kelamin || '-',
+        row.tanggal_lahir || '-',
+        row.kewarganegaraan || 'Indonesia',
+        row.nama_komunitas || '-',
+        row.kota || '-',
+        row.provinsi || '-',
+        row.alamat || '-',
+        row.golongan_darah || '-',
+        row.riwayat_medis || '-',
+        row.kontak_darurat || '-',
+        row.payment?.txn_id || '-',
+        row.payment?.order_id || '-',
+        row.created_at ? new Date(row.created_at).toLocaleString('id-ID') : '-',
+      ];
+    });
 
     const worksheetData = [headers, ...dataRows];
     const ws = XLSX.utils.aoa_to_sheet(worksheetData);
@@ -563,6 +642,10 @@ export default function AdminTrailrunPage() {
       { wch: 26 },  // Nama Peserta
       { wch: 14 },  // Kategori
       { wch: 20 },  // Status Pembayaran
+      { wch: 16 },  // Harga Tiket
+      { wch: 16 },  // Biaya Admin
+      { wch: 18 },  // Biaya Tx Gateway
+      { wch: 18 },  // Profit Admin
       { wch: 18 },  // Total Bayar
       { wch: 16 },  // Metode Bayar
       { wch: 28 },  // Email
@@ -598,6 +681,7 @@ export default function AdminTrailrunPage() {
     const headerRow = activeCols.map((c) => `"${c.label}"`).join(',');
 
     const rows = filteredData.map((row) => {
+      const fin = getRowFinancials(row);
       return activeCols
         .map((col) => {
           let val = '';
@@ -615,9 +699,16 @@ export default function AdminTrailrunPage() {
               val = row.status === 'paid' ? 'LUNAS (PAID)' : row.status === 'confirmed' ? 'Dikonfirmasi' : 'Menunggu Bayar';
               break;
             case 'total_payment':
-              val = row.payment?.total_payment
-                ? `Rp ${row.payment.total_payment.toLocaleString('id-ID')}`
-                : '-';
+              val = fin.totalPayment > 0 ? `Rp ${fin.totalPayment.toLocaleString('id-ID')}` : '-';
+              break;
+            case 'admin_profit':
+              val = `Rp ${fin.adminProfit.toLocaleString('id-ID')}`;
+              break;
+            case 'admin_fee':
+              val = `Rp ${fin.adminFee.toLocaleString('id-ID')}`;
+              break;
+            case 'gateway_fee':
+              val = `Rp ${fin.gatewayFee.toLocaleString('id-ID')}`;
               break;
             case 'payment_method':
               val = row.payment?.payment_method?.toUpperCase() || '-';
@@ -800,15 +891,15 @@ export default function AdminTrailrunPage() {
           </div>
         </div>
 
-        {/* Card 4: Total Penerimaan */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-[#0a1424] border border-[#e9c176]/30 space-y-2 shadow-sm flex flex-col justify-between">
+        {/* Card 4: Total Penerimaan & Profit Fee Admin */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-[#0a1424] border border-[#e9c176]/30 space-y-2.5 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-[11px] uppercase tracking-wider text-[#e9c176] font-semibold flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5" />
               Total Penerimaan
             </span>
             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              Sudah Dibayar
+              {metrics.paidCount} Lunas
             </span>
           </div>
           <div>
@@ -817,14 +908,20 @@ export default function AdminTrailrunPage() {
               {formatCurrency(metrics.totalRevenue)}
             </div>
           </div>
-          <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[11px]">
-            <span className="text-slate-400 flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span>Pendaftaran Lunas:</span>
-            </span>
-            <strong className="text-emerald-400 font-bold font-mono">
-              {metrics.paidCount} Peserta
-            </strong>
+          <div className="pt-2 border-t border-white/10 space-y-1">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="text-emerald-400 flex items-center gap-1 font-semibold">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span>Profit Fee Admin:</span>
+              </span>
+              <strong className="text-emerald-400 font-bold font-mono">
+                +{formatCurrency(metrics.totalAdminProfit)}
+              </strong>
+            </div>
+            <div className="flex items-center justify-between text-[10px] text-slate-400">
+              <span>Admin: {formatCurrency(metrics.totalAdminFee)}</span>
+              <span>Tx Gateway: -{formatCurrency(metrics.totalGatewayFee)}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -1024,6 +1121,9 @@ export default function AdminTrailrunPage() {
                 {visibleColumns.includes('kategori') && <th className="py-3.5 px-4">Kategori Lomba</th>}
                 {visibleColumns.includes('status') && <th className="py-3.5 px-4">Status Bayar</th>}
                 {visibleColumns.includes('total_payment') && <th className="py-3.5 px-4">Nominal Bayar</th>}
+                {visibleColumns.includes('admin_profit') && <th className="py-3.5 px-4 text-emerald-400">Profit Admin</th>}
+                {visibleColumns.includes('admin_fee') && <th className="py-3.5 px-4">Biaya Admin</th>}
+                {visibleColumns.includes('gateway_fee') && <th className="py-3.5 px-4">Tx Fee Gateway</th>}
                 {visibleColumns.includes('payment_method') && <th className="py-3.5 px-4">Metode Bayar</th>}
                 {visibleColumns.includes('email') && <th className="py-3.5 px-4">Email</th>}
                 {visibleColumns.includes('no_hp') && <th className="py-3.5 px-4">WhatsApp / HP</th>}
@@ -1135,6 +1235,35 @@ export default function AdminTrailrunPage() {
                           ) : (
                             <span className="text-slate-500">-</span>
                           )}
+                        </td>
+                      )}
+
+                      {/* Profit Fee Admin */}
+                      {visibleColumns.includes('admin_profit') && (
+                        <td className="py-3.5 px-4 whitespace-nowrap font-mono">
+                          {isPaid ? (
+                            <span className="inline-flex items-center gap-1 font-bold text-emerald-400 text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/25">
+                              +{formatCurrency(getRowFinancials(row).adminProfit)}
+                            </span>
+                          ) : (
+                            <span className="text-slate-500 text-[11px]">
+                              ~{formatCurrency(getRowFinancials(row).adminProfit)}
+                            </span>
+                          )}
+                        </td>
+                      )}
+
+                      {/* Biaya Admin */}
+                      {visibleColumns.includes('admin_fee') && (
+                        <td className="py-3.5 px-4 whitespace-nowrap text-slate-300 font-mono text-[11px]">
+                          {formatCurrency(getRowFinancials(row).adminFee)}
+                        </td>
+                      )}
+
+                      {/* Biaya Tx Gateway */}
+                      {visibleColumns.includes('gateway_fee') && (
+                        <td className="py-3.5 px-4 whitespace-nowrap text-rose-300/80 font-mono text-[11px]">
+                          -{formatCurrency(getRowFinancials(row).gatewayFee)}
                         </td>
                       )}
 
@@ -1582,40 +1711,92 @@ export default function AdminTrailrunPage() {
 
               {/* Rincian Transaksi */}
               <div className="p-4 rounded-xl bg-white/[0.03] border border-white/5 space-y-3 sm:col-span-2">
-                <h4 className="font-bold text-slate-300 text-xs flex items-center gap-2 uppercase tracking-wider">
-                  <CreditCard className="w-3.5 h-3.5 text-[#e9c176]" />
-                  Rincian Transaksi Payment Gateway
-                </h4>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-slate-300 pt-1">
-                  <div className="p-2.5 rounded-lg bg-white/5">
-                    <span className="text-[10px] text-slate-400 uppercase block">Metode</span>
-                    <span className="font-bold uppercase text-white">
-                      {selectedRow.payment?.payment_method?.replace('_', ' ') || '-'}
-                    </span>
-                  </div>
-                  <div className="p-2.5 rounded-lg bg-white/5">
-                    <span className="text-[10px] text-slate-400 uppercase block">Total Bayar</span>
-                    <span className="font-bold text-[#e9c176]">
-                      {selectedRow.payment?.total_payment
-                        ? formatCurrency(selectedRow.payment.total_payment)
-                        : '-'}
-                    </span>
-                  </div>
-                  <div className="p-2.5 rounded-lg bg-white/5">
-                    <span className="text-[10px] text-slate-400 uppercase block">Txn ID</span>
-                    <span className="text-[11px] text-white truncate block" title={selectedRow.payment?.txn_id}>
-                      {selectedRow.payment?.txn_id || '-'}
-                    </span>
-                  </div>
-                  <div className="p-2.5 rounded-lg bg-white/5">
-                    <span className="text-[10px] text-slate-400 uppercase block">Waktu Selesai</span>
-                    <span className="text-[11px] text-slate-300 block">
-                      {selectedRow.payment?.completed_at
-                        ? new Date(selectedRow.payment.completed_at).toLocaleTimeString('id-ID')
-                        : '-'}
-                    </span>
-                  </div>
+                <div className="flex items-center justify-between">
+                  <h4 className="font-bold text-slate-300 text-xs flex items-center gap-2 uppercase tracking-wider">
+                    <CreditCard className="w-3.5 h-3.5 text-[#e9c176]" />
+                    Rincian Transaksi & Fee Payment Gateway
+                  </h4>
+                  <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
+                    Fee Flat Rp 5.000
+                  </span>
                 </div>
+
+                {(() => {
+                  const fin = getRowFinancials(selectedRow);
+                  return (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-slate-300 pt-1">
+                        <div className="p-2.5 rounded-lg bg-white/5">
+                          <span className="text-[10px] text-slate-400 uppercase block">Metode</span>
+                          <span className="font-bold uppercase text-white">
+                            {selectedRow.payment?.payment_method?.replace('_', ' ') || '-'}
+                          </span>
+                        </div>
+                        <div className="p-2.5 rounded-lg bg-white/5">
+                          <span className="text-[10px] text-slate-400 uppercase block">Harga Tiket</span>
+                          <span className="font-bold text-white font-mono">
+                            {formatCurrency(fin.baseAmount)}
+                          </span>
+                        </div>
+                        <div className="p-2.5 rounded-lg bg-white/5">
+                          <span className="text-[10px] text-slate-400 uppercase block">Biaya Admin (Flat)</span>
+                          <span className="font-bold text-white font-mono">
+                            {formatCurrency(fin.adminFee)}
+                          </span>
+                        </div>
+                        <div className="p-2.5 rounded-lg bg-white/5">
+                          <span className="text-[10px] text-slate-400 uppercase block">Total Bayar Peserta</span>
+                          <span className="font-bold text-[#e9c176] font-mono">
+                            {formatCurrency(fin.totalPayment)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Profit Breakdown Box */}
+                      <div className="p-3.5 rounded-xl bg-emerald-950/20 border border-emerald-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                        <div className="space-y-0.5">
+                          <span className="text-[10px] uppercase tracking-wider text-emerald-400 font-bold block">
+                            Keuntungan Fee Admin (Profit Bersih)
+                          </span>
+                          <p className="text-slate-400 text-[11px]">
+                            Biaya Admin ({formatCurrency(fin.adminFee)}) dikurangi Biaya Tx Gateway ({formatCurrency(fin.gatewayFee)} / 0.7% + 300)
+                          </p>
+                        </div>
+                        <div className="text-left sm:text-right">
+                          <span className="text-lg font-black text-emerald-400 font-mono block">
+                            +{formatCurrency(fin.adminProfit)}
+                          </span>
+                          <span className="text-[10px] text-emerald-300/80">
+                            {selectedRow.status === 'paid' ? 'Sudah masuk profit lunas' : 'Estimasi profit saat lunas'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-slate-300 pt-1 text-[11px]">
+                        <div className="p-2.5 rounded-lg bg-white/5">
+                          <span className="text-[10px] text-slate-400 uppercase block">ID Transaksi</span>
+                          <span className="font-mono text-white truncate block" title={selectedRow.payment?.txn_id}>
+                            {selectedRow.payment?.txn_id || '-'}
+                          </span>
+                        </div>
+                        <div className="p-2.5 rounded-lg bg-white/5">
+                          <span className="text-[10px] text-slate-400 uppercase block">Order ID</span>
+                          <span className="font-mono text-white truncate block" title={selectedRow.payment?.order_id}>
+                            {selectedRow.payment?.order_id || '-'}
+                          </span>
+                        </div>
+                        <div className="p-2.5 rounded-lg bg-white/5 sm:col-span-1 col-span-2">
+                          <span className="text-[10px] text-slate-400 uppercase block">Waktu Selesai</span>
+                          <span className="text-slate-300 block">
+                            {selectedRow.payment?.completed_at
+                              ? new Date(selectedRow.payment.completed_at).toLocaleString('id-ID')
+                              : '-'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 

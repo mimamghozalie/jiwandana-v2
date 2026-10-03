@@ -14,6 +14,7 @@ interface StepPembayaranProps {
   checkingStatus: boolean;
   onCheckPaymentStatus: (isManual?: boolean) => void;
   onChangePaymentMethod: () => void;
+  onBack?: () => void;
   formatCurrency: (amount: number) => string;
   formatExpiry: (dateStr?: string | null) => string;
 }
@@ -28,19 +29,36 @@ export default function StepPembayaran({
   checkingStatus,
   onCheckPaymentStatus,
   onChangePaymentMethod,
+  onBack,
   formatCurrency,
   formatExpiry,
 }: StepPembayaranProps) {
   return (
     <div className="p-6 sm:p-8 space-y-5 animate-[fadeIn_0.4s_ease-out]">
-      <div className="flex items-center gap-3 pb-4 border-b border-black/5">
-        <div className="w-9 h-9 rounded-xl bg-[#C9A227]/10 border border-[#C9A227]/30 flex items-center justify-center text-[#C9A227]">
-          <span className="material-symbols-outlined text-lg">payments</span>
+      <div className="flex items-center justify-between pb-4 border-b border-black/5">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-[#C9A227]/10 border border-[#C9A227]/30 flex items-center justify-center text-[#C9A227]">
+            <span className="material-symbols-outlined text-lg">payments</span>
+          </div>
+          <div>
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 font-serif">Pembayaran</h2>
+            <p className="text-[11px] text-slate-500">
+              {paymentData ? 'Selesaikan pembayaran transaksi Anda' : 'Pilih metode pembayaran dan selesaikan transaksi'}
+            </p>
+          </div>
         </div>
-        <div>
-          <h2 className="text-base sm:text-lg font-bold text-slate-900 font-serif">Pembayaran</h2>
-          <p className="text-[11px] text-slate-500">Pilih metode pembayaran dan selesaikan transaksi</p>
-        </div>
+
+        {onBack && paymentStatus !== 'completed' && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="px-3.5 py-1.5 rounded-xl border border-black/10 hover:border-[#C9A227] bg-white text-slate-700 hover:text-[#C9A227] text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+            title="Kembali ke langkah sebelumnya"
+          >
+            <span className="material-symbols-outlined text-sm">arrow_back</span>
+            <span>Kembali</span>
+          </button>
+        )}
       </div>
 
       {/* Before payment created — show method selector */}
@@ -239,6 +257,18 @@ export default function StepPembayaran({
               <span className="material-symbols-outlined text-sm">swap_horiz</span>
               <span>Ganti Metode</span>
             </button>
+
+            {onBack && paymentStatus !== 'completed' && (
+              <button
+                type="button"
+                onClick={onBack}
+                className="py-3 px-4 bg-white border border-black/10 hover:border-[#C9A227] text-slate-700 hover:text-[#C9A227] rounded-xl font-semibold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                title="Batalkan tagihan ini dan kembali ke formulir pendaftaran"
+              >
+                <span className="material-symbols-outlined text-sm">arrow_back</span>
+                <span>Kembali</span>
+              </button>
+            )}
           </div>
         </div>
       )}

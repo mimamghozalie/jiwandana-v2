@@ -2,17 +2,20 @@
 
 import React from 'react';
 import { TrailrunCard } from '@/lib/types';
+import { getCategoryStartingPrice } from '@/lib/pricing';
 
 interface StepKategoriLombaProps {
   categories: TrailrunCard[];
   selectedKategori: string;
   onSelect: (kategoriId: string) => void;
+  pricingInfoMap?: Record<string, any>;
 }
 
 export default function StepKategoriLomba({
   categories,
   selectedKategori,
   onSelect,
+  pricingInfoMap,
 }: StepKategoriLombaProps) {
   return (
     <div className="p-6 sm:p-8 space-y-5 animate-[fadeIn_0.4s_ease-out]">
@@ -29,6 +32,11 @@ export default function StepKategoriLomba({
       <div className="space-y-3">
         {categories.map((cat) => {
           const isSelected = selectedKategori === cat.id;
+          const startingPrice = getCategoryStartingPrice(
+            cat.id,
+            pricingInfoMap?.[cat.id.toLowerCase()] || pricingInfoMap?.[cat.id]
+          );
+
           return (
             <button
               key={cat.id}
@@ -74,12 +82,15 @@ export default function StepKategoriLomba({
                       <span className="material-symbols-outlined text-xs text-[#C9A227]">timer</span>
                       {cat.cutOffTime}
                     </span>
+                    <span className="sm:hidden font-bold text-[#C9A227] ml-auto">
+                      {startingPrice}
+                    </span>
                   </div>
                 </div>
                 <div className="hidden sm:block text-right shrink-0">
                   <span className="text-[10px] text-slate-400 font-semibold uppercase block">Mulai</span>
                   <span className={`text-base font-bold ${isSelected ? 'text-[#C9A227]' : 'text-slate-900'}`}>
-                    {cat.prices.early}
+                    {startingPrice}
                   </span>
                 </div>
               </div>

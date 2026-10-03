@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { TrailrunCard } from '@/lib/types';
-import type { ActivePricingResult } from '@/lib/pricing';
+import { type ActivePricingResult, getCategoryPricesFromConfig } from '@/lib/pricing';
 
 interface TrailrunCardItemProps {
   item: TrailrunCard;
@@ -20,6 +20,10 @@ export default function TrailrunCardItem({
   onSelectCategory,
   pricingInfo,
 }: TrailrunCardItemProps) {
+  const configPrices = getCategoryPricesFromConfig(item.id);
+  const earlyDisplay = pricingInfo?.prices?.early?.display || configPrices.early;
+  const presaleDisplay = pricingInfo?.prices?.presale?.display || configPrices.presale;
+  const regularDisplay = pricingInfo?.prices?.regular?.display || configPrices.regular;
   return (
     <div className="perspective-1000 w-full min-h-[560px]">
       <div
@@ -104,7 +108,7 @@ export default function TrailrunCardItem({
                   </span>
                   <span className="text-[9px] text-slate-400 block font-medium">04–10 Okt</span>
                   <span className={`text-sm font-bold block ${pricingInfo?.isEarlyBirdSoldOut ? 'line-through text-slate-400' : 'text-slate-900'}`}>
-                    {item.prices.early}
+                    {earlyDisplay}
                   </span>
                   <span className="text-[8px] font-semibold block">
                     {pricingInfo?.isEarlyBirdSoldOut ? (
@@ -123,7 +127,7 @@ export default function TrailrunCardItem({
                     Pre-Sale
                   </span>
                   <span className="text-[9px] text-amber-600/80 block font-medium">11–21 Okt</span>
-                  <span className="text-sm font-bold text-[#C9A227] block">{item.prices.presale}</span>
+                  <span className="text-sm font-bold text-[#C9A227] block">{presaleDisplay}</span>
                   <span className="text-[8px] text-slate-400 block">
                     {pricingInfo?.tierId === 'presale' ? (
                       <span className="text-amber-700 font-bold">Sedang Aktif</span>
@@ -139,7 +143,7 @@ export default function TrailrunCardItem({
                     Regular
                   </span>
                   <span className="text-[9px] text-slate-400 block font-medium">22 Okt–08 Nov</span>
-                  <span className="text-sm font-bold text-slate-700 block">{item.prices.regular}</span>
+                  <span className="text-sm font-bold text-slate-700 block">{regularDisplay}</span>
                   <span className="text-[8px] text-slate-400 block">
                     {pricingInfo?.tierId === 'regular' ? (
                       <span className="text-slate-800 font-bold">Sedang Aktif</span>
