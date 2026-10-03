@@ -164,7 +164,7 @@ export default function StepPembayaran({
               </h4>
               <p className="text-[11px] text-slate-500">
                 {paymentStatus === 'completed'
-                  ? 'Transaksi Anda telah dikonfirmasi.'
+                  ? 'Transaksi Anda telah dikonfirmasi. Informasi lengkap dikirimkan ke WhatsApp.'
                   : `Berlaku hingga: ${formatExpiry(paymentData.expired_at)}`}
               </p>
             </div>

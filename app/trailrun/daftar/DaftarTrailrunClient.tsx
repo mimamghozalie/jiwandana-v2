@@ -708,6 +708,11 @@ export default function DaftarTrailrunClient() {
       {/* ===== SUCCESS MODAL ===== */}
       <RegistrationSuccessModal
         isOpen={showSuccess}
+        name={formData.nama}
+        phone={formData.no_hp}
+        bibNumber={formData.no_bib}
+        orderId={paymentData?.order_id}
+        totalPayment={paymentData?.total_payment}
         email={formData.email}
         selectedCategory={selectedCategory}
         onReset={handleResetForm}
