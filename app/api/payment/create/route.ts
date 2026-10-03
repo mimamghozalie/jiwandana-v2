@@ -32,14 +32,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 1. Count confirmed/paid registrations for this category to enforce early quota
+    // 1. Count paid registrations for this category to enforce early quota (only paid counts!)
     let paidCount = 0;
     try {
       const { count } = await supabase
         .from('trailrun_registrations')
         .select('*', { count: 'exact', head: true })
         .ilike('kategori', `%${kategori}%`)
-        .in('status', ['paid', 'confirmed']);
+        .eq('status', 'paid');
       paidCount = count || 0;
     } catch (countErr) {
       console.warn('Could not count registrations, defaulting to 0:', countErr);
@@ -124,10 +124,10 @@ export async function POST(request: NextRequest) {
       await supabase.from('trailrun_payments').insert([basePaymentRecord]);
     }
 
-    // Update registration status
+    // Keep registration status as 'pending' until actual payment is completed
     await supabase
       .from('trailrun_registrations')
-      .update({ status: 'confirmed' })
+      .update({ status: 'pending' })
       .eq('id', registration_id);
 
     return NextResponse.json({

@@ -40,11 +40,12 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Query trailrun_registrations for any registration with matching no_bib (case-insensitive)
+    // Query trailrun_registrations for any active registration with matching no_bib (excluding canceled/expired)
     const queryPromise = supabase
       .from('trailrun_registrations')
       .select('id, no_bib, nama, status')
       .ilike('no_bib', cleanBib)
+      .not('status', 'in', '("canceled","expired")')
       .limit(1);
 
     const { data, error } = await withTimeout(queryPromise, 3500);

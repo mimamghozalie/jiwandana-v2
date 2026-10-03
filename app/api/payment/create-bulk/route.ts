@@ -51,11 +51,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 1. Get current registered counts per category to evaluate pricing accurately
+    // 1. Get current paid counts per category to evaluate pricing accurately (only paid counts!)
     const [res3k, res7k, res12k] = await Promise.all([
-      supabase.from('trailrun_registrations').select('*', { count: 'exact', head: true }).ilike('kategori', '%3k%').in('status', ['paid', 'confirmed']),
-      supabase.from('trailrun_registrations').select('*', { count: 'exact', head: true }).ilike('kategori', '%7k%').in('status', ['paid', 'confirmed']),
-      supabase.from('trailrun_registrations').select('*', { count: 'exact', head: true }).ilike('kategori', '%12k%').in('status', ['paid', 'confirmed']),
+      supabase.from('trailrun_registrations').select('*', { count: 'exact', head: true }).ilike('kategori', '%3k%').eq('status', 'paid'),
+      supabase.from('trailrun_registrations').select('*', { count: 'exact', head: true }).ilike('kategori', '%7k%').eq('status', 'paid'),
+      supabase.from('trailrun_registrations').select('*', { count: 'exact', head: true }).ilike('kategori', '%12k%').eq('status', 'paid'),
     ]);
 
     const runningCounts: Record<string, number> = {
@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
       riwayat_medis: p.riwayat_medis || null,
       kontak_darurat: p.kontak_darurat,
       kategori: p.kategori.toUpperCase(),
-      status: 'confirmed',
+      status: 'pending',
     }));
 
     const { data: insertedRegistrations, error: regError } = await supabase

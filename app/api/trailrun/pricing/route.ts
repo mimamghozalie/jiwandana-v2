@@ -8,23 +8,23 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function GET(request: NextRequest) {
   try {
-    // Count paid or confirmed registrations per category
+    // Count strictly paid registrations per category (unpaid/pending does not consume quota)
     const [res3k, res7k, res12k] = await Promise.all([
       supabase
         .from('trailrun_registrations')
         .select('*', { count: 'exact', head: true })
         .ilike('kategori', '%3k%')
-        .in('status', ['paid', 'confirmed']),
+        .eq('status', 'paid'),
       supabase
         .from('trailrun_registrations')
         .select('*', { count: 'exact', head: true })
         .ilike('kategori', '%7k%')
-        .in('status', ['paid', 'confirmed']),
+        .eq('status', 'paid'),
       supabase
         .from('trailrun_registrations')
         .select('*', { count: 'exact', head: true })
         .ilike('kategori', '%12k%')
-        .in('status', ['paid', 'confirmed']),
+        .eq('status', 'paid'),
     ]);
 
     const count3k = res3k.count || 0;

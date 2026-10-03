@@ -75,11 +75,55 @@ export async function GET(request: NextRequest) {
         })
         .eq('txn_id', txnId);
 
-      if (dbPayment?.registration_id) {
+      // Ambil seluruh peserta jika bulk atau single
+      const { data: relPayments } = await supabase
+        .from('trailrun_payments')
+        .select('registration_id')
+        .eq('txn_id', txnId);
+
+      const targetRegIds = (relPayments || [])
+        .map((p: any) => p.registration_id)
+        .filter(Boolean);
+
+      if (targetRegIds.length > 0) {
+        await supabase
+          .from('trailrun_registrations')
+          .update({ status: 'paid' })
+          .in('id', targetRegIds);
+      } else if (dbPayment?.registration_id) {
         await supabase
           .from('trailrun_registrations')
           .update({ status: 'paid' })
           .eq('id', dbPayment.registration_id);
+      }
+    } else if (pakasirStatus && (pakasirStatus.status === 'canceled' || pakasirStatus.status === 'expired' || pakasirStatus.status === 'failed')) {
+      const cancelStatus = pakasirStatus.status === 'failed' ? 'canceled' : pakasirStatus.status;
+      await supabase
+        .from('trailrun_payments')
+        .update({ status: cancelStatus })
+        .eq('txn_id', txnId);
+
+      const { data: relPayments } = await supabase
+        .from('trailrun_payments')
+        .select('registration_id')
+        .eq('txn_id', txnId);
+
+      const targetRegIds = (relPayments || [])
+        .map((p: any) => p.registration_id)
+        .filter(Boolean);
+
+      if (targetRegIds.length > 0) {
+        await supabase
+          .from('trailrun_registrations')
+          .update({ status: cancelStatus })
+          .in('id', targetRegIds)
+          .neq('status', 'paid');
+      } else if (dbPayment?.registration_id) {
+        await supabase
+          .from('trailrun_registrations')
+          .update({ status: cancelStatus })
+          .eq('id', dbPayment.registration_id)
+          .neq('status', 'paid');
       }
     }
 

@@ -134,9 +134,10 @@ export async function POST(request: NextRequest) {
       }
     } else if (status === 'canceled' || status === 'expired' || status === 'failed') {
       // 4. Proses jika pembayaran batal atau kedaluwarsa
+      const finalStatus = status === 'failed' ? 'canceled' : status;
       let paymentCancelQuery = supabase
         .from('trailrun_payments')
-        .update({ status: status === 'failed' ? 'canceled' : status });
+        .update({ status: finalStatus });
 
       if (txnId) {
         paymentCancelQuery = paymentCancelQuery.eq('txn_id', txnId);
@@ -144,8 +145,30 @@ export async function POST(request: NextRequest) {
         paymentCancelQuery = paymentCancelQuery.eq('order_id', orderId);
       }
 
-      await paymentCancelQuery;
-      console.log(`ℹ️ Status pembayaran ${txnId || orderId} diperbarui menjadi ${status}`);
+      const { data: canceledPayments } = await paymentCancelQuery.select('registration_id');
+      console.log(`ℹ️ Status pembayaran ${txnId || orderId} diperbarui menjadi ${finalStatus}`);
+
+      // Ambil seluruh registration_id terkait untuk melepaskan status registrasi
+      let cancelRegIds = (canceledPayments || []).map((p: any) => p.registration_id).filter(Boolean);
+      if (cancelRegIds.length === 0) {
+        let findQuery = supabase.from('trailrun_payments').select('registration_id');
+        if (txnId) {
+          findQuery = findQuery.eq('txn_id', txnId);
+        } else {
+          findQuery = findQuery.eq('order_id', orderId);
+        }
+        const { data: foundList } = await findQuery;
+        cancelRegIds = (foundList || []).map((f: any) => f.registration_id).filter(Boolean);
+      }
+
+      if (cancelRegIds.length > 0) {
+        await supabase
+          .from('trailrun_registrations')
+          .update({ status: finalStatus })
+          .in('id', cancelRegIds)
+          .neq('status', 'paid');
+        console.log(`ℹ️ Status registrasi ${cancelRegIds.length} peserta diperbarui menjadi ${finalStatus}`);
+      }
     }
 
     // 5. Berikan respon sukses 200 ke Pakasir

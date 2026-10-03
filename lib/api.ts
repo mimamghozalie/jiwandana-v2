@@ -274,11 +274,12 @@ export async function submitTrailrunRegistration(
       };
     }
 
-    // Uniqueness pre-check right before insert
+    // Uniqueness pre-check right before insert (excluding canceled/expired registrations)
     const checkPromise = supabase
       .from('trailrun_registrations')
       .select('id')
       .ilike('no_bib', cleanBib)
+      .not('status', 'in', '("canceled","expired")')
       .limit(1);
 
     const { data: existingBib } = await withTimeout(checkPromise, 3500).catch(() => ({ data: null }));
