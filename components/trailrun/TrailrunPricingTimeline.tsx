@@ -2,11 +2,17 @@
 
 import React from 'react';
 import pricingConfig from '@/data/trailrun-pricing.json';
+import { formatAmountToDisplay } from '@/lib/pricing';
 import { Calendar, Clock, Flame, ShieldAlert, Sparkles } from 'lucide-react';
 
 export default function TrailrunPricingTimeline() {
   const { tiers } = pricingConfig;
   const now = new Date().getTime();
+
+  const getPriceDisplay = (cat: '3k' | '7k' | '12k', tier: 'early' | 'presale' | 'regular') => {
+    const p = pricingConfig.categories[cat].prices[tier] as { amount: number; display?: string };
+    return p.display || formatAmountToDisplay(p.amount);
+  };
 
   const isEarlyActive =
     now >= new Date(tiers.early.startDate).getTime() &&
@@ -70,7 +76,7 @@ export default function TrailrunPricingTimeline() {
             </div>
 
             <div className="pt-2 border-t border-slate-100 text-[11px] text-slate-500">
-              3K: <strong className="text-rose-600 font-bold">Rp {pricingConfig.categories['3k'].prices.early.display}</strong> • 7K: <strong className="text-rose-600 font-bold">Rp {pricingConfig.categories['7k'].prices.early.display}</strong> • 12K: <strong className="text-rose-600 font-bold">Rp {pricingConfig.categories['12k'].prices.early.display}</strong>
+              3K: <strong className="text-rose-600 font-bold">Rp {getPriceDisplay('3k', 'early')}</strong> • 7K: <strong className="text-rose-600 font-bold">Rp {getPriceDisplay('7k', 'early')}</strong> • 12K: <strong className="text-rose-600 font-bold">Rp {getPriceDisplay('12k', 'early')}</strong>
             </div>
           </div>
         </div>
@@ -109,7 +115,7 @@ export default function TrailrunPricingTimeline() {
             </div>
 
             <div className="pt-2 border-t border-slate-100 text-[11px] text-slate-500">
-              3K: <strong className="text-amber-600 font-bold">Rp {pricingConfig.categories['3k'].prices.presale.display}</strong> • 7K: <strong className="text-amber-600 font-bold">Rp {pricingConfig.categories['7k'].prices.presale.display}</strong> • 12K: <strong className="text-amber-600 font-bold">Rp {pricingConfig.categories['12k'].prices.presale.display}</strong>
+              3K: <strong className="text-amber-600 font-bold">Rp {getPriceDisplay('3k', 'presale')}</strong> • 7K: <strong className="text-amber-600 font-bold">Rp {getPriceDisplay('7k', 'presale')}</strong> • 12K: <strong className="text-amber-600 font-bold">Rp {getPriceDisplay('12k', 'presale')}</strong>
             </div>
           </div>
         </div>
@@ -148,7 +154,7 @@ export default function TrailrunPricingTimeline() {
             </div>
 
             <div className="pt-2 border-t border-slate-100 text-[11px] text-slate-500">
-              3K: <strong className="text-slate-800 font-bold">Rp {pricingConfig.categories['3k'].prices.regular.display}</strong> • 7K: <strong className="text-slate-800 font-bold">Rp {pricingConfig.categories['7k'].prices.regular.display}</strong> • 12K: <strong className="text-slate-800 font-bold">Rp {pricingConfig.categories['12k'].prices.regular.display}</strong>
+              3K: <strong className="text-slate-800 font-bold">Rp {getPriceDisplay('3k', 'regular')}</strong> • 7K: <strong className="text-slate-800 font-bold">Rp {getPriceDisplay('7k', 'regular')}</strong> • 12K: <strong className="text-slate-800 font-bold">Rp {getPriceDisplay('12k', 'regular')}</strong>
             </div>
           </div>
         </div>

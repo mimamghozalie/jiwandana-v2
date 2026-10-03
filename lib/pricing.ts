@@ -101,7 +101,17 @@ export function getActivePricingTier(
   }
 
   const activeTierConfig = tiers[activeTierId];
-  const activePrice = catData.prices[activeTierId];
+  const rawActivePrice = catData.prices[activeTierId] as { amount: number; display?: string };
+  const amount = rawActivePrice?.amount ?? 0;
+  const display = rawActivePrice?.display || formatAmountToDisplay(amount);
+
+  const getTierPriceObj = (tier: PricingTierId): CategoryPrice => {
+    const p = catData.prices[tier] as { amount: number; display?: string };
+    return {
+      amount: p.amount,
+      display: p.display || formatAmountToDisplay(p.amount),
+    };
+  };
 
   return {
     categoryKey: catKey,
@@ -109,8 +119,8 @@ export function getActivePricingTier(
     categoryCode: catData.categoryCode,
     tierId: activeTierId,
     tierName: activeTierConfig.name,
-    amount: activePrice.amount,
-    display: activePrice.display,
+    amount,
+    display,
     badge: activeTierConfig.badge,
     quotaLimit: activeTierConfig.quotaPerCategory,
     quotaRemaining:
@@ -119,9 +129,59 @@ export function getActivePricingTier(
         : null,
     isEarlyBirdSoldOut,
     statusNote,
-    prices: catData.prices,
+    prices: {
+      early: getTierPriceObj('early'),
+      presale: getTierPriceObj('presale'),
+      regular: getTierPriceObj('regular'),
+    },
     tiersConfig: tiers,
   };
+}
+
+/**
+ * Converts a numeric price amount to a short display string (e.g. 320000 -> "320k", 250000 -> "250k", 1500000 -> "1.5M").
+ * Menghilangkan keharusan input ganda antara "amount" dan "display".
+ */
+export function formatAmountToDisplay(amount: number): string {
+  if (!amount || isNaN(amount)) return '0';
+  if (amount >= 1000000) {
+    const m = amount / 1000000;
+    return `${Number.isInteger(m) ? m : m.toFixed(1).replace(/\.0$/, '')}M`;
+  }
+  if (amount >= 1000) {
+    const k = amount / 1000;
+    return `${Number.isInteger(k) ? k : k.toFixed(1).replace(/\.0$/, '')}k`;
+  }
+  return String(amount);
+}
+
+/**
+ * Alias fungsi untuk konversi amount ke display (contoh: 320000 -> "320k")
+ */
+export const convertAmountToDisplay = formatAmountToDisplay;
+
+/**
+ * Formats a numeric price amount into standard Rupiah currency (e.g. 320000 -> "Rp 320.000")
+ */
+export function formatRupiah(amount: number): string {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+/**
+ * Returns CategoryPrice with guaranteed display (auto-computed from amount if display is missing)
+ */
+export function getCategoryTierPrice(categoryInput: string, tierId: PricingTierId): CategoryPrice {
+  const catKey = normalizeCategoryKey(categoryInput);
+  const catData = pricingConfig.categories[catKey];
+  const priceObj = catData?.prices?.[tierId] as { amount: number; display?: string } | undefined;
+  const amount = priceObj?.amount ?? 0;
+  const display = priceObj?.display || formatAmountToDisplay(amount);
+  return { amount, display };
 }
 
 /**
