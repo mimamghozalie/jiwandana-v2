@@ -4,7 +4,7 @@ import React from 'react';
 
 export default function TrailrunHero() {
   return (
-    <section className="relative w-full h-[70vh] min-h-[500px] max-h-[750px] overflow-hidden flex items-center justify-center pt-20">
+    <section className="relative w-full h-[80vh] min-h-[600px] max-h-[750px] overflow-hidden flex items-center justify-center pt-20">
       {/* Background Video with Poster Fallback */}
       <div className="absolute inset-0 z-0 bg-black">
         <video
@@ -12,7 +12,7 @@ export default function TrailrunHero() {
           loop
           muted
           playsInline
-          poster="/assets/jiwandana_trailrun_1.jpeg"
+          poster="/assets/banner_trailrun.png"
           className="w-full h-full object-cover opacity-60 scale-105 transition-all duration-1000"
         >
           <source
@@ -29,7 +29,7 @@ export default function TrailrunHero() {
         <div className="inline-flex flex-wrap items-center justify-center gap-2 text-xs">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/50 border border-[#C9A227]/60 text-xs font-semibold uppercase tracking-widest text-[#C9A227] backdrop-blur-md shadow-lg">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Kawasan Purbakala Trowulan • Mojokerto</span>
+            <span>Kawasan Purbakala lereng penanggunangan • Mojokerto</span>
           </div>
           <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-rose-950/70 border border-rose-500/60 text-[11px] font-bold text-rose-300 backdrop-blur-md shadow-lg">
             <span className="w-2 h-2 rounded-full bg-rose-400 animate-ping" />

@@ -58,11 +58,10 @@ export default function TrailrunRouteSection({
               key={key}
               type="button"
               onClick={() => onSelectRouteKey(key)}
-              className={`px-6 py-2.5 rounded-full font-medium text-xs sm:text-sm uppercase tracking-wider transition-all duration-300 shadow-sm flex items-center gap-2 cursor-pointer ${
-                safeActiveKey === key
-                  ? 'bg-[#C9A227] text-[#0d1c32] font-bold shadow-md'
-                  : 'bg-[#f8f8f8] border border-black/10 text-slate-600 hover:border-[#C9A227] hover:text-[#C9A227]'
-              }`}
+              className={`px-6 py-2.5 rounded-full font-medium text-xs sm:text-sm uppercase tracking-wider transition-all duration-300 shadow-sm flex items-center gap-2 cursor-pointer ${safeActiveKey === key
+                ? 'bg-[#C9A227] text-[#0d1c32] font-bold shadow-md'
+                : 'bg-[#f8f8f8] border border-black/10 text-slate-600 hover:border-[#C9A227] hover:text-[#C9A227]'
+                }`}
             >
               <span className="material-symbols-outlined text-sm">sprint</span>
               <span>Rute {key.toUpperCase()}</span>
@@ -99,17 +98,17 @@ export default function TrailrunRouteSection({
           </div>
 
           {/* Real Interactive Leaflet GPX Map */}
-          <TrailrunGpxMap
+          {/* <TrailrunGpxMap
             key={currentKey}
             gpxUrl={activeRoute.gpxFile || `/routes/${currentKey}.gpx`}
             routeTitle={activeRoute.title}
             routeDistance={activeRoute.distance}
             routeElevation={activeRoute.elevation}
             waypoints={activeRoute.waypoints}
-          />
+          /> */}
 
           {/* Waypoints Sequence List */}
-          <div className="p-6 bg-slate-50/70 border-t border-black/10">
+          {/* <div className="p-6 bg-slate-50/70 border-t border-black/10">
             <span className="text-xs font-bold uppercase tracking-wider text-[#C9A227] block mb-3">
               Titik Lintasan & Pos Pantau:
             </span>
@@ -130,7 +129,7 @@ export default function TrailrunRouteSection({
                 </div>
               ))}
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* BOX 2: Data Rute & Elevation Profile (Below MAPS) */}
@@ -140,20 +139,20 @@ export default function TrailrunRouteSection({
               <span className="text-xs font-bold uppercase tracking-widest text-[#C9A227]">
                 Profil Ketinggian
               </span>
-              <h3 className="text-xl font-bold font-serif text-slate-900">
+              {/* <h3 className="text-xl font-bold font-serif text-slate-900">
                 Grafik Elevasi (Altitude Profile)
-              </h3>
+              </h3> */}
             </div>
-            <div className="flex items-center gap-3">
+            {/* <div className="flex items-center gap-3">
               <span className="text-xs text-slate-500">Puncak Tertinggi:</span>
               <span className="px-3 py-1 bg-white border border-black/10 rounded-lg text-xs font-bold text-[#C9A227]">
                 {activeRoute.maxAlt}
               </span>
-            </div>
+            </div> */}
           </div>
 
           {/* SVG Elevation Graph */}
-          <div className="space-y-2">
+          {/* <div className="space-y-2">
             <div className="h-44 sm:h-52 w-full bg-white border border-black/10 rounded-xl p-4 flex items-end relative overflow-hidden">
               <svg
                 viewBox="0 0 1000 200"
@@ -167,7 +166,6 @@ export default function TrailrunRouteSection({
                   </linearGradient>
                 </defs>
 
-                {/* Gradient Area under curve */}
                 <polygon
                   points={`0,200 ${activeRoute.elevationPoints
                     .map((val, idx) => {
@@ -179,7 +177,6 @@ export default function TrailrunRouteSection({
                   fill="url(#elevFill)"
                 />
 
-                {/* Elevation Line */}
                 <polyline
                   points={activeRoute.elevationPoints
                     .map((val, idx) => {
@@ -196,7 +193,6 @@ export default function TrailrunRouteSection({
                 />
               </svg>
 
-              {/* Altitude markers */}
               <div className="absolute top-2 left-4 text-[10px] text-slate-400 font-sans font-medium">
                 ▲ Max: {activeRoute.maxAlt}
               </div>
@@ -207,10 +203,10 @@ export default function TrailrunRouteSection({
                 Garis Finish: {activeRoute.distance}
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* Summary Grid of Track Characteristics */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-2">
             <div className="p-4 rounded-xl bg-white border border-black/10">
               <span className="text-[11px] text-slate-500 font-medium block">Total Elevasi</span>
               <strong className="text-base text-slate-900 font-bold">{activeRoute.elevation}</strong>
@@ -223,12 +219,7 @@ export default function TrailrunRouteSection({
               <span className="text-[11px] text-slate-500 font-medium block">Hydration Point</span>
               <strong className="text-base text-slate-900 font-bold">{activeRoute.wsCount}</strong>
             </div>
-            <div className="p-4 rounded-xl bg-white border border-black/10">
-              <span className="text-[11px] text-slate-500 font-medium block">Karakter Lintasan</span>
-              <strong className="text-xs text-slate-900 font-semibold block mt-0.5">
-                Single Track ({activeRoute.surface.trail})
-              </strong>
-            </div>
+
           </div>
 
           {/* Download GPX Button */}
