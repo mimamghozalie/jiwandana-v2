@@ -59,6 +59,9 @@ export default function RegistrationSuccessModal({
   }
   waLines.push(`• Status: *LUNAS (PAID)* ✅`);
   waLines.push(``);
+  waLines.push(`👥 *Grup WhatsApp Resmi Peserta:*`);
+  waLines.push(`https://chat.whatsapp.com/FeoURQoiAB03yVEWeVgVYE?mode=gi_t`);
+  waLines.push(``);
   waLines.push(`Simpan bukti WhatsApp ini saat registrasi ulang / pengambilan Race Pack & Technical Meeting.`);
   waLines.push(`Terima kasih dan sampai jumpa di garis start! 🏃‍♂️⛰️`);
 
@@ -68,6 +71,8 @@ export default function RegistrationSuccessModal({
   const panitiaWaUrl = `https://wa.me/6282171914989?text=${encodeURIComponent(
     `Halo Panitia Trailrun Lintas Candi, saya ${name || 'peserta'} (BIB: ${bibNumber || '-'}, Order: ${orderId || '-'}), ingin konfirmasi bukti pendaftaran.`
   )}`;
+
+  const waGroupUrl = 'https://chat.whatsapp.com/FeoURQoiAB03yVEWeVgVYE?mode=gi_t';
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center px-4 bg-black/70 backdrop-blur-sm">
@@ -135,9 +140,21 @@ export default function RegistrationSuccessModal({
             </div>
           </div>
         </div>
-
         {/* Action Buttons */}
         <div className="flex flex-col gap-2.5 pt-1">
+          {/* Direct WhatsApp Group Button */}
+          <a
+            href={waGroupUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold py-3 px-4 rounded-xl transition-colors text-xs sm:text-sm uppercase tracking-wider shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+              <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.664-.698c.969.585 1.761.883 2.796.883 3.182 0 5.769-2.587 5.77-5.766.001-3.182-2.585-5.77-5.77-5.77zm0 10.455c-.998 0-1.748-.28-2.585-.826l-.185-.119-1.928.505.515-1.879-.13-.207c-.604-.962-.962-1.874-.962-2.869 0-2.616 2.128-4.744 4.745-4.745 2.616 0 4.746 2.129 4.746 4.746 0 2.616-2.129 4.745-4.745 4.745zm8.969-5.188c0 5.519-4.481 10-10 10-1.744 0-3.385-.45-4.819-1.242l-6.181 1.618 1.646-6.012c-.902-1.488-1.417-3.23-1.417-5.093 0-5.519 4.481-10 10-10 5.519 0 10 4.481 10 10z" />
+            </svg>
+            <span>Gabung Grup WhatsApp Peserta</span>
+          </a>
+
           {bibNumber && (
             <Link
               href={`/trailrun/peserta?no_bib=${encodeURIComponent(bibNumber)}`}
