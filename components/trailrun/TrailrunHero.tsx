@@ -1,6 +1,10 @@
 import React from 'react';
 
-export default function TrailrunHero() {
+interface TrailrunHeroProps {
+  isOpen?: boolean;
+}
+
+export default function TrailrunHero({ isOpen = false }: TrailrunHeroProps) {
   return (
     <section className="relative w-full h-[100dvh] min-h-[640px] flex items-center justify-center pt-20">
       {/* Hero Content */}
@@ -31,22 +35,24 @@ export default function TrailrunHero() {
         {/* CTA Button */}
         <div className="pt-2 flex flex-wrap justify-center gap-3">
           <a
-            href="#kategori"
+            href={isOpen ? '#kategori' : '#countdown'}
             className="px-8 py-4 bg-[#C9A227] hover:bg-[#b08d20] text-[#0d1c32] font-extrabold text-xs sm:text-sm uppercase tracking-wider rounded-xl transition-all transform active:scale-95 shadow-[0_4px_24px_rgba(201,162,39,0.6)] flex items-center gap-2 cursor-pointer"
           >
-            <span className="material-symbols-outlined text-lg">directions_run</span>
-            <span>Pilih Kategori Lomba</span>
+            <span className="material-symbols-outlined text-lg">
+              {isOpen ? 'directions_run' : 'timer'}
+            </span>
+            <span>{isOpen ? 'Pilih Kategori Lomba' : 'Hitung Mundur Pembukaan'}</span>
           </a>
         </div>
       </div>
 
       {/* Scroll Down Indicator */}
       <a
-        href="#kategori"
+        href={isOpen ? '#kategori' : '#countdown'}
         className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-1 text-slate-200 hover:text-[#C9A227] transition-colors cursor-pointer group select-none"
       >
         <span className="text-[10px] uppercase font-bold tracking-widest opacity-80 group-hover:opacity-100 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
-          Jelajahi Kategori
+          {isOpen ? 'Jelajahi Kategori' : 'Hitung Mundur Pembukaan'}
         </span>
         <span className="material-symbols-outlined text-xl animate-bounce drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
           keyboard_double_arrow_down

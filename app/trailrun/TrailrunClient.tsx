@@ -7,6 +7,7 @@ import { trailrunRoutes } from '@/data/routes';
 import { TrailrunCard, TrailrunRoute } from '@/lib/types';
 import type { ActivePricingResult } from '@/lib/pricing';
 import TrailrunHero from '@/components/trailrun/TrailrunHero';
+import TrailrunCountdown from '@/components/trailrun/TrailrunCountdown';
 import TrailrunCardItem from '@/components/trailrun/TrailrunCardItem';
 import TrailrunFacilityModal from '@/components/trailrun/TrailrunFacilityModal';
 import TrailrunRouteSection from '@/components/trailrun/TrailrunRouteSection';
@@ -16,6 +17,7 @@ export default function TrailrunClient() {
   const [activeRouteKey, setActiveRouteKey] = useState<string>('3k');
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
   const [pricingData, setPricingData] = useState<Record<string, ActivePricingResult>>({});
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
 
   useEffect(() => {
     // Fetch live quota & pricing from database
@@ -60,42 +62,47 @@ export default function TrailrunClient() {
       {/* Main Content Sections */}
       <div className="relative z-10">
         {/* 1. HERO SECTION */}
-        <TrailrunHero />
+        <TrailrunHero isOpen={isRegistrationOpen} />
 
-        {/* 2. CATEGORIES SECTION (Cards with 3D Flip Elevation Profile) */}
-        <section id="kategori" className="py-16 md:py-24 max-w-7xl mx-auto px-6 space-y-12">
-          <div className="text-center space-y-3">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/10 border border-[#C9A227]/80 text-xs font-bold uppercase tracking-widest text-[#C9A227] backdrop-blur-md shadow-sm">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Pilihan Kategori Lomba</span>
+        {/* 2. REGISTRATION COUNTDOWN SECTION */}
+        <TrailrunCountdown onStatusChange={setIsRegistrationOpen} />
+
+        {/* 3. CATEGORIES SECTION (Cards with 3D Flip Elevation Profile) */}
+        {isRegistrationOpen && (
+          <section id="kategori" className="py-16 md:py-24 max-w-7xl mx-auto px-6 space-y-12 animate-[fadeIn_0.6s_ease-out]">
+            <div className="text-center space-y-3">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/10 border border-[#C9A227]/80 text-xs font-bold uppercase tracking-widest text-[#C9A227] backdrop-blur-md shadow-sm">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Pilihan Kategori Lomba</span>
+              </div>
+              <h2 className="text-3xl md:text-5xl font-serif font-bold text-white tracking-wide drop-shadow-[0_4px_20px_rgba(0,0,0,0.95)]">
+                Kategori Trailrun
+              </h2>
+              <p className="text-white text-sm md:text-base max-w-2xl mx-auto leading-relaxed drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)]">
+                Pilih kategori jarak tempuh sesuai ketahanan fisik Anda. Klik tombol{' '}
+                <strong className="text-[#C9A227] font-bold">Profil Elevasi</strong> pada kartu untuk melihat grafik kontur elevasi.
+              </p>
             </div>
-            <h2 className="text-3xl md:text-5xl font-serif font-bold text-white tracking-wide drop-shadow-[0_4px_20px_rgba(0,0,0,0.95)]">
-              Kategori Trailrun
-            </h2>
-            <p className="text-white text-sm md:text-base max-w-2xl mx-auto leading-relaxed drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)]">
-              Pilih kategori jarak tempuh sesuai ketahanan fisik Anda. Klik tombol{' '}
-              <strong className="text-[#C9A227] font-bold">Profil Elevasi</strong> pada kartu untuk melihat grafik kontur elevasi.
-            </p>
-          </div>
 
-          {/* Modular Cards Grid loaded from JSON with Realtime Pricing */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-            {categories.map((item) => {
-              const catKey = item.id.toLowerCase();
-              const info = pricingData[catKey] || pricingData[item.id] || null;
-              return (
-                <TrailrunCardItem
-                  key={item.id}
-                  item={item}
-                  pricingInfo={info}
-                  isFlipped={!!flippedCards[item.id]}
-                  onToggleFlip={() => toggleFlip(item.id)}
-                  onSelectCategory={() => setSelectedCategory(item)}
-                />
-              );
-            })}
-          </div>
-        </section>
+            {/* Modular Cards Grid loaded from JSON with Realtime Pricing */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+              {categories.map((item) => {
+                const catKey = item.id.toLowerCase();
+                const info = pricingData[catKey] || pricingData[item.id] || null;
+                return (
+                  <TrailrunCardItem
+                    key={item.id}
+                    item={item}
+                    pricingInfo={info}
+                    isFlipped={!!flippedCards[item.id]}
+                    onToggleFlip={() => toggleFlip(item.id)}
+                    onSelectCategory={() => setSelectedCategory(item)}
+                  />
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         {/* 3. MODAL POPUP: FASILITAS TERMASUK */}
         <TrailrunFacilityModal
