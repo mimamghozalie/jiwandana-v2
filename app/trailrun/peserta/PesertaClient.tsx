@@ -1,0 +1,727 @@
+'use client';
+
+import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import {
+  QrCode,
+  Printer,
+  Share2,
+  Copy,
+  Check,
+  Search,
+  ArrowLeft,
+  AlertCircle,
+  ShieldCheck,
+  Calendar,
+  MapPin,
+  Clock,
+  HeartPulse,
+  User,
+  CreditCard,
+  CheckCircle2,
+  Activity,
+  Phone,
+  RefreshCw,
+  ExternalLink,
+} from 'lucide-react';
+import { formatCurrency } from '@/components/trailrun/registration/types';
+
+interface ParticipantData {
+  id?: string;
+  nama: string;
+  email: string;
+  no_bib: string;
+  no_hp: string;
+  alamat?: string;
+  kota?: string;
+  provinsi?: string;
+  kewarganegaraan?: string;
+  tanggal_lahir?: string;
+  jenis_kelamin?: string;
+  nama_komunitas?: string;
+  golongan_darah?: string;
+  riwayat_medis?: string;
+  kontak_darurat?: string;
+  kategori: string;
+  status: string;
+  created_at?: string;
+  payment?: {
+    order_id?: string;
+    amount?: number;
+    fee?: number;
+    total_payment?: number;
+    payment_method?: string;
+    status?: string;
+    completed_at?: string;
+  };
+}
+
+export default function PesertaClient() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const bibParam = searchParams.get('no_bib') || searchParams.get('bib') || '';
+
+  const [inputBib, setInputBib] = useState(bibParam);
+  const [loading, setLoading] = useState(false);
+  const [participant, setParticipant] = useState<ParticipantData | null>(null);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  // Fetch participant by BIB
+  const fetchParticipant = useCallback(async (bib: string) => {
+    if (!bib.trim()) {
+      setParticipant(null);
+      setErrorMsg('');
+      return;
+    }
+
+    setLoading(true);
+    setErrorMsg('');
+
+    try {
+      const res = await fetch(`/api/trailrun/peserta?no_bib=${encodeURIComponent(bib.trim())}`);
+      const json = await res.json();
+
+      if (json.success && json.data) {
+        setParticipant(json.data);
+        setErrorMsg('');
+      } else {
+        setParticipant(null);
+        setErrorMsg(json.message || `Peserta dengan nomor BIB "${bib}" tidak ditemukan.`);
+      }
+    } catch {
+      setParticipant(null);
+      setErrorMsg('Gagal memuat data peserta. Silakan periksa koneksi internet Anda.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (bibParam) {
+      setInputBib(bibParam);
+      fetchParticipant(bibParam);
+    } else {
+      setParticipant(null);
+      setErrorMsg('');
+    }
+  }, [bibParam, fetchParticipant]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputBib.trim()) return;
+    const clean = inputBib.trim().toUpperCase();
+    router.push(`/trailrun/peserta?no_bib=${encodeURIComponent(clean)}`);
+  };
+
+  const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
+  const qrTargetUrl = participant
+    ? `${typeof window !== 'undefined' ? window.location.origin : 'https://jiwandana.com'}/trailrun/peserta?no_bib=${encodeURIComponent(participant.no_bib)}`
+    : currentUrl;
+
+  const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=10&data=${encodeURIComponent(
+    qrTargetUrl
+  )}`;
+
+  const handleCopyLink = () => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(qrTargetUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    }
+  };
+
+  const handlePrint = () => {
+    if (typeof window !== 'undefined') {
+      window.print();
+    }
+  };
+
+  const handleShareWhatsApp = () => {
+    if (!participant) return;
+    const text = `*E-BIB & VERIFIKASI PESERTA TRAILRUN LINTAS CANDI 2026*\n\n` +
+      `• *Nama*: ${participant.nama}\n` +
+      `• *No. BIB*: ${participant.no_bib}\n` +
+      `• *Kategori*: ${participant.kategori}\n` +
+      `• *Status*: ${participant.status.toUpperCase()} ✅\n\n` +
+      `Lihat e-pass & barcode resmi di:\n${qrTargetUrl}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+  };
+
+  // Helper formatting
+  const formatDate = (isoString?: string) => {
+    if (!isoString) return '—';
+    try {
+      const d = new Date(isoString);
+      return d.toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
+    } catch {
+      return isoString;
+    }
+  };
+
+  const formatDateTime = (isoString?: string) => {
+    if (!isoString) return '—';
+    try {
+      const d = new Date(isoString);
+      return d.toLocaleString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }) + ' WIB';
+    } catch {
+      return isoString;
+    }
+  };
+
+  const isPaid =
+    participant?.status === 'paid' ||
+    participant?.status === 'confirmed' ||
+    participant?.payment?.status === 'completed' ||
+    participant?.payment?.status === 'settled';
+
+  return (
+    <div className="min-h-screen bg-[#f8f8f8] text-slate-800 pb-16 pt-20 sm:pt-24 print:bg-white print:p-0 print:pt-0">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-6">
+        {/* Navigation & Header (Hidden on Print) */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 print:hidden">
+          <Link
+            href="/trailrun"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-600 hover:text-[#C9A227] transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Kembali ke Halaman Trailrun</span>
+          </Link>
+
+          {/* Search Bar for BIB Verification */}
+          <form onSubmit={handleSearch} className="w-full sm:w-auto flex items-center gap-2">
+            <div className="relative flex-1 sm:w-64">
+              <input
+                type="text"
+                value={inputBib}
+                onChange={(e) => setInputBib(e.target.value.toUpperCase())}
+                placeholder="Cari No. BIB (cth: M-00001)"
+                className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-black/10 rounded-xl focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227] outline-hidden font-mono uppercase"
+              />
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 bg-[#C9A227] hover:bg-[#b08d20] disabled:opacity-50 text-[#0d1c32] rounded-xl text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer shrink-0 flex items-center gap-1"
+            >
+              {loading ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <span>Cek</span>
+              )}
+            </button>
+          </form>
+        </div>
+
+        {/* LOADING STATE */}
+        {loading && (
+          <div className="bg-white border border-black/10 rounded-3xl p-12 text-center shadow-xs space-y-4">
+            <RefreshCw className="w-8 h-8 text-[#C9A227] animate-spin mx-auto" />
+            <div>
+              <h3 className="font-serif font-bold text-slate-900 text-lg">Memeriksa Data Peserta...</h3>
+              <p className="text-xs text-slate-500 mt-1">Mengambil informasi resmi nomor BIB {bibParam}</p>
+            </div>
+          </div>
+        )}
+
+        {/* ERROR / NOT FOUND STATE */}
+        {!loading && errorMsg && (
+          <div className="bg-white border border-rose-200/80 rounded-3xl p-8 sm:p-10 shadow-xs text-center space-y-5">
+            <div className="w-16 h-16 rounded-full bg-rose-50 text-rose-500 border border-rose-200 flex items-center justify-center mx-auto">
+              <AlertCircle className="w-8 h-8" />
+            </div>
+            <div className="space-y-2 max-w-md mx-auto">
+              <h3 className="font-serif font-bold text-slate-900 text-xl">Peserta Tidak Ditemukan</h3>
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">{errorMsg}</p>
+            </div>
+
+            <div className="max-w-md mx-auto pt-2">
+              <form onSubmit={handleSearch} className="flex gap-2">
+                <input
+                  type="text"
+                  value={inputBib}
+                  onChange={(e) => setInputBib(e.target.value.toUpperCase())}
+                  placeholder="Masukkan Nomor BIB lain..."
+                  className="flex-1 px-4 py-2.5 bg-[#f8f8f8] border border-black/10 rounded-xl text-xs font-mono uppercase focus:border-[#C9A227] focus:bg-white focus:ring-1 focus:ring-[#C9A227] outline-hidden"
+                />
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 bg-[#C9A227] hover:bg-[#b08d20] text-[#0d1c32] rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-sm cursor-pointer"
+                >
+                  Cari
+                </button>
+              </form>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-3">
+              <Link
+                href="/trailrun/daftar"
+                className="px-5 py-2.5 bg-[#0d1c32] hover:bg-slate-800 text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-sm transition-colors"
+              >
+                Daftar Peserta Trailrun
+              </Link>
+              <a
+                href="https://wa.me/6282171914989?text=Halo%20Panitia,%20saya%20ingin%20menanyakan%20status%20nomor%20BIB%20saya"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-5 py-2.5 bg-white border border-black/10 hover:border-emerald-500 hover:text-emerald-600 text-slate-700 rounded-xl text-xs font-semibold uppercase tracking-wider transition-colors inline-flex items-center gap-1.5"
+              >
+                <Phone className="w-3.5 h-3.5" />
+                <span>Hubungi CS WhatsApp</span>
+              </a>
+            </div>
+          </div>
+        )}
+
+        {/* EMPTY STATE (NO QUERY PARAMETER PROVIDED) */}
+        {!loading && !participant && !errorMsg && (
+          <div className="bg-white border border-black/10 rounded-3xl p-10 sm:p-12 shadow-xs text-center space-y-6">
+            <div className="w-20 h-20 rounded-full bg-amber-50 text-[#C9A227] border border-amber-200/60 flex items-center justify-center mx-auto">
+              <QrCode className="w-10 h-10" />
+            </div>
+            <div className="space-y-2 max-w-md mx-auto">
+              <h3 className="font-serif font-bold text-slate-900 text-2xl">Verifikasi E-BIB & Peserta</h3>
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                Halaman ini digunakan untuk memverifikasi keaslian nomor BIB, data medis, dan tiket resmi peserta
+                <strong> Trailrun Lintas Candi Majapahit 2026</strong> via QR Code.
+              </p>
+            </div>
+
+            <div className="max-w-md mx-auto">
+              <form onSubmit={handleSearch} className="flex gap-2">
+                <input
+                  type="text"
+                  value={inputBib}
+                  onChange={(e) => setInputBib(e.target.value.toUpperCase())}
+                  placeholder="Masukkan Nomor BIB (contoh: M-00001 / F-00001)"
+                  className="flex-1 px-4 py-3 bg-[#f8f8f8] border border-black/10 rounded-xl text-sm font-mono uppercase focus:border-[#C9A227] focus:bg-white focus:ring-1 focus:ring-[#C9A227] outline-hidden"
+                />
+                <button
+                  type="submit"
+                  className="px-6 py-3 bg-[#C9A227] hover:bg-[#b08d20] text-[#0d1c32] rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-sm cursor-pointer"
+                >
+                  Cari Peserta
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* =========================================================================
+            PARTICIPANT FOUND: OFFICIAL DIGITAL PASS / E-BIB CARD
+        ========================================================================= */}
+        {!loading && participant && (
+          <div className="space-y-6">
+            {/* Action Bar (Download, Print, Share) - Hidden on Print */}
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-white border border-black/10 rounded-2xl p-4 shadow-xs print:hidden">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                  Digital Pass & Verifikasi Resmi
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={handleCopyLink}
+                  className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
+                  title="Salin tautan ke clipboard"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copied ? 'Tersalin!' : 'Salin Tautan'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleShareWhatsApp}
+                  className="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                  <span>Bagikan</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handlePrint}
+                  className="px-4 py-2 bg-[#0d1c32] hover:bg-slate-800 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+                >
+                  <Printer className="w-3.5 h-3.5 text-[#C9A227]" />
+                  <span>Cetak / PDF</span>
+                </button>
+              </div>
+            </div>
+
+            {/* THE OFFICIAL RUNNER CARD (Optimized for Screen & Print) */}
+            <div className="bg-white border-2 border-slate-900 rounded-3xl overflow-hidden shadow-xl print:shadow-none print:border-2 print:border-black print:rounded-2xl">
+              {/* Card Top Banner - Official Race Header */}
+              <div className="bg-[#0d1c32] text-white p-6 sm:p-7 relative overflow-hidden">
+                <div className="absolute -right-8 -top-8 w-44 h-44 rounded-full bg-[#C9A227]/10 pointer-events-none" />
+                <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-0.5 rounded-full bg-[#C9A227] text-[#0d1c32] text-[10px] font-extrabold uppercase tracking-widest">
+                        OFFICIAL PASS
+                      </span>
+                      <span className="text-[11px] text-slate-300 font-semibold tracking-wider uppercase">
+                        Trailrun Lintas Candi Majapahit 2026
+                      </span>
+                    </div>
+                    <h1 className="text-xl sm:text-2xl font-serif font-bold text-white tracking-wide">
+                      Kartu Peserta Resmi
+                    </h1>
+                  </div>
+
+                  {/* Status Badge */}
+                  <div className="flex items-center gap-2 self-start sm:self-center">
+                    {isPaid ? (
+                      <div className="px-3 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-400 text-emerald-300 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-xs">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                        <span>Terverifikasi • Lunas</span>
+                      </div>
+                    ) : (
+                      <div className="px-3 py-1.5 rounded-full bg-amber-500/20 border border-amber-400 text-amber-300 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
+                        <Clock className="w-4 h-4 text-amber-400" />
+                        <span>Menunggu Pembayaran</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Card Main Body: 2 Columns (Runner & BIB vs QR Code) */}
+              <div className="p-6 sm:p-8 space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center border-b border-black/10 pb-8">
+                  {/* Left Column: Big BIB Number & Runner Identity */}
+                  <div className="md:col-span-8 space-y-4">
+                    <div className="space-y-1">
+                      <span className="text-[11px] uppercase font-bold tracking-widest text-[#C9A227] block">
+                        Kategori Lomba
+                      </span>
+                      <h2 className="text-xl sm:text-2xl font-bold font-serif text-slate-900">
+                        {participant.kategori}
+                      </h2>
+                    </div>
+
+                    {/* Huge BIB Badge */}
+                    <div className="inline-block bg-slate-50 border-2 border-slate-900 rounded-2xl p-4 sm:p-5 shadow-inner">
+                      <div className="text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-1">
+                        NOMOR BIB RESMI
+                      </div>
+                      <div className="text-4xl sm:text-5xl md:text-6xl font-extrabold font-mono tracking-wider text-slate-900">
+                        {participant.no_bib}
+                      </div>
+                    </div>
+
+                    {/* Runner Name */}
+                    <div className="space-y-0.5 pt-1">
+                      <div className="text-xs uppercase font-semibold text-slate-400 tracking-wider">
+                        Nama Peserta
+                      </div>
+                      <div className="text-xl sm:text-2xl font-serif font-bold text-slate-900">
+                        {participant.nama}
+                      </div>
+                      {participant.nama_komunitas && (
+                        <div className="text-xs font-semibold text-[#C9A227] flex items-center gap-1 mt-0.5">
+                          <span>🏃‍♂️</span>
+                          <span>{participant.nama_komunitas}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right Column: QR Code Box */}
+                  <div className="md:col-span-4 flex flex-col items-center justify-center text-center p-5 bg-[#fbfbfb] border border-black/10 rounded-2xl space-y-3">
+                    <div className="relative p-2 bg-white rounded-xl shadow-xs border border-black/5">
+                      {/* Viewfinder Corners Accent */}
+                      <div className="absolute top-1 left-1 w-3 h-3 border-t-2 border-l-2 border-[#C9A227]" />
+                      <div className="absolute top-1 right-1 w-3 h-3 border-t-2 border-r-2 border-[#C9A227]" />
+                      <div className="absolute bottom-1 left-1 w-3 h-3 border-b-2 border-l-2 border-[#C9A227]" />
+                      <div className="absolute bottom-1 right-1 w-3 h-3 border-b-2 border-r-2 border-[#C9A227]" />
+
+                      {/* QR Code Image */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={qrImageUrl}
+                        alt={`QR Code BIB ${participant.no_bib}`}
+                        className="w-44 h-44 sm:w-48 sm:h-48 object-contain"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="text-[11px] font-bold uppercase tracking-wider text-slate-800">
+                        Pindai Untuk Verifikasi
+                      </div>
+                      <p className="text-[10px] text-slate-500 leading-tight max-w-[200px]">
+                        Tunjukkan QR ini saat pengambilan Race Pack & Technical Meeting.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Details Section: Grid of Data Diri, Medis, & Transaksi */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Block 1: Data Diri */}
+                  <div className="bg-[#f8f8f8] rounded-2xl p-5 border border-black/5 space-y-3">
+                    <div className="flex items-center gap-2 pb-2 border-b border-black/10 text-slate-800 font-bold text-xs uppercase tracking-wider">
+                      <User className="w-4 h-4 text-[#C9A227]" />
+                      <span>Data Pelari</span>
+                    </div>
+
+                    <div className="space-y-2 text-xs">
+                      <div>
+                        <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">
+                          Jenis Kelamin
+                        </span>
+                        <span className="font-semibold text-slate-800">
+                          {participant.jenis_kelamin || '—'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">
+                          Tanggal Lahir
+                        </span>
+                        <span className="font-semibold text-slate-800">
+                          {formatDate(participant.tanggal_lahir)}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">
+                          Kewarganegaraan
+                        </span>
+                        <span className="font-semibold text-slate-800">
+                          {participant.kewarganegaraan || 'WNI'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">
+                          Kota / Domisili
+                        </span>
+                        <span className="font-semibold text-slate-800">
+                          {participant.kota ? `${participant.kota}, ${participant.provinsi || ''}` : '—'}
+                        </span>
+                      </div>
+                      {participant.alamat && (
+                        <div>
+                          <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">
+                            Alamat
+                          </span>
+                          <span className="text-slate-600 text-[11px] leading-snug block">
+                            {participant.alamat}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Block 2: Medis & Darurat */}
+                  <div className="bg-[#f8f8f8] rounded-2xl p-5 border border-black/5 space-y-3">
+                    <div className="flex items-center gap-2 pb-2 border-b border-black/10 text-slate-800 font-bold text-xs uppercase tracking-wider">
+                      <HeartPulse className="w-4 h-4 text-rose-500" />
+                      <span>Medis & Darurat</span>
+                    </div>
+
+                    <div className="space-y-2.5 text-xs">
+                      <div>
+                        <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">
+                          Golongan Darah
+                        </span>
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-700 font-bold text-xs mt-0.5">
+                          <span>🩸</span>
+                          <span>Golongan {participant.golongan_darah || '-'}</span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">
+                          Riwayat Penyakit / Alergi
+                        </span>
+                        <span className="font-medium text-slate-800 block text-[11px] leading-snug">
+                          {participant.riwayat_medis || 'Tidak ada riwayat medis khusus'}
+                        </span>
+                      </div>
+
+                      <div className="pt-1 border-t border-black/5">
+                        <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">
+                          Kontak Darurat (ICE)
+                        </span>
+                        <span className="font-semibold text-slate-900 block mt-0.5">
+                          {participant.kontak_darurat || '—'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Block 3: Informasi Pendaftaran & Pembayaran */}
+                  <div className="bg-[#f8f8f8] rounded-2xl p-5 border border-black/5 space-y-3">
+                    <div className="flex items-center gap-2 pb-2 border-b border-black/10 text-slate-800 font-bold text-xs uppercase tracking-wider">
+                      <CreditCard className="w-4 h-4 text-emerald-600" />
+                      <span>Status Tiket</span>
+                    </div>
+
+                    <div className="space-y-2 text-xs">
+                      <div>
+                        <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">
+                          Status Pembayaran
+                        </span>
+                        <span
+                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-bold text-xs mt-0.5 ${
+                            isPaid
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                              : 'bg-amber-100 text-amber-800 border border-amber-300'
+                          }`}
+                        >
+                          <Check className="w-3 h-3" />
+                          <span>{isPaid ? 'Lunas (Paid)' : 'Menunggu Bayar'}</span>
+                        </span>
+                      </div>
+
+                      {participant.payment?.order_id && (
+                        <div>
+                          <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">
+                            Order ID
+                          </span>
+                          <span className="font-mono font-semibold text-slate-800 text-[11px]">
+                            {participant.payment.order_id}
+                          </span>
+                        </div>
+                      )}
+
+                      {participant.payment?.total_payment && (
+                        <div>
+                          <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">
+                            Total Bayar
+                          </span>
+                          <span className="font-bold text-slate-900">
+                            {formatCurrency(participant.payment.total_payment)}
+                          </span>
+                        </div>
+                      )}
+
+                      <div>
+                        <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">
+                          Metode
+                        </span>
+                        <span className="font-semibold text-slate-800 uppercase">
+                          {participant.payment?.payment_method?.replace('_', ' ') || 'QRIS'}
+                        </span>
+                      </div>
+
+                      <div>
+                        <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">
+                          Waktu Registrasi
+                        </span>
+                        <span className="text-slate-600 text-[11px]">
+                          {formatDateTime(participant.created_at)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Race Day Guide: Pengambilan Race Pack & Flag Off */}
+                <div className="bg-amber-50/60 border border-amber-200/80 rounded-2xl p-5 sm:p-6 space-y-4">
+                  <div className="flex items-center gap-2 text-amber-900 font-bold text-xs uppercase tracking-wider">
+                    <Calendar className="w-4 h-4 text-[#C9A227]" />
+                    <span>Informasi Pengambilan Race Pack & Technical Meeting</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1.5 font-bold text-slate-900">
+                        <Clock className="w-3.5 h-3.5 text-[#C9A227]" />
+                        <span>Waktu & Tanggal</span>
+                      </div>
+                      <p className="text-slate-600 text-[11px] leading-relaxed">
+                        H-1 sebelum lomba (10:00 - 18:00 WIB). Wajib hadir tepat waktu.
+                      </p>
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1.5 font-bold text-slate-900">
+                        <MapPin className="w-3.5 h-3.5 text-[#C9A227]" />
+                        <span>Lokasi Race Village</span>
+                      </div>
+                      <p className="text-slate-600 text-[11px] leading-relaxed">
+                        Kawasan Cagar Budaya Candi Bajang Ratu, Trowulan, Mojokerto.
+                      </p>
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1.5 font-bold text-slate-900">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Syarat Pengambilan</span>
+                      </div>
+                      <p className="text-slate-600 text-[11px] leading-relaxed">
+                        Wajib menunjukkan <strong>QR Pass ini</strong> beserta kartu identitas asli (KTP/SIM/Paspor).
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Mandatory Gear Warning */}
+                  <div className="pt-3 border-t border-amber-200/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-[11px] text-amber-900">
+                    <div className="flex items-center gap-2">
+                      <Activity className="w-4 h-4 text-amber-700 shrink-0" />
+                      <span>
+                        <strong>Perlengkapan Wajib (Mandatory Gear):</strong> Hydration pack/botol air min. 500ml,
+                        nomor BIB terpasang di dada, peluit darurat, & sepatu trail running.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card Footer: Official Organizer Watermark */}
+              <div className="bg-[#f4f4f4] px-6 py-4 border-t border-black/10 flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
+                <div className="text-[11px] text-slate-500">
+                  Diterbitkan secara resmi oleh{' '}
+                  <strong className="text-slate-800">JIWANDANA Event Organizer</strong>. Dokumen ini sah sebagai tanda
+                  peserta resmi.
+                </div>
+                <div className="text-[10px] font-mono text-slate-400">
+                  SECURE PASS • {participant.no_bib} • {participant.payment?.order_id || 'VERIFIED'}
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Actions - Hidden on Print */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 print:hidden">
+              <Link
+                href="/trailrun/daftar"
+                className="w-full sm:w-auto px-6 py-3 bg-white border border-black/10 hover:border-[#C9A227] text-slate-700 hover:text-[#C9A227] rounded-xl text-xs font-semibold uppercase tracking-wider transition-colors text-center"
+              >
+                Daftarkan Peserta Lain
+              </Link>
+
+              <div className="flex items-center gap-3">
+                <a
+                  href={`https://wa.me/6282171914989?text=${encodeURIComponent(
+                    `Halo Panitia Trailrun Lintas Candi, saya ingin menanyakan perihal nomor BIB ${participant.no_bib} atas nama ${participant.nama}.`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors inline-flex items-center gap-1.5 shadow-sm"
+                >
+                  <Phone className="w-3.5 h-3.5" />
+                  <span>Bantuan CS WhatsApp</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

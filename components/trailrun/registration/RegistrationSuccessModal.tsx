@@ -138,6 +138,15 @@ export default function RegistrationSuccessModal({
 
         {/* Action Buttons */}
         <div className="flex flex-col gap-2.5 pt-1">
+          {bibNumber && (
+            <Link
+              href={`/trailrun/peserta?no_bib=${encodeURIComponent(bibNumber)}`}
+              className="w-full bg-[#0d1c32] hover:bg-slate-800 text-white font-semibold py-3 px-4 rounded-xl transition-colors text-xs sm:text-sm uppercase tracking-wider shadow-sm flex items-center justify-center gap-2"
+            >
+              <span className="material-symbols-outlined text-base text-[#C9A227]">qr_code_2</span>
+              <span>Lihat E-BIB & QR Code Peserta</span>
+            </Link>
+          )}
 
           <Link
             href="/trailrun"
