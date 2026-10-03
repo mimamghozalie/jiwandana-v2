@@ -171,6 +171,7 @@ export default function StepAlamatMedis({
             label="Kategori Lomba"
             value={selectedCategory ? `${selectedCategory.categoryName} (${selectedCategory.distance})` : formData.kategori || '-'}
           />
+          <SummaryField label="No. BIB" value={formData.no_bib || '-'} />
           <SummaryField label="Nama" value={formData.nama || '-'} />
           <SummaryField label="Email" value={formData.email || '-'} />
           <SummaryField label="No. HP" value={formData.no_hp || '-'} />
@@ -180,10 +181,10 @@ export default function StepAlamatMedis({
           <SummaryField label="Gol. Darah" value={formData.golongan_darah || '-'} />
           <SummaryField label="Kontak Darurat" value={formData.kontak_darurat || '-'} />
           {formData.nama_komunitas && <SummaryField label="Komunitas" value={formData.nama_komunitas} />}
-          {formData.no_bib && <SummaryField label="No. BIB" value={formData.no_bib} />}
         </div>
       </div>
     </div>
+
   );
 }
 

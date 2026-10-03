@@ -20,6 +20,8 @@ export interface TrailrunFormData {
 
 export type FormStep = 1 | 2 | 3 | 4;
 
+export type BibStatus = 'idle' | 'checking' | 'available' | 'taken' | 'error';
+
 export interface PaymentData {
   txn_id: string;
   order_id: string;

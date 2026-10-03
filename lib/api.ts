@@ -193,16 +193,73 @@ export async function submitContact(formData: ContactSubmission): Promise<{ succ
 }
 
 // ============ TRAILRUN REGISTRATION ============
+export async function checkBibAvailability(
+  bib: string
+): Promise<{ available: boolean; bib?: string; message?: string; error?: string }> {
+  const cleanBib = bib.trim();
+  if (!cleanBib) {
+    return { available: false, error: 'Nomor BIB tidak boleh kosong.' };
+  }
+
+  try {
+    const res = await fetch(`/api/trailrun/check-bib?bib=${encodeURIComponent(cleanBib)}`);
+    const data = await res.json();
+    return data;
+  } catch (err: any) {
+    // Graceful fallback: check directly via Supabase client if API route fails
+    try {
+      const checkPromise = supabase
+        .from('trailrun_registrations')
+        .select('id, no_bib')
+        .ilike('no_bib', cleanBib)
+        .limit(1);
+
+      const { data } = await withTimeout(checkPromise, 3500);
+      const isTaken = !!(data && data.length > 0);
+      return {
+        available: !isTaken,
+        bib: cleanBib,
+        message: isTaken
+          ? `Nomor BIB "${cleanBib}" sudah terdaftar oleh peserta lain.`
+          : `Nomor BIB "${cleanBib}" tersedia.`,
+      };
+    } catch {
+      return { available: true, bib: cleanBib };
+    }
+  }
+}
+
 export async function submitTrailrunRegistration(
   formData: Omit<TrailrunRegistration, 'id' | 'status' | 'created_at'>
 ): Promise<{ success: boolean; registration_id?: string; error?: string }> {
   try {
+    const cleanBib = (formData.no_bib || '').trim();
+    if (!cleanBib) {
+      return { success: false, error: 'Nomor BIB wajib diisi.' };
+    }
+
+    // Uniqueness pre-check right before insert
+    const checkPromise = supabase
+      .from('trailrun_registrations')
+      .select('id')
+      .ilike('no_bib', cleanBib)
+      .limit(1);
+
+    const { data: existingBib } = await withTimeout(checkPromise, 3500).catch(() => ({ data: null }));
+
+    if (existingBib && existingBib.length > 0) {
+      return {
+        success: false,
+        error: `Nomor BIB "${cleanBib}" sudah digunakan oleh peserta lain. Silakan pilih nomor BIB yang berbeda.`,
+      };
+    }
+
     const insertPromise = supabase
       .from('trailrun_registrations')
       .insert([{
         nama: formData.nama,
         email: formData.email,
-        no_bib: formData.no_bib,
+        no_bib: cleanBib,
         no_hp: formData.no_hp,
         alamat: formData.alamat,
         kota: formData.kota,
@@ -223,6 +280,16 @@ export async function submitTrailrunRegistration(
     const { data, error } = await withTimeout(insertPromise, 5000);
 
     if (error) {
+      if (
+        error.code === '23505' ||
+        error.message?.toLowerCase().includes('duplicate') ||
+        error.message?.toLowerCase().includes('unique')
+      ) {
+        return {
+          success: false,
+          error: `Nomor BIB "${cleanBib}" sudah digunakan oleh peserta lain. Silakan pilih nomor BIB yang berbeda.`,
+        };
+      }
       throw error;
     }
 
@@ -232,4 +299,5 @@ export async function submitTrailrunRegistration(
     return { success: false, error: err.message || 'Gagal menyimpan data pendaftaran.' };
   }
 }
+
 

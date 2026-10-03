@@ -5,12 +5,13 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import trailrunData from '@/data/trailrun.json';
 import { TrailrunCard } from '@/lib/types';
-import { submitTrailrunRegistration } from '@/lib/api';
+import { submitTrailrunRegistration, checkBibAvailability } from '@/lib/api';
 import TrailrunBulkRegister from '@/components/trailrun/TrailrunBulkRegister';
 
 import {
   TrailrunFormData,
   FormStep,
+  BibStatus,
   PaymentData,
   formatCurrency,
   formatExpiry,
@@ -21,6 +22,7 @@ import StepDataPribadi from '@/components/trailrun/registration/StepDataPribadi'
 import StepAlamatMedis from '@/components/trailrun/registration/StepAlamatMedis';
 import StepPembayaran from '@/components/trailrun/registration/StepPembayaran';
 import RegistrationSuccessModal from '@/components/trailrun/registration/RegistrationSuccessModal';
+
 
 const categories = trailrunData.categories as TrailrunCard[];
 
@@ -43,6 +45,11 @@ export default function DaftarTrailrunClient() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [pricingInfoMap, setPricingInfoMap] = useState<Record<string, any>>({});
   const [checkingStatus, setCheckingStatus] = useState(false);
+
+  // BIB validation states
+  const [bibStatus, setBibStatus] = useState<BibStatus>('idle');
+  const [bibMessage, setBibMessage] = useState('');
+  const [checkingBib, setCheckingBib] = useState(false);
 
   useEffect(() => {
     fetch('/api/trailrun/pricing')
@@ -73,11 +80,71 @@ export default function DaftarTrailrunClient() {
 
   const selectedCategory = categories.find((c) => c.id === formData.kategori);
 
+  // Debounced check on BIB number input
+  useEffect(() => {
+    const bib = formData.no_bib.trim();
+    if (!bib) {
+      setBibStatus('idle');
+      setBibMessage('');
+      return;
+    }
+
+    setBibStatus('checking');
+    const timer = setTimeout(async () => {
+      try {
+        const res = await checkBibAvailability(bib);
+        if (res.available) {
+          setBibStatus('available');
+          setBibMessage(res.message || `Nomor BIB "${bib}" tersedia.`);
+        } else {
+          setBibStatus('taken');
+          setBibMessage(res.message || `Nomor BIB "${bib}" sudah digunakan oleh peserta lain.`);
+        }
+      } catch {
+        setBibStatus('idle');
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [formData.no_bib]);
+
+  const handleManualCheckBib = async () => {
+    const bib = formData.no_bib.trim();
+    if (!bib) {
+      setErrorMsg('Nomor BIB wajib diisi terlebih dahulu.');
+      return;
+    }
+
+    setCheckingBib(true);
+    setBibStatus('checking');
+    try {
+      const res = await checkBibAvailability(bib);
+      if (res.available) {
+        setBibStatus('available');
+        setBibMessage(res.message || `Nomor BIB "${bib}" tersedia.`);
+        setErrorMsg('');
+      } else {
+        setBibStatus('taken');
+        const msg = res.message || `Nomor BIB "${bib}" sudah digunakan oleh peserta lain.`;
+        setBibMessage(msg);
+        setErrorMsg(msg);
+      }
+    } catch {
+      setBibStatus('idle');
+    } finally {
+      setCheckingBib(false);
+    }
+  };
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (name === 'no_bib') {
+      setBibStatus('idle');
+      setBibMessage('');
+    }
     if (errorMsg) setErrorMsg('');
   };
 
@@ -100,6 +167,9 @@ export default function DaftarTrailrunClient() {
         if (!formData.nama.trim()) return fail('Nama lengkap wajib diisi.');
         if (!formData.email.trim() || !formData.email.includes('@'))
           return fail('Email tidak valid.');
+        if (!formData.no_bib.trim()) return fail('Nomor BIB wajib diisi.');
+        if (bibStatus === 'taken')
+          return fail(bibMessage || `Nomor BIB "${formData.no_bib}" sudah digunakan oleh peserta lain.`);
         if (!formData.no_hp.trim()) return fail('No. telepon/WhatsApp wajib diisi.');
         if (!formData.tanggal_lahir) return fail('Tanggal lahir wajib diisi.');
         if (!formData.jenis_kelamin) return fail('Jenis kelamin wajib dipilih.');
@@ -122,11 +192,37 @@ export default function DaftarTrailrunClient() {
     return false;
   }
 
-  const goNext = () => {
-    if (validateStep(currentStep)) {
-      setCurrentStep((prev) => Math.min(prev + 1, 4) as FormStep);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+  const goNext = async () => {
+    if (!validateStep(currentStep)) return;
+
+    if (currentStep === 2) {
+      if (bibStatus === 'taken') {
+        fail(bibMessage || `Nomor BIB "${formData.no_bib}" sudah terdaftar oleh peserta lain.`);
+        return;
+      }
+
+      setCheckingBib(true);
+      try {
+        const res = await checkBibAvailability(formData.no_bib.trim());
+        setCheckingBib(false);
+
+        if (!res.available) {
+          setBibStatus('taken');
+          const msg = res.message || `Nomor BIB "${formData.no_bib}" sudah terdaftar oleh peserta lain. Silakan ganti nomor BIB.`;
+          setBibMessage(msg);
+          fail(msg);
+          return;
+        }
+
+        setBibStatus('available');
+        setBibMessage(`Nomor BIB "${formData.no_bib}" tersedia.`);
+      } catch {
+        setCheckingBib(false);
+      }
     }
+
+    setCurrentStep((prev) => Math.min(prev + 1, 4) as FormStep);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const goBack = () => {
@@ -143,11 +239,24 @@ export default function DaftarTrailrunClient() {
     setLoading(true);
     setErrorMsg('');
 
+    // Pre-check BIB availability before inserting to prevent race conditions
+    const bibCheck = await checkBibAvailability(formData.no_bib.trim());
+    if (!bibCheck.available) {
+      setLoading(false);
+      setBibStatus('taken');
+      const msg = bibCheck.message || `Nomor BIB "${formData.no_bib}" sudah terdaftar oleh peserta lain.`;
+      setBibMessage(msg);
+      setErrorMsg(msg);
+      setCurrentStep(2);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     try {
       const res = await submitTrailrunRegistration({
         nama: formData.nama,
         email: formData.email,
-        no_bib: formData.no_bib,
+        no_bib: formData.no_bib.trim(),
         no_hp: formData.no_hp,
         alamat: formData.alamat,
         kota: formData.kota,
@@ -168,6 +277,12 @@ export default function DaftarTrailrunClient() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
         setErrorMsg(res.error || 'Gagal mengirim pendaftaran.');
+        if (res.error?.toLowerCase().includes('bib')) {
+          setBibStatus('taken');
+          setBibMessage(res.error);
+          setCurrentStep(2);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
       }
     } catch (err: any) {
       setErrorMsg(err.message || 'Terjadi kesalahan sistem.');
@@ -175,6 +290,7 @@ export default function DaftarTrailrunClient() {
       setLoading(false);
     }
   };
+
 
   // Step 4 → Create payment via Pakasir
   const handleCreatePayment = async () => {
@@ -243,6 +359,8 @@ export default function DaftarTrailrunClient() {
     setPaymentData(null);
     setPaymentStatus('idle');
     setPaymentMethod('qris');
+    setBibStatus('idle');
+    setBibMessage('');
     setFormData({
       nama: '',
       email: '',
@@ -352,6 +470,9 @@ export default function DaftarTrailrunClient() {
                     selectedCategory={selectedCategory}
                     onChange={handleChange}
                     onChangeCategoryStep={() => setCurrentStep(1)}
+                    bibStatus={bibStatus}
+                    bibMessage={bibMessage}
+                    onCheckBib={handleManualCheckBib}
                   />
                 )}
 
@@ -424,10 +545,20 @@ export default function DaftarTrailrunClient() {
                     <button
                       type="button"
                       onClick={goNext}
-                      className="px-6 py-3 bg-[#C9A227] hover:bg-[#b08d20] text-[#0d1c32] rounded-xl font-semibold text-xs uppercase tracking-wider shadow-md transition-all transform active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                      disabled={checkingBib}
+                      className="px-6 py-3 bg-[#C9A227] hover:bg-[#b08d20] disabled:opacity-50 text-[#0d1c32] rounded-xl font-semibold text-xs uppercase tracking-wider shadow-md transition-all transform active:scale-95 flex items-center gap-1.5 cursor-pointer"
                     >
-                      <span>Lanjutkan</span>
-                      <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                      {checkingBib && currentStep === 2 ? (
+                        <>
+                          <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+                          <span>Memeriksa BIB...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Lanjutkan</span>
+                          <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                        </>
+                      )}
                     </button>
                   )}
 
