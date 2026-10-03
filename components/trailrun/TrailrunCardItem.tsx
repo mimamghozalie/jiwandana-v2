@@ -67,27 +67,24 @@ export default function TrailrunCardItem({
   return (
     <div className="perspective-1000 w-full min-h-[560px]">
       <div
-        className={`relative w-full h-full transition-transform duration-700 transform-style-3d ${
-          isFlipped ? 'rotate-y-180' : ''
-        }`}
+        className={`relative w-full h-full transition-transform duration-700 transform-style-3d ${isFlipped ? 'rotate-y-180' : ''
+          }`}
       >
         {/* =========================================================================
             FRONT SIDE OF CARD
         ========================================================================= */}
         <div
-          className={`backface-hidden w-full h-full bg-white border border-black/10 rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-sm hover:shadow-xl transition-all duration-300 hover:border-[#C9A227]/50 group font-sans relative overflow-hidden ${
-            isFlipped ? 'pointer-events-none' : 'pointer-events-auto'
-          }`}
+          className={`backface-hidden w-full h-full bg-white border border-black/10 rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-sm hover:shadow-xl transition-all duration-300 hover:border-[#C9A227]/50 group font-sans relative overflow-hidden ${isFlipped ? 'pointer-events-none' : 'pointer-events-auto'
+            }`}
         >
           {/* 45-Degree Corner Ribbon Badge in Top-Right of Card: "SOLD" if sold out, "OPEN" if active */}
           {(pricingInfo?.tierId === 'early' || pricingInfo?.tierId === 'presale' || pricingInfo?.tierId === 'regular' || isCurrentActiveSoldOut) && (
             <div className="absolute top-0 right-0 w-24 h-24 overflow-hidden pointer-events-none z-30">
               <div
-                className={`absolute transform rotate-45 text-white font-black text-[9px] py-1 right-[-34px] top-[18px] w-[120px] text-center shadow-md uppercase tracking-wider ${
-                  isCurrentActiveSoldOut
-                    ? 'bg-rose-600 shadow-rose-950/40'
-                    : 'bg-emerald-500 shadow-emerald-950/40'
-                }`}
+                className={`absolute transform rotate-45 text-white font-black text-[9px] py-1 right-[-34px] top-[18px] w-[120px] text-center shadow-md uppercase tracking-wider ${isCurrentActiveSoldOut
+                  ? 'bg-rose-600 shadow-rose-950/40'
+                  : 'bg-emerald-500 shadow-emerald-950/40'
+                  }`}
               >
                 {isCurrentActiveSoldOut ? 'SOLD' : 'OPEN'}
               </div>
@@ -110,7 +107,7 @@ export default function TrailrunCardItem({
               </div>
 
               {/* Rotate Button Chip on Image */}
-              <button
+              {/* <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -123,7 +120,7 @@ export default function TrailrunCardItem({
                   sync
                 </span>
                 <span>Profil Elevasi</span>
-              </button>
+              </button> */}
             </div>
 
             {/* 2. Middle Box: Title & Details */}
@@ -158,13 +155,12 @@ export default function TrailrunCardItem({
               <div className="grid grid-cols-3 text-center divide-x divide-black/10 pt-1">
                 {/* Early Bird */}
                 <div
-                  className={`relative overflow-hidden px-1 space-y-0.5 rounded-lg transition-colors ${
-                    isEarlySoldOut
-                      ? 'bg-slate-50/60 py-1'
-                      : pricingInfo?.tierId === 'early'
+                  className={`relative overflow-hidden px-1 space-y-0.5 rounded-lg transition-colors ${isEarlySoldOut
+                    ? 'bg-slate-50/60 py-1'
+                    : pricingInfo?.tierId === 'early'
                       ? 'bg-rose-50/80 py-1 ring-1 ring-rose-400/80'
                       : ''
-                  }`}
+                    }`}
                 >
                   {isEarlySoldOut ? (
                     <div className="absolute top-0 right-0 w-8 h-8 overflow-hidden pointer-events-none z-10">
@@ -184,9 +180,8 @@ export default function TrailrunCardItem({
                   </span>
                   <span className="text-[9px] text-slate-400 block font-medium">04–10 Okt</span>
                   <span
-                    className={`text-sm font-bold block ${
-                      isEarlySoldOut ? 'line-through text-slate-400' : 'text-slate-900'
-                    }`}
+                    className={`text-sm font-bold block ${isEarlySoldOut ? 'line-through text-slate-400' : 'text-slate-900'
+                      }`}
                   >
                     {earlyDisplay}
                   </span>
@@ -203,13 +198,12 @@ export default function TrailrunCardItem({
 
                 {/* Pre-Sale */}
                 <div
-                  className={`relative overflow-hidden px-1 space-y-0.5 rounded-lg transition-colors ${
-                    isPresaleSoldOut
-                      ? 'bg-slate-50/60 py-1'
-                      : pricingInfo?.tierId === 'presale'
+                  className={`relative overflow-hidden px-1 space-y-0.5 rounded-lg transition-colors ${isPresaleSoldOut
+                    ? 'bg-slate-50/60 py-1'
+                    : pricingInfo?.tierId === 'presale'
                       ? 'bg-amber-50/80 py-1 ring-1 ring-[#C9A227]/80'
                       : ''
-                  }`}
+                    }`}
                 >
                   {isPresaleSoldOut ? (
                     <div className="absolute top-0 right-0 w-8 h-8 overflow-hidden pointer-events-none z-10">
@@ -229,9 +223,8 @@ export default function TrailrunCardItem({
                   </span>
                   <span className="text-[9px] text-amber-600/80 block font-medium">11–21 Okt</span>
                   <span
-                    className={`text-sm font-bold block ${
-                      isPresaleSoldOut ? 'line-through text-slate-400' : 'text-[#C9A227]'
-                    }`}
+                    className={`text-sm font-bold block ${isPresaleSoldOut ? 'line-through text-slate-400' : 'text-[#C9A227]'
+                      }`}
                   >
                     {presaleDisplay}
                   </span>
@@ -248,13 +241,12 @@ export default function TrailrunCardItem({
 
                 {/* Regular */}
                 <div
-                  className={`relative overflow-hidden px-1 space-y-0.5 rounded-lg transition-colors ${
-                    isRegularSoldOut
-                      ? 'bg-slate-50/60 py-1'
-                      : pricingInfo?.tierId === 'regular'
+                  className={`relative overflow-hidden px-1 space-y-0.5 rounded-lg transition-colors ${isRegularSoldOut
+                    ? 'bg-slate-50/60 py-1'
+                    : pricingInfo?.tierId === 'regular'
                       ? 'bg-slate-100/90 py-1 ring-1 ring-slate-400/80'
                       : ''
-                  }`}
+                    }`}
                 >
                   {isRegularSoldOut ? (
                     <div className="absolute top-0 right-0 w-8 h-8 overflow-hidden pointer-events-none z-10">
@@ -274,9 +266,8 @@ export default function TrailrunCardItem({
                   </span>
                   <span className="text-[9px] text-slate-400 block font-medium">22 Okt–08 Nov</span>
                   <span
-                    className={`text-sm font-bold block ${
-                      isRegularSoldOut ? 'line-through text-slate-400' : 'text-slate-700'
-                    }`}
+                    className={`text-sm font-bold block ${isRegularSoldOut ? 'line-through text-slate-400' : 'text-slate-700'
+                      }`}
                   >
                     {regularDisplay}
                   </span>
@@ -324,12 +315,11 @@ export default function TrailrunCardItem({
             BACK SIDE OF CARD: ELEVATION PROFILE (Matching User's Screenshot)
         ========================================================================= */}
         <div
-          className={`backface-hidden rotate-y-180 absolute inset-0 w-full h-full bg-[#121316] border border-white/10 rounded-2xl p-5 flex flex-col justify-between shadow-2xl font-sans text-white ${
-            isFlipped ? 'pointer-events-auto z-10' : 'pointer-events-none'
-          }`}
+          className={`backface-hidden rotate-y-180 absolute inset-0 w-full h-full bg-[#121316] border border-white/10 rounded-2xl p-5 flex flex-col justify-between shadow-2xl font-sans text-white ${isFlipped ? 'pointer-events-auto z-10' : 'pointer-events-none'
+            }`}
         >
           {/* Top: PROFIL ELEVASI & Code + Close (X) button */}
-          <div className="flex justify-between items-start">
+          {/* <div className="flex justify-between items-start">
             <div>
               <span className="text-[11px] font-semibold uppercase tracking-wider text-[#8e929b] block">
                 PROFIL ELEVASI
@@ -347,7 +337,7 @@ export default function TrailrunCardItem({
             >
               <span className="material-symbols-outlined text-lg">close</span>
             </button>
-          </div>
+          </div> */}
 
           {/* Middle: Elevation Curve Box matching screenshot */}
           <div className="w-full h-52 sm:h-56 rounded-2xl bg-[#0a0a0c] border border-white/5 relative overflow-hidden flex items-end p-2.5 my-3">
