@@ -472,7 +472,7 @@ export default function PesertaClient() {
                 </div>
 
                 {/* Details Section: Grid of Data Diri, Medis, & Transaksi */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Block 1: Data Diri */}
                   <div className="bg-[#f8f8f8] rounded-2xl p-5 border border-black/5 space-y-3">
                     <div className="flex items-center gap-2 pb-2 border-b border-black/10 text-slate-800 font-bold text-xs uppercase tracking-wider">
@@ -565,7 +565,7 @@ export default function PesertaClient() {
                   </div>
 
                   {/* Block 3: Informasi Pendaftaran & Pembayaran */}
-                  <div className="bg-[#f8f8f8] rounded-2xl p-5 border border-black/5 space-y-3">
+                  {/* <div className="bg-[#f8f8f8] rounded-2xl p-5 border border-black/5 space-y-3">
                     <div className="flex items-center gap-2 pb-2 border-b border-black/10 text-slate-800 font-bold text-xs uppercase tracking-wider">
                       <CreditCard className="w-4 h-4 text-emerald-600" />
                       <span>Status Tiket</span>
@@ -628,7 +628,7 @@ export default function PesertaClient() {
                         </span>
                       </div>
                     </div>
-                  </div>
+                  </div> */}
                 </div>
 
                 {/* Race Day Guide: Pengambilan Race Pack & Flag Off */}
