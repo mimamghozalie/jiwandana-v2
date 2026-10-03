@@ -80,16 +80,20 @@ export default function TrailrunClient() {
 
           {/* Modular Cards Grid loaded from JSON with Realtime Pricing */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-            {categories.map((item) => (
-              <TrailrunCardItem
-                key={item.id}
-                item={item}
-                pricingInfo={pricingData[item.id] || null}
-                isFlipped={!!flippedCards[item.id]}
-                onToggleFlip={() => toggleFlip(item.id)}
-                onSelectCategory={() => setSelectedCategory(item)}
-              />
-            ))}
+            {categories.map((item) => {
+              const catKey = item.id.toLowerCase();
+              const info = pricingData[catKey] || pricingData[item.id] || null;
+              return (
+                <TrailrunCardItem
+                  key={item.id}
+                  item={item}
+                  pricingInfo={info}
+                  isFlipped={!!flippedCards[item.id]}
+                  onToggleFlip={() => toggleFlip(item.id)}
+                  onSelectCategory={() => setSelectedCategory(item)}
+                />
+              );
+            })}
           </div>
         </section>
 

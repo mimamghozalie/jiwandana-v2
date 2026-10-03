@@ -30,6 +30,11 @@ export interface ActiveTierResult {
   quotaLimit: number | null;
   quotaRemaining: number | null;
   isEarlyBirdSoldOut: boolean;
+  isPresaleSoldOut: boolean;
+  isRegularSoldOut: boolean;
+  isCategorySoldOut: boolean;
+  isCurrentTierSoldOut: boolean;
+  isSoldOut: boolean;
   statusNote: string;
   prices: {
     early: CategoryPrice;
@@ -69,36 +74,75 @@ export function getActivePricingTier(
   const earlyStart = new Date(tiers.early.startDate).getTime();
   const earlyEnd = new Date(tiers.early.endDate).getTime();
   const presaleEnd = new Date(tiers.presale.endDate).getTime();
+  const regularEnd = new Date(tiers.regular.endDate).getTime();
+
+  const isEarlyConfigSoldOut = Boolean(
+    (tiers.early as any).isSoldOut ||
+    (tiers.early as any).soldOut ||
+    (catData as any)?.prices?.early?.isSoldOut ||
+    (catData as any)?.prices?.early?.soldOut
+  );
+  const isPresaleConfigSoldOut = Boolean(
+    (tiers.presale as any).isSoldOut ||
+    (tiers.presale as any).soldOut ||
+    (catData as any)?.prices?.presale?.isSoldOut ||
+    (catData as any)?.prices?.presale?.soldOut
+  );
+  const isRegularConfigSoldOut = Boolean(
+    (tiers.regular as any).isSoldOut ||
+    (tiers.regular as any).soldOut ||
+    (catData as any)?.prices?.regular?.isSoldOut ||
+    (catData as any)?.prices?.regular?.soldOut
+  );
+  const isCategoryConfigSoldOut = Boolean(
+    (catData as any).isSoldOut ||
+    (catData as any).soldOut
+  );
 
   const earlyQuota = tiers.early.quotaPerCategory || 50;
   const isEarlyQuotaFull = registeredCount >= earlyQuota;
   const isEarlyDateActive = now >= earlyStart && now <= earlyEnd;
   const isEarlyDatePassed = now > earlyEnd;
 
+  const presaleQuota = tiers.presale.quotaPerCategory || 150;
+  const isPresaleQuotaFull = registeredCount >= earlyQuota + presaleQuota;
+  const isPresaleDatePassed = now > presaleEnd;
+
   let activeTierId: PricingTierId = 'regular';
-  let isEarlyBirdSoldOut = false;
+  let isEarlyBirdSoldOut = isEarlyQuotaFull || isEarlyDatePassed || isEarlyConfigSoldOut;
+  let isPresaleSoldOut = isPresaleQuotaFull || isPresaleDatePassed || isPresaleConfigSoldOut;
+  let isRegularSoldOut = isRegularConfigSoldOut || now > regularEnd;
   let statusNote = '';
 
   // 1. Check if eligible for Early Bird
-  if (!isEarlyDatePassed && !isEarlyQuotaFull) {
+  if (!isEarlyDatePassed && !isEarlyQuotaFull && !isEarlyConfigSoldOut) {
     activeTierId = 'early';
     const remaining = Math.max(0, earlyQuota - registeredCount);
     statusNote = `Sesi Early Bird aktif (Tersisa ${remaining} dari ${earlyQuota} kuota)`;
   } 
   // 2. Early Bird Sold Out or Date Expired -> Presale
-  else if (now <= presaleEnd) {
+  else if (now <= presaleEnd && !isPresaleQuotaFull && !isPresaleConfigSoldOut) {
     activeTierId = 'presale';
-    isEarlyBirdSoldOut = isEarlyQuotaFull || isEarlyDatePassed;
-    statusNote = isEarlyQuotaFull
-      ? 'Kuota Early Bird (50 slot) telah penuh! Masuk sesi Presale.'
+    isEarlyBirdSoldOut = true;
+    statusNote = isEarlyQuotaFull || isEarlyConfigSoldOut
+      ? 'Kuota Early Bird telah penuh! Masuk sesi Presale.'
       : 'Sesi Early Bird telah berakhir. Sesi Presale aktif.';
   } 
-  // 3. Past Presale -> Regular
+  // 3. Past Presale or Presale Sold Out -> Regular
   else {
     activeTierId = 'regular';
     isEarlyBirdSoldOut = true;
-    statusNote = 'Sesi Reguler aktif hingga pendaftaran ditutup.';
+    isPresaleSoldOut = true;
+    statusNote = isRegularSoldOut
+      ? 'Pendaftaran telah ditutup (Sold Out).'
+      : 'Sesi Reguler aktif hingga pendaftaran ditutup.';
   }
+
+  const isCurrentTierSoldOut =
+    isCategoryConfigSoldOut ||
+    (activeTierId === 'early' && isEarlyBirdSoldOut) ||
+    (activeTierId === 'presale' && isPresaleSoldOut) ||
+    (activeTierId === 'regular' && isRegularSoldOut);
 
   const activeTierConfig = tiers[activeTierId];
   const rawActivePrice = catData.prices[activeTierId] as { amount: number; display?: string };
@@ -124,10 +168,15 @@ export function getActivePricingTier(
     badge: activeTierConfig.badge,
     quotaLimit: activeTierConfig.quotaPerCategory,
     quotaRemaining:
-      activeTierId === 'early'
+      activeTierId === 'early' && !isEarlyBirdSoldOut
         ? Math.max(0, earlyQuota - registeredCount)
         : null,
     isEarlyBirdSoldOut,
+    isPresaleSoldOut,
+    isRegularSoldOut,
+    isCategorySoldOut: isCategoryConfigSoldOut,
+    isCurrentTierSoldOut,
+    isSoldOut: isCurrentTierSoldOut || isCategoryConfigSoldOut,
     statusNote,
     prices: {
       early: getTierPriceObj('early'),

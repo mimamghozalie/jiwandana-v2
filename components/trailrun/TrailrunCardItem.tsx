@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { TrailrunCard } from '@/lib/types';
-import { type ActivePricingResult, getCategoryPricesFromConfig } from '@/lib/pricing';
+import { type ActivePricingResult, getCategoryPricesFromConfig, getActivePricingTier } from '@/lib/pricing';
 
 interface TrailrunCardItemProps {
   item: TrailrunCard;
@@ -18,12 +18,52 @@ export default function TrailrunCardItem({
   isFlipped,
   onToggleFlip,
   onSelectCategory,
-  pricingInfo,
+  pricingInfo: propPricingInfo,
 }: TrailrunCardItemProps) {
+  // Fallback to computed active tier so badges and session states are never missing
+  const pricingInfo = propPricingInfo || getActivePricingTier(item.id, 0);
   const configPrices = getCategoryPricesFromConfig(item.id);
   const earlyDisplay = pricingInfo?.prices?.early?.display || configPrices.early;
   const presaleDisplay = pricingInfo?.prices?.presale?.display || configPrices.presale;
   const regularDisplay = pricingInfo?.prices?.regular?.display || configPrices.regular;
+  const isEarlySoldOut = Boolean(
+    pricingInfo?.isEarlyBirdSoldOut ||
+    (pricingInfo?.tiersConfig?.early as any)?.isSoldOut ||
+    (pricingInfo?.tiersConfig?.early as any)?.soldOut ||
+    (item as any)?.prices?.early?.isSoldOut ||
+    (item as any)?.prices?.early?.soldOut
+  );
+
+  const isPresaleSoldOut = Boolean(
+    pricingInfo?.isPresaleSoldOut ||
+    (pricingInfo?.tiersConfig?.presale as any)?.isSoldOut ||
+    (pricingInfo?.tiersConfig?.presale as any)?.soldOut ||
+    (item as any)?.prices?.presale?.isSoldOut ||
+    (item as any)?.prices?.presale?.soldOut
+  );
+
+  const isRegularSoldOut = Boolean(
+    pricingInfo?.isRegularSoldOut ||
+    (pricingInfo?.tiersConfig?.regular as any)?.isSoldOut ||
+    (pricingInfo?.tiersConfig?.regular as any)?.soldOut ||
+    (item as any)?.prices?.regular?.isSoldOut ||
+    (item as any)?.prices?.regular?.soldOut
+  );
+
+  const isCategorySoldOut = Boolean(
+    pricingInfo?.isCategorySoldOut ||
+    pricingInfo?.isSoldOut ||
+    (item as any)?.isSoldOut ||
+    (item as any)?.soldOut ||
+    (item as any)?.status === 'sold_out'
+  );
+
+  const isCurrentActiveSoldOut =
+    isCategorySoldOut ||
+    (pricingInfo?.tierId === 'early' && isEarlySoldOut) ||
+    (pricingInfo?.tierId === 'presale' && isPresaleSoldOut) ||
+    (pricingInfo?.tierId === 'regular' && isRegularSoldOut);
+
   return (
     <div className="perspective-1000 w-full min-h-[560px]">
       <div
@@ -35,10 +75,25 @@ export default function TrailrunCardItem({
             FRONT SIDE OF CARD
         ========================================================================= */}
         <div
-          className={`backface-hidden w-full h-full bg-white border border-black/10 rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-sm hover:shadow-xl transition-all duration-300 hover:border-[#C9A227]/50 group font-sans ${
+          className={`backface-hidden w-full h-full bg-white border border-black/10 rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-sm hover:shadow-xl transition-all duration-300 hover:border-[#C9A227]/50 group font-sans relative overflow-hidden ${
             isFlipped ? 'pointer-events-none' : 'pointer-events-auto'
           }`}
         >
+          {/* 45-Degree Corner Ribbon Badge in Top-Right of Card: "SOLD" if sold out, "OPEN" if active */}
+          {(pricingInfo?.tierId === 'early' || pricingInfo?.tierId === 'presale' || pricingInfo?.tierId === 'regular' || isCurrentActiveSoldOut) && (
+            <div className="absolute top-0 right-0 w-24 h-24 overflow-hidden pointer-events-none z-30">
+              <div
+                className={`absolute transform rotate-45 text-white font-black text-[9px] py-1 right-[-34px] top-[18px] w-[120px] text-center shadow-md uppercase tracking-wider ${
+                  isCurrentActiveSoldOut
+                    ? 'bg-rose-600 shadow-rose-950/40'
+                    : 'bg-emerald-500 shadow-emerald-950/40'
+                }`}
+              >
+                {isCurrentActiveSoldOut ? 'SOLD' : 'OPEN'}
+              </div>
+            </div>
+          )}
+
           <div className="space-y-4">
             {/* 1. FOTO Banner with Badges and Rotate Chip */}
             <div className="relative w-full h-48 rounded-xl overflow-hidden border border-black/10 bg-slate-100">
@@ -50,7 +105,7 @@ export default function TrailrunCardItem({
               <div className="absolute top-3 left-3 px-3 py-1 bg-slate-950/80 backdrop-blur-md rounded-full text-[11px] font-bold text-[#C9A227] border border-[#C9A227]/40 shadow-sm">
                 {item.distance}
               </div>
-              <div className="absolute top-3 right-3 px-2.5 py-1 bg-white/90 backdrop-blur-md rounded-full text-[10px] font-semibold text-slate-700 shadow-sm">
+              <div className="absolute top-3 right-8 sm:right-9 px-2.5 py-1 bg-white/90 backdrop-blur-md rounded-full text-[10px] font-semibold text-slate-700 shadow-sm">
                 {item.badge}
               </div>
 
@@ -102,16 +157,41 @@ export default function TrailrunCardItem({
               </div>
               <div className="grid grid-cols-3 text-center divide-x divide-black/10 pt-1">
                 {/* Early Bird */}
-                <div className={`px-1 space-y-0.5 rounded-lg transition-colors ${pricingInfo?.tierId === 'early' ? 'bg-rose-50/70 py-1' : ''}`}>
+                <div
+                  className={`relative overflow-hidden px-1 space-y-0.5 rounded-lg transition-colors ${
+                    isEarlySoldOut
+                      ? 'bg-slate-50/60 py-1'
+                      : pricingInfo?.tierId === 'early'
+                      ? 'bg-rose-50/80 py-1 ring-1 ring-rose-400/80'
+                      : ''
+                  }`}
+                >
+                  {isEarlySoldOut ? (
+                    <div className="absolute top-0 right-0 w-8 h-8 overflow-hidden pointer-events-none z-10">
+                      <div className="absolute transform rotate-45 bg-rose-600 text-white font-black text-[6.5px] py-[1.5px] right-[-12px] top-[4px] w-[40px] text-center shadow-xs uppercase tracking-tight">
+                        SOLD
+                      </div>
+                    </div>
+                  ) : pricingInfo?.tierId === 'early' ? (
+                    <div className="absolute top-0 right-0 w-8 h-8 overflow-hidden pointer-events-none z-10">
+                      <div className="absolute transform rotate-45 bg-emerald-500 text-white font-black text-[6.5px] py-[1.5px] right-[-12px] top-[4px] w-[40px] text-center shadow-xs uppercase tracking-tight">
+                        OPEN
+                      </div>
+                    </div>
+                  ) : null}
                   <span className="text-[10px] text-rose-600 uppercase block font-bold">
                     Early Bird
                   </span>
                   <span className="text-[9px] text-slate-400 block font-medium">04–10 Okt</span>
-                  <span className={`text-sm font-bold block ${pricingInfo?.isEarlyBirdSoldOut ? 'line-through text-slate-400' : 'text-slate-900'}`}>
+                  <span
+                    className={`text-sm font-bold block ${
+                      isEarlySoldOut ? 'line-through text-slate-400' : 'text-slate-900'
+                    }`}
+                  >
                     {earlyDisplay}
                   </span>
                   <span className="text-[8px] font-semibold block">
-                    {pricingInfo?.isEarlyBirdSoldOut ? (
+                    {isEarlySoldOut ? (
                       <span className="text-rose-600 bg-rose-100 px-1 py-0.5 rounded font-bold">Sold Out</span>
                     ) : typeof pricingInfo?.quotaRemaining === 'number' ? (
                       <span className="text-rose-600 font-bold">Sisa {pricingInfo.quotaRemaining} Kuota</span>
@@ -122,14 +202,43 @@ export default function TrailrunCardItem({
                 </div>
 
                 {/* Pre-Sale */}
-                <div className={`px-1 space-y-0.5 rounded-lg transition-colors ${pricingInfo?.tierId === 'presale' ? 'bg-amber-50/70 py-1' : ''}`}>
+                <div
+                  className={`relative overflow-hidden px-1 space-y-0.5 rounded-lg transition-colors ${
+                    isPresaleSoldOut
+                      ? 'bg-slate-50/60 py-1'
+                      : pricingInfo?.tierId === 'presale'
+                      ? 'bg-amber-50/80 py-1 ring-1 ring-[#C9A227]/80'
+                      : ''
+                  }`}
+                >
+                  {isPresaleSoldOut ? (
+                    <div className="absolute top-0 right-0 w-8 h-8 overflow-hidden pointer-events-none z-10">
+                      <div className="absolute transform rotate-45 bg-rose-600 text-white font-black text-[6.5px] py-[1.5px] right-[-12px] top-[4px] w-[40px] text-center shadow-xs uppercase tracking-tight">
+                        SOLD
+                      </div>
+                    </div>
+                  ) : pricingInfo?.tierId === 'presale' ? (
+                    <div className="absolute top-0 right-0 w-8 h-8 overflow-hidden pointer-events-none z-10">
+                      <div className="absolute transform rotate-45 bg-emerald-500 text-white font-black text-[6.5px] py-[1.5px] right-[-12px] top-[4px] w-[40px] text-center shadow-xs uppercase tracking-tight">
+                        OPEN
+                      </div>
+                    </div>
+                  ) : null}
                   <span className="text-[10px] text-[#C9A227] uppercase block font-bold">
                     Pre-Sale
                   </span>
                   <span className="text-[9px] text-amber-600/80 block font-medium">11–21 Okt</span>
-                  <span className="text-sm font-bold text-[#C9A227] block">{presaleDisplay}</span>
+                  <span
+                    className={`text-sm font-bold block ${
+                      isPresaleSoldOut ? 'line-through text-slate-400' : 'text-[#C9A227]'
+                    }`}
+                  >
+                    {presaleDisplay}
+                  </span>
                   <span className="text-[8px] text-slate-400 block">
-                    {pricingInfo?.tierId === 'presale' ? (
+                    {isPresaleSoldOut ? (
+                      <span className="text-rose-600 bg-rose-100 px-1 py-0.5 rounded font-bold">Sold Out</span>
+                    ) : pricingInfo?.tierId === 'presale' ? (
                       <span className="text-amber-700 font-bold">Sedang Aktif</span>
                     ) : (
                       'Sesi 2'
@@ -138,14 +247,43 @@ export default function TrailrunCardItem({
                 </div>
 
                 {/* Regular */}
-                <div className={`px-1 space-y-0.5 rounded-lg transition-colors ${pricingInfo?.tierId === 'regular' ? 'bg-slate-100 py-1' : ''}`}>
+                <div
+                  className={`relative overflow-hidden px-1 space-y-0.5 rounded-lg transition-colors ${
+                    isRegularSoldOut
+                      ? 'bg-slate-50/60 py-1'
+                      : pricingInfo?.tierId === 'regular'
+                      ? 'bg-slate-100/90 py-1 ring-1 ring-slate-400/80'
+                      : ''
+                  }`}
+                >
+                  {isRegularSoldOut ? (
+                    <div className="absolute top-0 right-0 w-8 h-8 overflow-hidden pointer-events-none z-10">
+                      <div className="absolute transform rotate-45 bg-rose-600 text-white font-black text-[6.5px] py-[1.5px] right-[-12px] top-[4px] w-[40px] text-center shadow-xs uppercase tracking-tight">
+                        SOLD
+                      </div>
+                    </div>
+                  ) : pricingInfo?.tierId === 'regular' ? (
+                    <div className="absolute top-0 right-0 w-8 h-8 overflow-hidden pointer-events-none z-10">
+                      <div className="absolute transform rotate-45 bg-emerald-500 text-white font-black text-[6.5px] py-[1.5px] right-[-12px] top-[4px] w-[40px] text-center shadow-xs uppercase tracking-tight">
+                        OPEN
+                      </div>
+                    </div>
+                  ) : null}
                   <span className="text-[10px] text-slate-600 uppercase block font-bold">
                     Regular
                   </span>
                   <span className="text-[9px] text-slate-400 block font-medium">22 Okt–08 Nov</span>
-                  <span className="text-sm font-bold text-slate-700 block">{regularDisplay}</span>
+                  <span
+                    className={`text-sm font-bold block ${
+                      isRegularSoldOut ? 'line-through text-slate-400' : 'text-slate-700'
+                    }`}
+                  >
+                    {regularDisplay}
+                  </span>
                   <span className="text-[8px] text-slate-400 block">
-                    {pricingInfo?.tierId === 'regular' ? (
+                    {isRegularSoldOut ? (
+                      <span className="text-rose-600 bg-rose-100 px-1 py-0.5 rounded font-bold">Sold Out</span>
+                    ) : pricingInfo?.tierId === 'regular' ? (
                       <span className="text-slate-800 font-bold">Sedang Aktif</span>
                     ) : (
                       'Penutupan'
@@ -165,13 +303,20 @@ export default function TrailrunCardItem({
             >
               <span>Fasilitas</span>
             </button>
-            <Link
-              href={`/trailrun/daftar?dist=${item.id}`}
-              className="flex-1 bg-[#C9A227] hover:bg-[#b08d20] text-[#0d1c32] font-bold py-3.5 px-3 rounded-xl transition-all transform active:scale-95 shadow-md hover:shadow-lg flex items-center justify-center gap-1.5 text-xs uppercase tracking-wider text-center cursor-pointer"
-            >
-              <span>Daftar</span>
-              <span className="material-symbols-outlined text-sm">arrow_forward</span>
-            </Link>
+            {isCurrentActiveSoldOut ? (
+              <span className="flex-1 bg-slate-100 border border-slate-200 text-slate-400 font-bold py-3.5 px-3 rounded-xl flex items-center justify-center gap-1.5 text-xs uppercase tracking-wider text-center cursor-not-allowed">
+                <span>Sold Out</span>
+                <span className="material-symbols-outlined text-sm">block</span>
+              </span>
+            ) : (
+              <Link
+                href={`/trailrun/daftar?dist=${item.id}`}
+                className="flex-1 bg-[#C9A227] hover:bg-[#b08d20] text-[#0d1c32] font-bold py-3.5 px-3 rounded-xl transition-all transform active:scale-95 shadow-md hover:shadow-lg flex items-center justify-center gap-1.5 text-xs uppercase tracking-wider text-center cursor-pointer"
+              >
+                <span>Daftar</span>
+                <span className="material-symbols-outlined text-sm">arrow_forward</span>
+              </Link>
+            )}
           </div>
         </div>
 

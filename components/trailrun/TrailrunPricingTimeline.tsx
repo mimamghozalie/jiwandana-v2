@@ -14,6 +14,45 @@ export default function TrailrunPricingTimeline() {
     return p.display || formatAmountToDisplay(p.amount);
   };
 
+  const [realtimeData, setRealtimeData] = React.useState<Record<string, any> | null>(null);
+
+  React.useEffect(() => {
+    fetch('/api/trailrun/pricing')
+      .then((res) => res.json())
+      .then((data) => setRealtimeData(data))
+      .catch(() => {});
+  }, []);
+
+  const isEarlySoldOutLive =
+    Boolean((tiers.early as any).isSoldOut || (tiers.early as any).soldOut) ||
+    (realtimeData
+      ? Boolean(
+          realtimeData['3k']?.isEarlyBirdSoldOut &&
+          realtimeData['7k']?.isEarlyBirdSoldOut &&
+          realtimeData['12k']?.isEarlyBirdSoldOut
+        )
+      : false);
+
+  const isPresaleSoldOutLive =
+    Boolean((tiers.presale as any).isSoldOut || (tiers.presale as any).soldOut) ||
+    (realtimeData
+      ? Boolean(
+          realtimeData['3k']?.isPresaleSoldOut &&
+          realtimeData['7k']?.isPresaleSoldOut &&
+          realtimeData['12k']?.isPresaleSoldOut
+        )
+      : false);
+
+  const isRegularSoldOutLive =
+    Boolean((tiers.regular as any).isSoldOut || (tiers.regular as any).soldOut) ||
+    (realtimeData
+      ? Boolean(
+          realtimeData['3k']?.isRegularSoldOut &&
+          realtimeData['7k']?.isRegularSoldOut &&
+          realtimeData['12k']?.isRegularSoldOut
+        )
+      : false);
+
   const isEarlyActive =
     now >= new Date(tiers.early.startDate).getTime() &&
     now <= new Date(tiers.early.endDate).getTime();
@@ -44,20 +83,32 @@ export default function TrailrunPricingTimeline() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {/* 1. EARLY BIRD CARD */}
         <div className={`relative overflow-hidden rounded-2xl border transition-all duration-300 shadow-sm bg-white ${
-          isEarlyActive
+          isEarlyActive && !isEarlySoldOutLive
             ? 'border-rose-500 ring-2 ring-rose-500/30 shadow-md shadow-rose-500/10'
+            : isEarlySoldOutLive
+            ? 'border-slate-200 opacity-90'
             : 'border-slate-200 hover:border-rose-300'
         }`}>
+          {/* 45-Degree Corner Ribbon Badge in Top-Right: SOLD if sold out, OPEN if active */}
+          {isEarlySoldOutLive ? (
+            <div className="absolute top-0 right-0 w-24 h-24 overflow-hidden pointer-events-none z-20">
+              <div className="absolute transform rotate-45 bg-rose-600 text-white font-black text-[10px] py-1 right-[-32px] top-[18px] w-[120px] text-center shadow-md uppercase tracking-wider">
+                SOLD
+              </div>
+            </div>
+          ) : isEarlyActive ? (
+            <div className="absolute top-0 right-0 w-24 h-24 overflow-hidden pointer-events-none z-20">
+              <div className="absolute transform rotate-45 bg-emerald-500 text-white font-black text-[10px] py-1 right-[-32px] top-[18px] w-[120px] text-center shadow-md uppercase tracking-wider">
+                OPEN
+              </div>
+            </div>
+          ) : null}
+
           {/* Header Banner - Red (matches poster) */}
           <div className="bg-[#c22d2d] py-3 px-4 text-center relative">
             <span className="text-white text-base sm:text-lg font-bold tracking-wide uppercase font-serif">
               Early Bird
             </span>
-            {isEarlyActive && (
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 px-2 py-0.5 rounded-full bg-white text-rose-600 text-[10px] font-black uppercase tracking-wider animate-pulse">
-                Aktif
-              </span>
-            )}
           </div>
 
           <div className="p-5 text-center space-y-3">
@@ -83,20 +134,32 @@ export default function TrailrunPricingTimeline() {
 
         {/* 2. PRE-SALE CARD */}
         <div className={`relative overflow-hidden rounded-2xl border transition-all duration-300 shadow-sm bg-white ${
-          isPresaleActive
+          isPresaleActive && !isPresaleSoldOutLive
             ? 'border-[#C9A227] ring-2 ring-[#C9A227]/30 shadow-md shadow-[#C9A227]/10'
+            : isPresaleSoldOutLive
+            ? 'border-slate-200 opacity-90'
             : 'border-slate-200 hover:border-[#C9A227]/50'
         }`}>
+          {/* 45-Degree Corner Ribbon Badge in Top-Right: SOLD if sold out, OPEN if active */}
+          {isPresaleSoldOutLive ? (
+            <div className="absolute top-0 right-0 w-24 h-24 overflow-hidden pointer-events-none z-20">
+              <div className="absolute transform rotate-45 bg-rose-600 text-white font-black text-[10px] py-1 right-[-32px] top-[18px] w-[120px] text-center shadow-md uppercase tracking-wider">
+                SOLD
+              </div>
+            </div>
+          ) : isPresaleActive ? (
+            <div className="absolute top-0 right-0 w-24 h-24 overflow-hidden pointer-events-none z-20">
+              <div className="absolute transform rotate-45 bg-emerald-500 text-white font-black text-[10px] py-1 right-[-32px] top-[18px] w-[120px] text-center shadow-md uppercase tracking-wider">
+                OPEN
+              </div>
+            </div>
+          ) : null}
+
           {/* Header Banner - Amber / Gold (matches poster) */}
           <div className="bg-[#d98218] py-3 px-4 text-center relative">
             <span className="text-white text-base sm:text-lg font-bold tracking-wide uppercase font-serif">
               Pre-Sale
             </span>
-            {isPresaleActive && (
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 px-2 py-0.5 rounded-full bg-white text-[#d98218] text-[10px] font-black uppercase tracking-wider animate-pulse">
-                Aktif
-              </span>
-            )}
           </div>
 
           <div className="p-5 text-center space-y-3">
@@ -122,20 +185,32 @@ export default function TrailrunPricingTimeline() {
 
         {/* 3. REGULAR CARD */}
         <div className={`relative overflow-hidden rounded-2xl border transition-all duration-300 shadow-sm bg-white ${
-          isRegularActive
+          isRegularActive && !isRegularSoldOutLive
             ? 'border-emerald-600 ring-2 ring-emerald-600/30 shadow-md shadow-emerald-600/10'
+            : isRegularSoldOutLive
+            ? 'border-slate-200 opacity-90'
             : 'border-slate-200 hover:border-slate-400'
         }`}>
+          {/* 45-Degree Corner Ribbon Badge in Top-Right: SOLD if sold out, OPEN if active */}
+          {isRegularSoldOutLive ? (
+            <div className="absolute top-0 right-0 w-24 h-24 overflow-hidden pointer-events-none z-20">
+              <div className="absolute transform rotate-45 bg-rose-600 text-white font-black text-[10px] py-1 right-[-32px] top-[18px] w-[120px] text-center shadow-md uppercase tracking-wider">
+                SOLD
+              </div>
+            </div>
+          ) : isRegularActive ? (
+            <div className="absolute top-0 right-0 w-24 h-24 overflow-hidden pointer-events-none z-20">
+              <div className="absolute transform rotate-45 bg-emerald-500 text-white font-black text-[10px] py-1 right-[-32px] top-[18px] w-[120px] text-center shadow-md uppercase tracking-wider">
+                OPEN
+              </div>
+            </div>
+          ) : null}
+
           {/* Header Banner - Dark Slate (matches poster) */}
           <div className="bg-[#1f372e] py-3 px-4 text-center relative">
             <span className="text-white text-base sm:text-lg font-bold tracking-wide uppercase font-serif">
               Regular
             </span>
-            {isRegularActive && (
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 px-2 py-0.5 rounded-full bg-white text-[#1f372e] text-[10px] font-black uppercase tracking-wider animate-pulse">
-                Aktif
-              </span>
-            )}
           </div>
 
           <div className="p-5 text-center space-y-3">
