@@ -12,102 +12,158 @@ export default function HomePage() {
   const [splashFading, setSplashFading] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Splash Screen Logic matching index.html
+  // Splash Screen Logic - Only show 1x using localStorage and cookie
   useEffect(() => {
+    const KEY = 'jiwandana_splash_v2';
+
     const getCookie = (name: string) => {
+      if (typeof document === 'undefined') return null;
       const value = `; ${document.cookie}`;
       const parts = value.split(`; ${name}=`);
       if (parts.length === 2) return parts.pop()?.split(';').shift();
+      return null;
     };
 
-    if (!getCookie('splash_shown')) {
-      setShowSplash(true);
-      document.body.classList.add('overflow-hidden');
+    // Check if user forces splash via query param ?splash=1 or ?test=1
+    const search = typeof window !== 'undefined' ? window.location.search : '';
+    const forceSplash = search.includes('splash=1') || search.includes('test_splash=1');
 
-      // Sequential greeting text cycle
-      const greetings = ['Selamat Datang', 'Sugeng Rawuh', 'Welcome to'];
-      const timerGreet1 = setTimeout(() => {
-        setSplashGreeting(greetings[1]);
-      }, 1300);
-
-      const timerGreet2 = setTimeout(() => {
-        setSplashGreeting(greetings[2]);
-      }, 2400);
-
-      // Logo container animation
-      const timerLogo = setTimeout(() => {
-        setSplashLogoVisible(true);
-      }, 800);
-
-      // Subtitle animation
-      const timerSub = setTimeout(() => {
-        setSplashSubVisible(true);
-      }, 2800);
-
-      // Fade out splash screen
-      const timerFade = setTimeout(() => {
-        setSplashFading(true);
-        document.body.classList.remove('overflow-hidden');
-        document.cookie = 'splash_shown=true; path=/; max-age=86400';
-      }, 4500);
-
-      // Remove splash completely
-      const timerHide = setTimeout(() => {
-        setShowSplash(false);
-      }, 5500);
-
-      return () => {
-        clearTimeout(timerGreet1);
-        clearTimeout(timerGreet2);
-        clearTimeout(timerLogo);
-        clearTimeout(timerSub);
-        clearTimeout(timerFade);
-        clearTimeout(timerHide);
-        document.body.classList.remove('overflow-hidden');
-      };
+    let alreadyShown = false;
+    if (!forceSplash) {
+      try {
+        alreadyShown =
+          localStorage.getItem(KEY) === 'true' ||
+          getCookie(KEY) === 'true';
+      } catch {
+        alreadyShown = getCookie(KEY) === 'true';
+      }
     }
+
+    if (alreadyShown) {
+      setShowSplash(false);
+      return;
+    }
+
+    setShowSplash(true);
+    document.body.classList.add('overflow-hidden');
+
+    // Sequential greeting text cycle
+    const greetings = ['Selamat Datang', 'Sugeng Rawuh', 'Welcome to'];
+    const timerGreet1 = setTimeout(() => {
+      setSplashGreeting(greetings[1]);
+    }, 1100);
+
+    const timerGreet2 = setTimeout(() => {
+      setSplashGreeting(greetings[2]);
+    }, 2100);
+
+    // Logo container animation
+    const timerLogo = setTimeout(() => {
+      setSplashLogoVisible(true);
+    }, 450);
+
+    // Subtitle animation
+    const timerSub = setTimeout(() => {
+      setSplashSubVisible(true);
+    }, 2400);
+
+    // Fade out splash screen & save 1x flag
+    const timerFade = setTimeout(() => {
+      setSplashFading(true);
+      document.body.classList.remove('overflow-hidden');
+      try {
+        localStorage.setItem(KEY, 'true');
+        document.cookie = `${KEY}=true; path=/; max-age=31536000; SameSite=Lax`;
+      } catch {}
+    }, 3600);
+
+    // Remove splash completely from DOM
+    const timerHide = setTimeout(() => {
+      setShowSplash(false);
+    }, 4400);
+
+    return () => {
+      clearTimeout(timerGreet1);
+      clearTimeout(timerGreet2);
+      clearTimeout(timerLogo);
+      clearTimeout(timerSub);
+      clearTimeout(timerFade);
+      clearTimeout(timerHide);
+      document.body.classList.remove('overflow-hidden');
+    };
   }, []);
+
+  const handleDismissSplash = () => {
+    setSplashFading(true);
+    document.body.classList.remove('overflow-hidden');
+    try {
+      localStorage.setItem('jiwandana_splash_v2', 'true');
+      document.cookie = 'jiwandana_splash_v2=true; path=/; max-age=31536000; SameSite=Lax';
+    } catch {}
+    setTimeout(() => {
+      setShowSplash(false);
+    }, 700);
+  };
 
   return (
     <div className="bg-[#f8f8f8] text-slate-800 font-sans selection:bg-[#C9A227] selection:text-[#0d1c32] min-h-screen">
-      {/* Splash Screen */}
+      {/* Splash Screen (Light Theme) */}
       {showSplash && (
         <div
           id="splash-screen"
-          className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#0d1c32] text-white transition-opacity duration-1000 ease-in-out ${
+          className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-white/95 backdrop-blur-xl text-slate-800 transition-opacity duration-700 ease-in-out ${
             splashFading ? 'opacity-0 pointer-events-none' : 'opacity-100'
           }`}
         >
-          <div className="text-center space-y-8 px-6 max-w-lg">
+          {/* Tombol Lewati */}
+          <button
+            type="button"
+            onClick={handleDismissSplash}
+            className="absolute top-6 right-6 px-3.5 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 text-[11px] font-semibold uppercase tracking-wider transition-all cursor-pointer border border-black/5"
+          >
+            Lewati
+          </button>
+
+          <div className="text-center space-y-6 px-6 max-w-md w-full">
             <p
               id="splash-greet"
-              className="text-lg md:text-xl font-light tracking-widest text-[#C9A227] uppercase transition-opacity duration-300"
+              className="text-xs sm:text-sm font-semibold tracking-[0.3em] text-[#C9A227] uppercase transition-opacity duration-300 font-sans"
             >
               {splashGreeting}
             </p>
+
             <div
               id="splash-logo-container"
-              className={`w-64 h-64 mx-auto transform transition-all duration-1000 flex items-center justify-center ${
+              className={`w-48 h-48 sm:w-56 sm:h-56 mx-auto bg-white border border-black/5 rounded-3xl p-6 shadow-2xl flex items-center justify-center transform transition-all duration-700 ${
                 splashLogoVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
               }`}
             >
               <Image
                 src="/logo.webp"
                 alt="JIWANDANA Logo"
-                width={256}
-                height={256}
+                width={200}
+                height={200}
                 className="max-w-full max-h-full object-contain"
                 priority
               />
             </div>
-            <p
+
+            <div
               id="splash-sub"
-              className={`text-[10px] tracking-[0.4em] text-slate-500 uppercase transition-all duration-700 ${
-                splashSubVisible ? 'opacity-100' : 'opacity-0'
+              className={`space-y-3 transition-all duration-700 ${
+                splashSubVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
               }`}
             >
-              &copy;2026 Jiwandana
-            </p>
+              <h2 className="text-lg font-serif font-bold text-slate-900 tracking-wider">
+                JIWANDANA
+              </h2>
+              <p className="text-[10px] tracking-[0.35em] text-slate-400 uppercase font-medium">
+                Event Organizer &bull; Professional & Luxury
+              </p>
+              <div className="w-24 h-1 bg-slate-100 rounded-full mx-auto overflow-hidden">
+                <div className="w-full h-full bg-[#C9A227] rounded-full animate-pulse" />
+              </div>
+            </div>
           </div>
         </div>
       )}
