@@ -16,6 +16,7 @@ interface BulkRequestBody {
   participants: Array<{
     nama: string;
     email: string;
+    no_bib?: string;
     no_hp: string;
     kategori: string;
     tanggal_lahir: string;
@@ -29,6 +30,7 @@ interface BulkRequestBody {
     riwayat_medis?: string;
   }>;
 }
+
 
 export async function POST(request: NextRequest) {
   try {
@@ -116,6 +118,7 @@ export async function POST(request: NextRequest) {
     const insertPayload = evaluatedParticipants.map((p) => ({
       nama: p.nama,
       email: p.email,
+      no_bib: (p.no_bib || '').trim() || null,
       no_hp: p.no_hp,
       alamat: p.alamat,
       kota: p.kota,
@@ -134,7 +137,8 @@ export async function POST(request: NextRequest) {
     const { data: insertedRegistrations, error: regError } = await supabase
       .from('trailrun_registrations')
       .insert(insertPayload)
-      .select('id, nama, email, kategori');
+      .select('id, nama, email, kategori, no_bib');
+
 
     if (regError) {
       console.error('Failed to batch insert bulk registrations:', regError);

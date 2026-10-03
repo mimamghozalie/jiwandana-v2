@@ -97,6 +97,7 @@ export default function TrailrunBulkRegister() {
   const [fileName, setFileName] = useState('');
   const [participants, setParticipants] = useState<BulkParticipant[]>([]);
   const [parsing, setParsing] = useState(false);
+  const [validatingBibs, setValidatingBibs] = useState(false);
   const [parseError, setParseError] = useState('');
   const [categorySummary, setCategorySummary] = useState({ '3k': 0, '7k': 0, '12k': 0 });
 
@@ -149,13 +150,61 @@ export default function TrailrunBulkRegister() {
     try {
       const result = await parseTrailrunExcelFile(file, picData.group_name);
       setFileName(file.name);
-      setParticipants(result.participants);
+
+      // Otomatis validasi manual BIB & generate BIB unik untuk peserta yang kosong
+      setValidatingBibs(true);
+      try {
+        const bibRes = await fetch('/api/trailrun/bulk-bib-process', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ participants: result.participants }),
+        });
+        const bibJson = await bibRes.json();
+        if (bibJson.success && Array.isArray(bibJson.participants)) {
+          setParticipants(bibJson.participants);
+        } else {
+          setParticipants(result.participants);
+        }
+      } catch (bibErr) {
+        console.warn('Gagal memproses BIB massal via API, menggunakan data awal:', bibErr);
+        setParticipants(result.participants);
+      } finally {
+        setValidatingBibs(false);
+      }
+
       setCategorySummary(result.categoryCounts);
     } catch (err: any) {
       setParseError(err.message || 'Gagal membaca file Excel. Pastikan format sesuai template.');
     } finally {
       setParsing(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  // Re-generate fresh unique sequential BIBs for all participants
+  const handleRegenerateAllBibs = async () => {
+    if (participants.length === 0) return;
+    setValidatingBibs(true);
+    setSubmitError('');
+    try {
+      const res = await fetch('/api/trailrun/bulk-bib-process', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          participants,
+          forceRegenerateAll: true,
+        }),
+      });
+      const json = await res.json();
+      if (json.success && Array.isArray(json.participants)) {
+        setParticipants(json.participants);
+      } else if (!json.success && json.error) {
+        setSubmitError(json.error);
+      }
+    } catch (err: any) {
+      setSubmitError('Gagal mengenerate ulang nomor BIB: ' + (err.message || ''));
+    } finally {
+      setValidatingBibs(false);
     }
   };
 
@@ -194,7 +243,13 @@ export default function TrailrunBulkRegister() {
 
     const hasInvalid = participants.some((p) => !p.isValid);
     if (hasInvalid) {
-      setSubmitError('Masih terdapat baris data yang belum valid (berwarna merah). Periksa kembali data Anda.');
+      setSubmitError('Masih terdapat baris data yang belum valid (berwarna merah). Periksa kembali data Anda atau klik "Generate Ulang BIB".');
+      return;
+    }
+
+    const missingBib = participants.some((p) => !p.no_bib?.trim());
+    if (missingBib) {
+      setSubmitError('Ada peserta yang belum memiliki nomor BIB. Silakan klik "Generate Ulang BIB".');
       return;
     }
 
@@ -706,9 +761,26 @@ export default function TrailrunBulkRegister() {
                   <h4 className="text-sm font-bold uppercase tracking-wider text-slate-900">
                     Pratinjau Data Peserta ({participants.length} Orang)
                   </h4>
+                  {validatingBibs && (
+                    <span className="text-xs text-amber-600 font-semibold flex items-center gap-1 animate-pulse">
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      Memvalidasi BIB...
+                    </span>
+                  )}
                 </div>
 
-                <div className="flex items-center gap-2 text-xs">
+                <div className="flex items-center gap-2 text-xs flex-wrap">
+                  <button
+                    type="button"
+                    onClick={handleRegenerateAllBibs}
+                    disabled={validatingBibs}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#C9A227]/40 bg-[#C9A227]/10 hover:bg-[#C9A227]/20 text-[#0d1c32] font-bold text-xs transition-all cursor-pointer disabled:opacity-50"
+                    title="Generate ulang nomor BIB urut unik untuk seluruh peserta"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${validatingBibs ? 'animate-spin' : ''}`} />
+                    <span>Generate Ulang BIB</span>
+                  </button>
+
                   <span
                     className={`px-2.5 py-1 rounded-full border font-bold ${
                       validCount >= 5
@@ -798,11 +870,12 @@ export default function TrailrunBulkRegister() {
                   <thead className="bg-[#f8f8f8] sticky top-0 z-10 text-[11px] uppercase tracking-wider text-slate-600 border-b border-black/10">
                     <tr>
                       <th className="py-2.5 px-3 font-bold">No</th>
-                      <th className="py-2.5 px-3 font-bold">Nama Lengkap</th>
-                      <th className="py-2.5 px-3 font-bold">Kategori & Biaya</th>
+                      <th className="py-2.5 px-3 font-bold whitespace-nowrap">Nama Lengkap</th>
+                      <th className="py-2.5 px-3 font-bold whitespace-nowrap min-w-[120px]">No. BIB</th>
+                      <th className="py-2.5 px-3 font-bold whitespace-nowrap">Kategori & Biaya</th>
                       <th className="py-2.5 px-3 font-bold">Email</th>
                       <th className="py-2.5 px-3 font-bold">WhatsApp</th>
-                      <th className="py-2.5 px-3 font-bold">Kota / Prov</th>
+                      <th className="py-2.5 px-3 font-bold whitespace-nowrap">Kota / Prov</th>
                       <th className="py-2.5 px-3 font-bold">Status</th>
                       <th className="py-2.5 px-3 font-bold text-center">Aksi</th>
                     </tr>
@@ -817,6 +890,32 @@ export default function TrailrunBulkRegister() {
                       >
                         <td className="py-2.5 px-3 font-mono font-medium">{idx + 1}</td>
                         <td className="py-2.5 px-3 font-semibold text-slate-900">{p.nama || '—'}</td>
+                        <td className="py-2.5 px-3 whitespace-nowrap">
+                          {p.no_bib ? (
+                            <div className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                              <span className="font-mono font-bold text-slate-900 bg-slate-100 border border-black/10 px-2.5 py-0.5 rounded text-xs whitespace-nowrap tracking-wide">
+                                {p.no_bib}
+                              </span>
+                              {p.bibAutoGenerated ? (
+                                <span
+                                  className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-700 font-semibold border border-amber-500/20 whitespace-nowrap"
+                                  title="Digenerate otomatis oleh sistem"
+                                >
+                                  Auto
+                                </span>
+                              ) : (
+                                <span
+                                  className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-700 font-semibold border border-blue-500/20 whitespace-nowrap"
+                                  title="Diisi manual dari Excel"
+                                >
+                                  Manual
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-slate-400 italic text-[11px]">—</span>
+                          )}
+                        </td>
                         <td className="py-2.5 px-3">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="font-bold text-[#C9A227]">{p.kategori.toUpperCase()}</span>
