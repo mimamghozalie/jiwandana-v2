@@ -41,7 +41,7 @@ export default function DaftarTrailrunClient() {
   const [registrationId, setRegistrationId] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('qris');
   const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
-  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'pending' | 'completed' | 'error'>('idle');
+  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'pending' | 'completed' | 'expired' | 'error'>('idle');
   const [showSuccess, setShowSuccess] = useState(false);
   const [pricingInfoMap, setPricingInfoMap] = useState<Record<string, any>>({});
   const [checkingStatus, setCheckingStatus] = useState(false);
@@ -413,6 +413,8 @@ export default function DaftarTrailrunClient() {
       if (result.success && (result.data?.status === 'completed' || result.data?.status === 'settled')) {
         setPaymentStatus('completed');
         setShowSuccess(true);
+      } else if (result.success && (result.data?.status === 'expired' || result.data?.status === 'canceled')) {
+        setPaymentStatus('expired');
       }
     } catch {
       // Silently ignore polling errors

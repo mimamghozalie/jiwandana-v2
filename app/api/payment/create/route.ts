@@ -75,13 +75,23 @@ export async function POST(request: NextRequest) {
       amount: amountToSend,
     });
 
-    // Default expired_at fallback: 24 hours from now if Pakasir does not return it
-    const defaultExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-    const expiredAt =
+    // Batas waktu pembayaran: 1 jam (60 menit) dari saat transaksi dibuat
+    const ONE_HOUR_MS = 60 * 60 * 1000;
+    const defaultExpiry = new Date(Date.now() + ONE_HOUR_MS).toISOString();
+
+    let expiredAt = defaultExpiry;
+    const pakasirExpiryRaw =
       (transaction as any).expired_at ||
       (transaction as any).expire_at ||
-      (transaction as any).expiry_time ||
-      defaultExpiry;
+      (transaction as any).expiry_time;
+
+    if (pakasirExpiryRaw) {
+      const pakasirTime = new Date(pakasirExpiryRaw).getTime();
+      if (!isNaN(pakasirTime)) {
+        // Batasi batas waktu pembayaran maksimal 1 jam dari sekarang
+        expiredAt = new Date(Math.min(pakasirTime, Date.now() + ONE_HOUR_MS)).toISOString();
+      }
+    }
 
     // Tx fee riil gateway (atau fallback estimasi 0.7% + 300)
     const gatewayFee = transaction.fee || estimatedTxFee;

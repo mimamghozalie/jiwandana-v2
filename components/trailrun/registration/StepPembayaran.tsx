@@ -10,7 +10,7 @@ interface StepPembayaranProps {
   paymentMethod: string;
   onSelectPaymentMethod: (id: string) => void;
   paymentData: PaymentData | null;
-  paymentStatus: 'idle' | 'pending' | 'completed' | 'error';
+  paymentStatus: 'idle' | 'pending' | 'completed' | 'expired' | 'error';
   checkingStatus: boolean;
   onCheckPaymentStatus: (isManual?: boolean) => void;
   onChangePaymentMethod: () => void;
@@ -144,28 +144,50 @@ export default function StepPembayaran({
           {/* Status Badge */}
           <div
             className={`p-4 rounded-xl border flex items-center gap-3 ${
-              paymentStatus === 'completed' ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'
+              paymentStatus === 'completed'
+                ? 'bg-emerald-50 border-emerald-200'
+                : paymentStatus === 'expired'
+                ? 'bg-rose-50 border-rose-200'
+                : 'bg-amber-50 border-amber-200'
             }`}
           >
             <span
               className={`material-symbols-outlined text-xl ${
-                paymentStatus === 'completed' ? 'text-emerald-500' : 'text-amber-500 animate-pulse'
+                paymentStatus === 'completed'
+                  ? 'text-emerald-500'
+                  : paymentStatus === 'expired'
+                  ? 'text-rose-500'
+                  : 'text-amber-500 animate-pulse'
               }`}
             >
-              {paymentStatus === 'completed' ? 'check_circle' : 'hourglass_top'}
+              {paymentStatus === 'completed'
+                ? 'check_circle'
+                : paymentStatus === 'expired'
+                ? 'timer_off'
+                : 'hourglass_top'}
             </span>
             <div>
               <h4
                 className={`text-sm font-bold ${
-                  paymentStatus === 'completed' ? 'text-emerald-700' : 'text-amber-700'
+                  paymentStatus === 'completed'
+                    ? 'text-emerald-700'
+                    : paymentStatus === 'expired'
+                    ? 'text-rose-700'
+                    : 'text-amber-700'
                 }`}
               >
-                {paymentStatus === 'completed' ? 'Pembayaran Berhasil!' : 'Menunggu Pembayaran'}
+                {paymentStatus === 'completed'
+                  ? 'Pembayaran Berhasil!'
+                  : paymentStatus === 'expired'
+                  ? 'Waktu Pembayaran Kedaluwarsa'
+                  : 'Menunggu Pembayaran'}
               </h4>
               <p className="text-[11px] text-slate-500">
                 {paymentStatus === 'completed'
                   ? 'Transaksi Anda telah dikonfirmasi. Informasi lengkap dikirimkan ke WhatsApp.'
-                  : `Berlaku hingga: ${formatExpiry(paymentData.expired_at)}`}
+                  : paymentStatus === 'expired'
+                  ? 'Batas waktu pembayaran (1 jam) telah habis. Silakan klik Ganti Metode untuk membuat tagihan baru.'
+                  : `Batas waktu pembayaran (1 jam): Berlaku hingga ${formatExpiry(paymentData.expired_at)}`}
               </p>
             </div>
           </div>

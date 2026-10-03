@@ -108,12 +108,22 @@ export async function POST(request: NextRequest) {
       amount: amountToSend,
     });
 
-    const defaultExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-    const expiredAt =
+    // Batas waktu pembayaran kolektif: 1 jam (60 menit) dari saat transaksi dibuat
+    const ONE_HOUR_MS = 60 * 60 * 1000;
+    const defaultExpiry = new Date(Date.now() + ONE_HOUR_MS).toISOString();
+
+    let expiredAt = defaultExpiry;
+    const pakasirExpiryRaw =
       (transaction as any).expired_at ||
       (transaction as any).expire_at ||
-      (transaction as any).expiry_time ||
-      defaultExpiry;
+      (transaction as any).expiry_time;
+
+    if (pakasirExpiryRaw) {
+      const pakasirTime = new Date(pakasirExpiryRaw).getTime();
+      if (!isNaN(pakasirTime)) {
+        expiredAt = new Date(Math.min(pakasirTime, Date.now() + ONE_HOUR_MS)).toISOString();
+      }
+    }
 
     const gatewayFee = transaction.fee || estimatedTxFee;
     const adminProfit = Math.max(0, ADMIN_FEE - gatewayFee);

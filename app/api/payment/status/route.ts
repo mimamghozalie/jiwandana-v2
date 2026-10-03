@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     // 1. Cek di database Supabase terlebih dahulu
     const { data: dbPayment } = await supabase
       .from('trailrun_payments')
-      .select('registration_id, status, completed_at, is_sandbox, order_id')
+      .select('registration_id, status, completed_at, is_sandbox, order_id, expired_at')
       .eq('txn_id', txnId)
       .maybeSingle();
 
@@ -61,6 +61,52 @@ export async function GET(request: NextRequest) {
           status: dbPayment?.status || 'pending',
           is_sandbox: dbPayment?.is_sandbox,
           rate_limited: apiErr.message?.includes('429'),
+        },
+      });
+    }
+
+    // Cek apakah waktu pembayaran sudah melewati batas 1 jam (expired)
+    const isExpiredByTime = dbPayment?.expired_at && new Date().getTime() > new Date(dbPayment.expired_at).getTime();
+    if (
+      isExpiredByTime &&
+      dbPayment?.status === 'pending' &&
+      (!pakasirStatus || (pakasirStatus.status !== 'completed' && pakasirStatus.status !== 'settled'))
+    ) {
+      await supabase
+        .from('trailrun_payments')
+        .update({ status: 'expired' })
+        .eq('txn_id', txnId);
+
+      const { data: relPayments } = await supabase
+        .from('trailrun_payments')
+        .select('registration_id')
+        .eq('txn_id', txnId);
+
+      const targetRegIds = (relPayments || [])
+        .map((p: any) => p.registration_id)
+        .filter(Boolean);
+
+      if (targetRegIds.length > 0) {
+        await supabase
+          .from('trailrun_registrations')
+          .update({ status: 'expired' })
+          .in('id', targetRegIds)
+          .neq('status', 'paid');
+      } else if (dbPayment?.registration_id) {
+        await supabase
+          .from('trailrun_registrations')
+          .update({ status: 'expired' })
+          .eq('id', dbPayment.registration_id)
+          .neq('status', 'paid');
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          txn_id: txnId,
+          order_id: dbPayment.order_id,
+          status: 'expired',
+          is_sandbox: dbPayment.is_sandbox,
         },
       });
     }
