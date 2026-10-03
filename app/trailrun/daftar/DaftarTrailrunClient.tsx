@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import trailrunData from '@/data/trailrun.json';
 import { TrailrunCard } from '@/lib/types';
-import { submitTrailrunRegistration, checkBibAvailability } from '@/lib/api';
+import { submitTrailrunRegistration, checkBibAvailability, generateAutoBib } from '@/lib/api';
 import TrailrunBulkRegister from '@/components/trailrun/TrailrunBulkRegister';
 
 import {
@@ -50,6 +50,7 @@ export default function DaftarTrailrunClient() {
   const [bibStatus, setBibStatus] = useState<BibStatus>('idle');
   const [bibMessage, setBibMessage] = useState('');
   const [checkingBib, setCheckingBib] = useState(false);
+  const [generatingBib, setGeneratingBib] = useState(false);
 
   useEffect(() => {
     fetch('/api/trailrun/pricing')
@@ -148,8 +149,65 @@ export default function DaftarTrailrunClient() {
     if (errorMsg) setErrorMsg('');
   };
 
+  const handleGenerateBib = async (kategoriId?: string, forceNext = false) => {
+    const targetCat = kategoriId || formData.kategori;
+    if (!targetCat) return;
+
+    setGeneratingBib(true);
+    try {
+      const res = await generateAutoBib(targetCat, forceNext ? formData.no_bib : undefined);
+      if (res.success && res.bib) {
+        setFormData((prev) => ({ ...prev, no_bib: res.bib }));
+        setBibStatus('available');
+        setBibMessage(`Nomor BIB ${res.bib} tersedia.`);
+        if (errorMsg && errorMsg.toLowerCase().includes('bib')) {
+          setErrorMsg('');
+        }
+      }
+    } catch (err) {
+      console.warn('Error generating auto bib:', err);
+    } finally {
+      setGeneratingBib(false);
+    }
+  };
+
+  // Auto-generate BIB when reaching Step 2 if empty or if category prefix mismatches
+  useEffect(() => {
+    if (currentStep === 2 && formData.kategori) {
+      const is3k = formData.kategori.toLowerCase().includes('3');
+      const is7k = formData.kategori.toLowerCase().includes('7');
+      const is12k = formData.kategori.toLowerCase().includes('12');
+      const currentBib = formData.no_bib.trim();
+
+      const mismatch =
+        !currentBib ||
+        (is3k && !currentBib.startsWith('3-')) ||
+        (is7k && !currentBib.startsWith('7-')) ||
+        (is12k && !currentBib.startsWith('12-'));
+
+      if (mismatch) {
+        handleGenerateBib(formData.kategori, false);
+      }
+    }
+  }, [currentStep, formData.kategori]);
+
   const handleSelectCategory = (catId: string) => {
-    setFormData((prev) => ({ ...prev, kategori: catId }));
+    setFormData((prev) => {
+      const is3k = catId.toLowerCase().includes('3');
+      const is7k = catId.toLowerCase().includes('7');
+      const is12k = catId.toLowerCase().includes('12');
+      let shouldClear = false;
+      if (prev.no_bib) {
+        if (is3k && !prev.no_bib.startsWith('3-')) shouldClear = true;
+        if (is7k && !prev.no_bib.startsWith('7-')) shouldClear = true;
+        if (is12k && !prev.no_bib.startsWith('12-')) shouldClear = true;
+      }
+      return {
+        ...prev,
+        kategori: catId,
+        ...(shouldClear ? { no_bib: '' } : {}),
+      };
+    });
     if (errorMsg) setErrorMsg('');
   };
 
@@ -473,6 +531,8 @@ export default function DaftarTrailrunClient() {
                     bibStatus={bibStatus}
                     bibMessage={bibMessage}
                     onCheckBib={handleManualCheckBib}
+                    onGenerateBib={() => handleGenerateBib(formData.kategori, true)}
+                    generatingBib={generatingBib}
                   />
                 )}
 

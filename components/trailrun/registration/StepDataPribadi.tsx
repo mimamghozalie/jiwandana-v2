@@ -12,6 +12,8 @@ interface StepDataPribadiProps {
   bibStatus?: BibStatus;
   bibMessage?: string;
   onCheckBib?: () => void;
+  onGenerateBib?: () => void;
+  generatingBib?: boolean;
 }
 
 export default function StepDataPribadi({
@@ -22,7 +24,12 @@ export default function StepDataPribadi({
   bibStatus = 'idle',
   bibMessage = '',
   onCheckBib,
+  onGenerateBib,
+  generatingBib = false,
 }: StepDataPribadiProps) {
+  const catCode = selectedCategory?.categoryCode || '7K';
+  const expectedPrefix = catCode.includes('12') ? '12-' : catCode.includes('3') ? '3-' : '7-';
+
   return (
     <div className="p-6 sm:p-8 space-y-5 animate-[fadeIn_0.4s_ease-out]">
       <div className="flex items-center gap-3 pb-4 border-b border-black/5">
@@ -92,29 +99,32 @@ export default function StepDataPribadi({
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* No. BIB (Wajib & Unique) */}
+        {/* No. BIB (Wajib, Sesuai Kategori & Unique) */}
         <div className="space-y-1.5">
-          <div className="flex items-center justify-between">
-            <label htmlFor="no_bib" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
-              No. BIB <span className="text-rose-500">*</span>
-            </label>
-            {bibStatus === 'checking' && (
-              <span className="text-[11px] text-amber-600 font-medium flex items-center gap-1">
-                <span className="material-symbols-outlined text-xs animate-spin">progress_activity</span>
-                Mengecek...
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5">
+              <label htmlFor="no_bib" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                No. BIB <span className="text-rose-500">*</span>
+              </label>
+              <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#C9A227]/10 text-[#C9A227] font-bold border border-[#C9A227]/30">
+                {catCode}
               </span>
-            )}
-            {bibStatus === 'available' && (
-              <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
-                <span className="material-symbols-outlined text-xs">check_circle</span>
-                Tersedia
-              </span>
-            )}
-            {bibStatus === 'taken' && (
-              <span className="text-[11px] text-rose-600 font-medium flex items-center gap-1">
-                <span className="material-symbols-outlined text-xs">cancel</span>
-                Sudah Digunakan
-              </span>
+            </div>
+
+            {/* Tombol Generate BIB */}
+            {onGenerateBib && (
+              <button
+                type="button"
+                onClick={onGenerateBib}
+                disabled={generatingBib}
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-[#0d1c32] bg-[#C9A227] hover:bg-[#b08d20] px-2.5 py-1 rounded-lg transition-all shadow-xs active:scale-95 cursor-pointer disabled:opacity-50"
+                title={`Generate nomor BIB otomatis format ${expectedPrefix}XXXX`}
+              >
+                <span className={`material-symbols-outlined text-xs ${generatingBib ? 'animate-spin' : ''}`}>
+                  {generatingBib ? 'progress_activity' : 'auto_fix_high'}
+                </span>
+                <span>{generatingBib ? 'Mengenerate...' : 'Generate BIB'}</span>
+              </button>
             )}
           </div>
 
@@ -126,8 +136,8 @@ export default function StepDataPribadi({
               required
               value={formData.no_bib}
               onChange={onChange}
-              placeholder="Contoh: 1024 (Wajib & unik)"
-              className={`w-full bg-[#f8f8f8] border text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3.5 pr-18 transition-all text-sm outline-none ${
+              placeholder={`Contoh: ${expectedPrefix}0001 (Wajib & unik)`}
+              className={`w-full bg-[#f8f8f8] border text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3.5 pr-18 transition-all text-sm outline-none font-mono font-medium ${
                 bibStatus === 'taken'
                   ? 'border-rose-500 focus:border-rose-600 focus:ring-1 focus:ring-rose-500'
                   : bibStatus === 'available'
@@ -147,22 +157,46 @@ export default function StepDataPribadi({
             )}
           </div>
 
-          {bibStatus === 'taken' ? (
-            <p className="text-[11px] text-rose-600 flex items-center gap-1">
-              <span className="material-symbols-outlined text-xs">error</span>
-              {bibMessage || `Nomor BIB "${formData.no_bib}" sudah digunakan oleh peserta lain.`}
+          {/* Feedback & Status Indicators */}
+          {bibStatus === 'checking' && (
+            <p className="text-[11px] text-amber-600 font-medium flex items-center gap-1 animate-pulse">
+              <span className="material-symbols-outlined text-xs animate-spin">progress_activity</span>
+              Mengecek ketersediaan BIB...
             </p>
-          ) : bibStatus === 'available' ? (
-            <p className="text-[11px] text-emerald-600 flex items-center gap-1">
+          )}
+
+          {bibStatus === 'taken' && (
+            <div className="flex items-center justify-between text-[11px] text-rose-600">
+              <span className="flex items-center gap-1">
+                <span className="material-symbols-outlined text-xs">error</span>
+                {bibMessage || `Nomor BIB "${formData.no_bib}" sudah digunakan peserta lain.`}
+              </span>
+              {onGenerateBib && (
+                <button
+                  type="button"
+                  onClick={onGenerateBib}
+                  className="font-bold underline hover:text-rose-800 cursor-pointer ml-1"
+                >
+                  Generate Lain
+                </button>
+              )}
+            </div>
+          )}
+
+          {bibStatus === 'available' && (
+            <p className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
               <span className="material-symbols-outlined text-xs">verified</span>
               {bibMessage || `Nomor BIB "${formData.no_bib}" tersedia dan dapat digunakan.`}
             </p>
-          ) : (
-            <p className="text-[10px] text-slate-400">
-              Wajib diisi & unik. Tidak boleh sama dengan peserta lain.
+          )}
+
+          {bibStatus === 'idle' && (
+            <p className="text-[10px] text-slate-500">
+              Format otomatis {catCode}: <strong>{expectedPrefix}XXXX</strong> (contoh: {expectedPrefix}0001). Klik <em>Generate BIB</em> atau ketik nomor Anda.
             </p>
           )}
         </div>
+
 
         <div className="space-y-1.5">
           <label htmlFor="no_hp" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">

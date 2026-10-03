@@ -229,6 +229,28 @@ export async function checkBibAvailability(
   }
 }
 
+export async function generateAutoBib(
+  kategori: string,
+  currentBib?: string
+): Promise<{ success: boolean; bib: string; prefix?: string }> {
+  try {
+    const params = new URLSearchParams({ kategori: kategori || '' });
+    if (currentBib) params.set('current', currentBib);
+    const res = await fetch(`/api/trailrun/generate-bib?${params.toString()}`);
+    const data = await res.json();
+    if (data?.success && data?.bib) {
+      return { success: true, bib: data.bib, prefix: data.prefix };
+    }
+  } catch (err) {
+    console.warn('generateAutoBib error, fallback to category prefix:', err);
+  }
+
+  // Graceful fallback
+  const cat = (kategori || '').toLowerCase();
+  const prefix = cat.includes('12') ? '12-' : cat.includes('7') ? '7-' : '3-';
+  return { success: true, bib: `${prefix}0001`, prefix };
+}
+
 export async function submitTrailrunRegistration(
   formData: Omit<TrailrunRegistration, 'id' | 'status' | 'created_at'>
 ): Promise<{ success: boolean; registration_id?: string; error?: string }> {
