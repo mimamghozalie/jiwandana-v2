@@ -70,14 +70,22 @@ export default function TrailrunMetricsCards({ metrics }: TrailrunMetricsCardsPr
           </div>
         </div>
 
-        <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[11px]">
-          <span className="text-slate-400 flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <span>Peserta Menunggu:</span>
-          </span>
-          <strong className="text-amber-400 font-bold font-mono">
-            {metrics.pendingCount} Peserta
-          </strong>
+        <div className="pt-2 border-t border-white/10 space-y-1">
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="text-slate-400 flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span>Peserta Menunggu:</span>
+            </span>
+            <strong className="text-amber-400 font-bold font-mono">
+              {metrics.pendingCount} Peserta
+            </strong>
+          </div>
+          <div className="flex items-center justify-between text-[10px] text-slate-400">
+            <span>Biaya Admin & Kode Gateway:</span>
+            <span className="font-mono text-amber-400/90 font-medium">
+              +{formatCurrency(metrics.pendingRevenue - metrics.pendingTicketRevenue)}
+            </span>
+          </div>
         </div>
       </div>
 
