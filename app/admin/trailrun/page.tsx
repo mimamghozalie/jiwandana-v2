@@ -3,272 +3,20 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 import { supabase } from '@/lib/supabaseClient';
+import { Trophy, FileSpreadsheet, Download, RefreshCw } from 'lucide-react';
+
 import {
-  Trophy,
-  CheckCircle2,
-  Clock,
-  Search,
-  Filter,
-  SlidersHorizontal,
-  Download,
-  FileSpreadsheet,
-  RefreshCw,
-  Eye,
-  Check,
-  X,
-  Phone,
-  Mail,
-  User,
-  Activity,
-  HeartPulse,
-  CreditCard,
-  Building,
-  MapPin,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  RotateCcw,
-  Sparkles,
-  ExternalLink,
-} from 'lucide-react';
-
-interface TrailrunRow {
-  id: string;
-  nama: string;
-  email: string;
-  no_bib: string;
-  no_hp: string;
-  alamat?: string;
-  kota?: string;
-  provinsi?: string;
-  kewarganegaraan?: string;
-  tanggal_lahir?: string;
-  jenis_kelamin?: string;
-  nama_komunitas?: string | null;
-  golongan_darah?: string;
-  riwayat_medis?: string | null;
-  kontak_darurat?: string;
-  kategori: string;
-  status: 'pending' | 'confirmed' | 'paid';
-  created_at: string;
-  payment?: {
-    txn_id?: string;
-    order_id?: string;
-    amount?: number;
-    fee?: number;
-    admin_fee?: number;
-    gateway_fee?: number;
-    admin_profit?: number;
-    total_payment?: number;
-    payment_method?: string;
-    status?: string;
-    completed_at?: string;
-    is_sandbox?: boolean;
-  };
-}
-
-/**
- * Helper untuk menghitung rincian finansial per pendaftar:
- * - totalPayment: Total yang dibayar peserta (misal 245.000)
- * - adminFee: Biaya admin flat ke peserta (Rp 5.000)
- * - gatewayFee: Biaya potongan transaksi gateway (0.7% + Rp 300)
- * - adminProfit: Keuntungan bersih fee admin (adminFee - gatewayFee)
- * - baseAmount: Harga tiket dasar (totalPayment - adminFee)
- */
-const getRowFinancials = (row: TrailrunRow) => {
-  const totalPayment = row.payment?.total_payment || row.payment?.amount || 0;
-  const adminFee = row.payment?.admin_fee ?? (row.payment?.fee ?? 5000);
-  
-  // Jika gateway_fee belum tersimpan, hitung rumus gateway: 0.7% + Rp 300
-  const gatewayFee =
-    row.payment?.gateway_fee ??
-    (totalPayment > 0 ? Math.round(totalPayment * 0.007 + 300) : 0);
-
-  // Profit fee admin = adminFee - gatewayFee
-  const adminProfit =
-    row.payment?.admin_profit ??
-    Math.max(0, adminFee - gatewayFee);
-
-  const baseAmount =
-    row.payment?.amount ??
-    Math.max(0, totalPayment - adminFee);
-
-  return { totalPayment, adminFee, gatewayFee, adminProfit, baseAmount };
-};
-
-interface ColumnConfig {
-  key: string;
-  label: string;
-  category: 'Utama' | 'Pembayaran' | 'Profil & Kontak' | 'Medis & Darurat';
-  defaultVisible: boolean;
-}
-
-const ALL_COLUMNS: ColumnConfig[] = [
-  { key: 'no_bib', label: 'No. BIB', category: 'Utama', defaultVisible: true },
-  { key: 'nama', label: 'Nama Peserta', category: 'Utama', defaultVisible: true },
-  { key: 'kategori', label: 'Kategori', category: 'Utama', defaultVisible: true },
-  { key: 'status', label: 'Status Bayar', category: 'Pembayaran', defaultVisible: true },
-  { key: 'total_payment', label: 'Nominal Bayar', category: 'Pembayaran', defaultVisible: true },
-  { key: 'admin_profit', label: 'Profit Fee Admin', category: 'Pembayaran', defaultVisible: true },
-  { key: 'payment_method', label: 'Metode Bayar', category: 'Pembayaran', defaultVisible: true },
-  { key: 'email', label: 'Email', category: 'Profil & Kontak', defaultVisible: true },
-  { key: 'no_hp', label: 'WhatsApp / HP', category: 'Profil & Kontak', defaultVisible: true },
-  { key: 'created_at', label: 'Waktu Daftar', category: 'Utama', defaultVisible: true },
-  { key: 'admin_fee', label: 'Biaya Admin', category: 'Pembayaran', defaultVisible: false },
-  { key: 'gateway_fee', label: 'Biaya Tx Gateway', category: 'Pembayaran', defaultVisible: false },
-  { key: 'jenis_kelamin', label: 'Gender', category: 'Profil & Kontak', defaultVisible: false },
-  { key: 'tanggal_lahir', label: 'Tgl Lahir', category: 'Profil & Kontak', defaultVisible: false },
-  { key: 'nama_komunitas', label: 'Komunitas / Klub', category: 'Profil & Kontak', defaultVisible: false },
-  { key: 'kota_provinsi', label: 'Kota / Asal', category: 'Profil & Kontak', defaultVisible: false },
-  { key: 'alamat', label: 'Alamat Lengkap', category: 'Profil & Kontak', defaultVisible: false },
-  { key: 'golongan_darah', label: 'Gol. Darah', category: 'Medis & Darurat', defaultVisible: false },
-  { key: 'riwayat_medis', label: 'Riwayat Medis', category: 'Medis & Darurat', defaultVisible: false },
-  { key: 'kontak_darurat', label: 'Kontak Darurat', category: 'Medis & Darurat', defaultVisible: false },
-  { key: 'txn_id', label: 'ID Transaksi', category: 'Pembayaran', defaultVisible: false },
-  { key: 'order_id', label: 'Order ID', category: 'Pembayaran', defaultVisible: false },
-];
-
-const DEFAULT_VISIBLE_KEYS = ALL_COLUMNS.filter((c) => c.defaultVisible).map((c) => c.key);
-
-// Fallback sample data if Supabase tables have no rows yet
-const SAMPLE_TRAILRUN_DATA: TrailrunRow[] = [
-  {
-    id: 'sample-1',
-    nama: 'Budi Santoso',
-    email: 'budi.santoso@example.com',
-    no_bib: '7K-0142',
-    no_hp: '081234567890',
-    alamat: 'Jl. Hayam Wuruk No. 45',
-    kota: 'Mojokerto',
-    provinsi: 'Jawa Timur',
-    kewarganegaraan: 'WNI',
-    tanggal_lahir: '1992-05-14',
-    jenis_kelamin: 'Laki-laki',
-    nama_komunitas: 'Mojokerto Runners Club',
-    golongan_darah: 'O',
-    riwayat_medis: 'Tidak ada',
-    kontak_darurat: 'Siti Rahayu (Istri) - 081298765432',
-    kategori: '7K Junior Pawitra',
-    status: 'paid',
-    created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
-    payment: {
-      txn_id: 'TXN-7K-001',
-      order_id: 'ORD-TR-7K-0142',
-      amount: 240000,
-      fee: 5000,
-      admin_fee: 5000,
-      gateway_fee: 2015,
-      admin_profit: 2985,
-      total_payment: 245000,
-      payment_method: 'qris',
-      status: 'completed',
-      completed_at: new Date(Date.now() - 3600000 * 1.8).toISOString(),
-      is_sandbox: false,
-    },
-  },
-  {
-    id: 'sample-2',
-    nama: 'Aditya Pratama',
-    email: 'aditya.p@example.com',
-    no_bib: '3K-0089',
-    no_hp: '082198765432',
-    alamat: 'Perum Gatsu Asri Blok C-12',
-    kota: 'Surabaya',
-    provinsi: 'Jawa Timur',
-    kewarganegaraan: 'WNI',
-    tanggal_lahir: '1996-11-20',
-    jenis_kelamin: 'Laki-laki',
-    nama_komunitas: 'Suroboyo Trail Run',
-    golongan_darah: 'A',
-    riwayat_medis: 'Asma ringan (terkontrol)',
-    kontak_darurat: 'Bambang (Kakak) - 082111223344',
-    kategori: '3K Hallo Pawitra',
-    status: 'paid',
-    created_at: new Date(Date.now() - 3600000 * 5).toISOString(),
-    payment: {
-      txn_id: 'TXN-3K-002',
-      order_id: 'ORD-TR-3K-0089',
-      amount: 280000,
-      fee: 5000,
-      admin_fee: 5000,
-      gateway_fee: 2295,
-      admin_profit: 2705,
-      total_payment: 285000,
-      payment_method: 'bri_va',
-      status: 'completed',
-      completed_at: new Date(Date.now() - 3600000 * 4.5).toISOString(),
-      is_sandbox: false,
-    },
-  },
-  {
-    id: 'sample-3',
-    nama: 'Dewi Lestari',
-    email: 'dewi.lestari@example.com',
-    no_bib: '7K-0205',
-    no_hp: '085712345678',
-    alamat: 'Jl. Pahlawan No. 18',
-    kota: 'Malang',
-    provinsi: 'Jawa Timur',
-    kewarganegaraan: 'WNI',
-    tanggal_lahir: '1998-08-09',
-    jenis_kelamin: 'Perempuan',
-    nama_komunitas: 'Malang Trail Squad',
-    golongan_darah: 'B',
-    riwayat_medis: 'Tidak ada',
-    kontak_darurat: 'Dr. Agus (Ayah) - 085799887766',
-    kategori: '7K Junior Pawitra',
-    status: 'pending',
-    created_at: new Date(Date.now() - 3600000 * 8).toISOString(),
-    payment: {
-      txn_id: 'TXN-7K-003',
-      order_id: 'ORD-TR-7K-0205',
-      amount: 240000,
-      fee: 5000,
-      admin_fee: 5000,
-      gateway_fee: 2015,
-      admin_profit: 2985,
-      total_payment: 245000,
-      payment_method: 'qris',
-      status: 'pending',
-      is_sandbox: false,
-    },
-  },
-  {
-    id: 'sample-4',
-    nama: 'Rizky Nugraha',
-    email: 'rizky.nugraha@example.com',
-    no_bib: '3K-0012',
-    no_hp: '081344556677',
-    alamat: 'Jl. Kusuma Bangsa No. 03',
-    kota: 'Sidoarjo',
-    provinsi: 'Jawa Timur',
-    kewarganegaraan: 'WNI',
-    tanggal_lahir: '2000-01-25',
-    jenis_kelamin: 'Laki-laki',
-    nama_komunitas: null,
-    golongan_darah: 'AB',
-    riwayat_medis: 'Pernah cedera lutut tahun 2024',
-    kontak_darurat: 'Hj. Endang (Ibu) - 081333221100',
-    kategori: '3K Hallo Pawitra',
-    status: 'confirmed',
-    created_at: new Date(Date.now() - 3600000 * 14).toISOString(),
-    payment: {
-      txn_id: 'TXN-3K-004',
-      order_id: 'ORD-TR-3K-0012',
-      amount: 280000,
-      fee: 5000,
-      admin_fee: 5000,
-      gateway_fee: 2295,
-      admin_profit: 2705,
-      total_payment: 285000,
-      payment_method: 'mandiri_va',
-      status: 'pending',
-      is_sandbox: false,
-    },
-  },
-];
+  TrailrunRow,
+  MetricsData,
+  ALL_COLUMNS,
+  DEFAULT_VISIBLE_KEYS,
+  SAMPLE_TRAILRUN_DATA,
+  getRowFinancials,
+  TrailrunMetricsCards,
+  TrailrunFilterBar,
+  TrailrunTable,
+  TrailrunDetailModal,
+} from '@/components/admin/trailrun';
 
 export default function AdminTrailrunPage() {
   const [data, setData] = useState<TrailrunRow[]>([]);
@@ -505,7 +253,7 @@ export default function AdminTrailrunPage() {
   }, [filteredData, startIndex, endIndex]);
 
   // Summary Metrics
-  const metrics = useMemo(() => {
+  const metrics: MetricsData = useMemo(() => {
     const total = data.length;
     const paidRows = data.filter((r) => r.status === 'paid');
     const paidCount = paidRows.length;
@@ -515,6 +263,7 @@ export default function AdminTrailrunPage() {
     // Deduplicate transaction amounts if multiple participants share the same txn_id / order_id (bulk registration)
     const seenPaidTxn = new Set<string>();
     let totalRevenue = 0;
+    let totalTicketRevenue = 0;
     let totalAdminProfit = 0;
     let totalAdminFee = 0;
     let totalGatewayFee = 0;
@@ -527,12 +276,14 @@ export default function AdminTrailrunPage() {
         if (!seenPaidTxn.has(txnKey)) {
           seenPaidTxn.add(txnKey);
           totalRevenue += fin.totalPayment;
+          totalTicketRevenue += fin.baseAmount;
           totalAdminProfit += fin.adminProfit;
           totalAdminFee += fin.adminFee;
           totalGatewayFee += fin.gatewayFee;
         }
       } else {
         totalRevenue += fin.totalPayment;
+        totalTicketRevenue += fin.baseAmount;
         totalAdminProfit += fin.adminProfit;
         totalAdminFee += fin.adminFee;
         totalGatewayFee += fin.gatewayFee;
@@ -542,17 +293,19 @@ export default function AdminTrailrunPage() {
     // Calculate total unpaid / pending revenue
     const seenPendingTxn = new Set<string>();
     let pendingRevenue = 0;
+    let pendingTicketRevenue = 0;
     for (const r of pendingRows) {
       const txnKey = r.payment?.txn_id || r.payment?.order_id;
+      const fin = getRowFinancials(r);
       if (txnKey) {
         if (!seenPendingTxn.has(txnKey)) {
           seenPendingTxn.add(txnKey);
-          pendingRevenue += (r.payment?.total_payment || r.payment?.amount || 0);
+          pendingRevenue += fin.totalPayment;
+          pendingTicketRevenue += fin.baseAmount;
         }
       } else {
-        const cat = (r.kategori || '').toLowerCase();
-        const fallbackPrice = (cat.includes('12') ? 290000 : cat.includes('7') ? 240000 : 250000) + 5000;
-        pendingRevenue += (r.payment?.total_payment || r.payment?.amount || fallbackPrice);
+        pendingRevenue += fin.totalPayment;
+        pendingTicketRevenue += fin.baseAmount;
       }
     }
 
@@ -561,7 +314,9 @@ export default function AdminTrailrunPage() {
       paidCount,
       pendingCount,
       totalRevenue,
+      totalTicketRevenue,
       pendingRevenue,
+      pendingTicketRevenue,
       totalAdminProfit,
       totalAdminFee,
       totalGatewayFee,
@@ -701,6 +456,9 @@ export default function AdminTrailrunPage() {
             case 'total_payment':
               val = fin.totalPayment > 0 ? `Rp ${fin.totalPayment.toLocaleString('id-ID')}` : '-';
               break;
+            case 'base_amount':
+              val = fin.baseAmount > 0 ? `Rp ${fin.baseAmount.toLocaleString('id-ID')}` : '-';
+              break;
             case 'admin_profit':
               val = `Rp ${fin.adminProfit.toLocaleString('id-ID')}`;
               break;
@@ -758,7 +516,7 @@ export default function AdminTrailrunPage() {
           return `"${String(val).replace(/"/g, '""')}"`;
         })
         .join(',');
-    });
+      });
 
     const csvContent = '\uFEFF' + [headerRow, ...rows].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -769,14 +527,6 @@ export default function AdminTrailrunPage() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
-
-  const formatCurrency = (num: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-    }).format(num);
   };
 
   return (
@@ -835,984 +585,53 @@ export default function AdminTrailrunPage() {
       </div>
 
       {/* 2. Metrics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {/* Card 1: Total Pendaftar */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-[#0a1424] border border-white/10 space-y-2 shadow-sm flex flex-col justify-between">
-          <div>
-            <span className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold block">
-              Total Pendaftar
-            </span>
-            <div className="text-2xl sm:text-3xl font-bold text-white mt-1">{metrics.total}</div>
-          </div>
-          <span className="text-[11px] text-slate-500 block pt-2 border-t border-white/10">Semua formulir masuk</span>
-        </div>
+      <TrailrunMetricsCards metrics={metrics} />
 
-        {/* Card 2: Sudah Bayar (Lunas) */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-[#0a1424] border border-emerald-500/20 space-y-2 shadow-sm flex flex-col justify-between">
-          <div>
-            <span className="text-[11px] uppercase tracking-wider text-emerald-400 font-semibold flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              Sudah Bayar (Lunas)
-            </span>
-            <div className="text-2xl sm:text-3xl font-bold text-emerald-400 mt-1">{metrics.paidCount}</div>
-          </div>
-          <span className="text-[11px] text-slate-400 block pt-2 border-t border-white/10">
-            {metrics.total > 0
-              ? `${Math.round((metrics.paidCount / metrics.total) * 100)}% dari total pendaftar`
-              : '0% dari total'}
-          </span>
-        </div>
+      {/* 3. Filter Bar */}
+      <TrailrunFilterBar
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        statusFilter={statusFilter}
+        setStatusFilter={setStatusFilter}
+        categoryFilter={categoryFilter}
+        setCategoryFilter={setCategoryFilter}
+        availableCategories={availableCategories}
+        visibleColumns={visibleColumns}
+        toggleColumn={toggleColumn}
+        resetToDefaultColumns={resetToDefaultColumns}
+        selectAllColumns={selectAllColumns}
+        selectCompactColumns={selectCompactColumns}
+        showColumnFilter={showColumnFilter}
+        setShowColumnFilter={setShowColumnFilter}
+      />
 
-        {/* Card 3: Menunggu Pembayaran */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-[#0a1424] border border-amber-500/30 space-y-2 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] uppercase tracking-wider text-amber-400 font-semibold flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5" />
-              Menunggu Pembayaran
-            </span>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-              Belum Bayar
-            </span>
-          </div>
-          <div>
-            <span className="text-[11px] text-slate-400 block font-medium">Total Belum Dibayar:</span>
-            <div className="text-xl sm:text-2xl font-bold text-amber-400 truncate mt-0.5">
-              {formatCurrency(metrics.pendingRevenue)}
-            </div>
-          </div>
-          <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[11px]">
-            <span className="text-slate-400 flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span>Peserta Belum Bayar:</span>
-            </span>
-            <strong className="text-amber-400 font-bold font-mono">
-              {metrics.pendingCount} Peserta
-            </strong>
-          </div>
-        </div>
+      {/* 4. Table */}
+      <TrailrunTable
+        data={paginatedData}
+        totalFilteredCount={filteredData.length}
+        totalRawCount={data.length}
+        startIndex={startIndex}
+        endIndex={endIndex}
+        currentPage={safeCurrentPage}
+        setCurrentPage={setCurrentPage}
+        pageSize={pageSize}
+        setPageSize={setPageSize}
+        totalPages={totalPages}
+        visibleColumns={visibleColumns}
+        loading={loading}
+        onSelectRow={(row) => setSelectedRow(row)}
+        onUpdateStatus={handleUpdateStatus}
+        updatingId={updatingId}
+        onOpenColumnFilter={() => setShowColumnFilter(true)}
+      />
 
-        {/* Card 4: Total Penerimaan & Profit Fee Admin */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-[#0a1424] border border-[#e9c176]/30 space-y-2.5 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] uppercase tracking-wider text-[#e9c176] font-semibold flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5" />
-              Total Penerimaan
-            </span>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              {metrics.paidCount} Lunas
-            </span>
-          </div>
-          <div>
-            <span className="text-[11px] text-slate-400 block font-medium">Total Sudah Dibayar:</span>
-            <div className="text-xl sm:text-2xl font-bold text-[#e9c176] truncate mt-0.5">
-              {formatCurrency(metrics.totalRevenue)}
-            </div>
-          </div>
-          <div className="pt-2 border-t border-white/10 space-y-1">
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="text-emerald-400 flex items-center gap-1 font-semibold">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <span>Profit Fee Admin:</span>
-              </span>
-              <strong className="text-emerald-400 font-bold font-mono">
-                +{formatCurrency(metrics.totalAdminProfit)}
-              </strong>
-            </div>
-            <div className="flex items-center justify-between text-[10px] text-slate-400">
-              <span>Admin: {formatCurrency(metrics.totalAdminFee)}</span>
-              <span>Tx Gateway: -{formatCurrency(metrics.totalGatewayFee)}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 3. Filter Bar & Column Customizer Button */}
-      <div className="p-4 rounded-2xl bg-[#0a1424] border border-white/10 space-y-3">
-        <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
-          {/* Search Box */}
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari berdasarkan nama, BIB, email, WhatsApp, kota..."
-              className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 focus:border-[#e9c176] focus:ring-1 focus:ring-[#e9c176] rounded-xl text-xs text-white placeholder:text-slate-500 outline-none transition-all"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          {/* Filters and Column Toggle */}
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Status Filter */}
-            <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs">
-              <Filter className="w-3.5 h-3.5 text-slate-400" />
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as any)}
-                className="bg-transparent text-white text-xs outline-none cursor-pointer pr-2"
-              >
-                <option value="all" className="bg-[#0a1424]">Semua Status</option>
-                <option value="paid" className="bg-[#0a1424]">✓ Sudah Bayar (Lunas)</option>
-                <option value="pending" className="bg-[#0a1424]">⏳ Menunggu Bayar</option>
-                <option value="confirmed" className="bg-[#0a1424]">📌 Dikonfirmasi</option>
-              </select>
-            </div>
-
-            {/* Category Filter */}
-            <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs">
-              <span className="text-slate-400 text-xs">Kategori:</span>
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="bg-transparent text-white text-xs outline-none cursor-pointer pr-2 max-w-[140px] truncate"
-              >
-                <option value="all" className="bg-[#0a1424]">Semua Kategori</option>
-                {availableCategories.map((cat) => (
-                  <option key={cat} value={cat} className="bg-[#0a1424]">
-                    {cat}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Column Customizer Toggle Button */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setShowColumnFilter(!showColumnFilter)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer border ${
-                  showColumnFilter || visibleColumns.length !== DEFAULT_VISIBLE_KEYS.length
-                    ? 'bg-[#e9c176] text-[#0d1c32] border-[#e9c176] font-bold shadow-md'
-                    : 'bg-white/5 hover:bg-white/10 text-slate-300 border-white/10'
-                }`}
-              >
-                <SlidersHorizontal className="w-3.5 h-3.5" />
-                <span>
-                  Filter Kolom ({visibleColumns.length}/{ALL_COLUMNS.length})
-                </span>
-                <ChevronDown className={`w-3 h-3 transition-transform ${showColumnFilter ? 'rotate-180' : ''}`} />
-              </button>
-
-              {/* Column Filter Dropdown Popover */}
-              {showColumnFilter && (
-                <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 p-4 bg-[#0a1424] border border-white/20 rounded-2xl shadow-2xl z-50 space-y-4 font-sans backdrop-blur-xl">
-                  <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                    <div>
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-[#e9c176]">
-                        Pilih Kolom Tabel
-                      </h4>
-                      <p className="text-[11px] text-slate-400">
-                        Centang bagian kolom yang ingin Anda tampilkan
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowColumnFilter(false)}
-                      className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  {/* Preset Shortcuts */}
-                  <div className="flex items-center gap-2 text-[11px]">
-                    <button
-                      type="button"
-                      onClick={selectAllColumns}
-                      className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/15 text-slate-300 transition-colors"
-                    >
-                      Semua
-                    </button>
-                    <button
-                      type="button"
-                      onClick={resetToDefaultColumns}
-                      className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/15 text-slate-300 transition-colors"
-                    >
-                      Default
-                    </button>
-                    <button
-                      type="button"
-                      onClick={selectCompactColumns}
-                      className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/15 text-slate-300 transition-colors"
-                    >
-                      Ringkas
-                    </button>
-                  </div>
-
-                  {/* Column List with checkboxes grouped */}
-                  <div className="max-h-72 overflow-y-auto space-y-3 pr-1 text-xs divide-y divide-white/5">
-                    {(['Utama', 'Pembayaran', 'Profil & Kontak', 'Medis & Darurat'] as const).map(
-                      (categoryName) => {
-                        const colsInCategory = ALL_COLUMNS.filter((c) => c.category === categoryName);
-                        if (colsInCategory.length === 0) return null;
-
-                        return (
-                          <div key={categoryName} className="pt-2 first:pt-0 space-y-1.5">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block px-1">
-                              {categoryName}
-                            </span>
-                            <div className="grid grid-cols-2 gap-1.5">
-                              {colsInCategory.map((col) => {
-                                const isChecked = visibleColumns.includes(col.key);
-                                return (
-                                  <label
-                                    key={col.key}
-                                    className={`flex items-center gap-2 p-2 rounded-xl cursor-pointer transition-colors text-xs select-none ${
-                                      isChecked
-                                        ? 'bg-white/10 text-white font-medium'
-                                        : 'hover:bg-white/5 text-slate-400'
-                                    }`}
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      checked={isChecked}
-                                      onChange={() => toggleColumn(col.key)}
-                                      className="rounded border-white/20 text-[#e9c176] focus:ring-[#e9c176] bg-transparent cursor-pointer"
-                                    />
-                                    <span className="truncate">{col.label}</span>
-                                  </label>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        );
-                      }
-                    )}
-                  </div>
-
-                  <div className="pt-2 border-t border-white/10 flex justify-between items-center text-[11px] text-slate-400">
-                    <span>
-                      {visibleColumns.length} dari {ALL_COLUMNS.length} kolom aktif
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setShowColumnFilter(false)}
-                      className="px-3 py-1 bg-[#e9c176] text-[#0d1c32] font-bold rounded-lg hover:bg-[#d8b065] transition-all cursor-pointer"
-                    >
-                      Selesai
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 4. Table Container */}
-      <div className="bg-[#0a1424] border border-white/10 rounded-2xl overflow-hidden shadow-xl">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="bg-white/5 border-b border-white/10 text-slate-400 uppercase tracking-wider text-[11px] font-semibold">
-                <th className="py-3.5 px-4 w-12 text-center">#</th>
-
-                {visibleColumns.includes('no_bib') && <th className="py-3.5 px-4">No. BIB</th>}
-                {visibleColumns.includes('nama') && <th className="py-3.5 px-4">Nama Peserta</th>}
-                {visibleColumns.includes('kategori') && <th className="py-3.5 px-4">Kategori Lomba</th>}
-                {visibleColumns.includes('status') && <th className="py-3.5 px-4">Status Bayar</th>}
-                {visibleColumns.includes('total_payment') && <th className="py-3.5 px-4">Nominal Bayar</th>}
-                {visibleColumns.includes('admin_profit') && <th className="py-3.5 px-4 text-emerald-400">Profit Admin</th>}
-                {visibleColumns.includes('admin_fee') && <th className="py-3.5 px-4">Biaya Admin</th>}
-                {visibleColumns.includes('gateway_fee') && <th className="py-3.5 px-4">Tx Fee Gateway</th>}
-                {visibleColumns.includes('payment_method') && <th className="py-3.5 px-4">Metode Bayar</th>}
-                {visibleColumns.includes('email') && <th className="py-3.5 px-4">Email</th>}
-                {visibleColumns.includes('no_hp') && <th className="py-3.5 px-4">WhatsApp / HP</th>}
-                {visibleColumns.includes('created_at') && <th className="py-3.5 px-4">Waktu Daftar</th>}
-
-                {visibleColumns.includes('jenis_kelamin') && <th className="py-3.5 px-4">Gender</th>}
-                {visibleColumns.includes('tanggal_lahir') && <th className="py-3.5 px-4">Tgl Lahir</th>}
-                {visibleColumns.includes('nama_komunitas') && <th className="py-3.5 px-4">Komunitas</th>}
-                {visibleColumns.includes('kota_provinsi') && <th className="py-3.5 px-4">Kota / Asal</th>}
-                {visibleColumns.includes('alamat') && <th className="py-3.5 px-4">Alamat</th>}
-                {visibleColumns.includes('golongan_darah') && <th className="py-3.5 px-4">Gol. Darah</th>}
-                {visibleColumns.includes('riwayat_medis') && <th className="py-3.5 px-4">Riwayat Medis</th>}
-                {visibleColumns.includes('kontak_darurat') && <th className="py-3.5 px-4">Kontak Darurat</th>}
-                {visibleColumns.includes('txn_id') && <th className="py-3.5 px-4">Txn ID</th>}
-                {visibleColumns.includes('order_id') && <th className="py-3.5 px-4">Order ID</th>}
-
-                <th className="py-3.5 px-4 text-center">Aksi</th>
-              </tr>
-            </thead>
-
-            <tbody className="divide-y divide-white/5 font-sans">
-              {loading ? (
-                <tr>
-                  <td colSpan={visibleColumns.length + 2} className="py-16 text-center text-slate-400">
-                    <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-[#e9c176]" />
-                    <span>Memuat data pendaftar...</span>
-                  </td>
-                </tr>
-              ) : filteredData.length === 0 ? (
-                <tr>
-                  <td colSpan={visibleColumns.length + 2} className="py-16 text-center text-slate-400 space-y-2">
-                    <Filter className="w-8 h-8 mx-auto text-slate-600 mb-1" />
-                    <p className="font-semibold text-slate-300">Tidak ada pendaftar yang cocok.</p>
-                    <p className="text-xs text-slate-500">
-                      Coba ganti filter status, kategori lomba, atau kata kunci pencarian.
-                    </p>
-                  </td>
-                </tr>
-              ) : (
-                paginatedData.map((row, index) => {
-                  const isPaid = row.status === 'paid';
-                  const isPending = row.status === 'pending';
-                  const isConfirmed = row.status === 'confirmed';
-
-                  return (
-                    <tr
-                      key={row.id}
-                      className="hover:bg-white/[0.04] transition-colors group cursor-pointer"
-                      onClick={() => setSelectedRow(row)}
-                    >
-                      <td className="py-3.5 px-4 text-center text-slate-500 text-[11px]">
-                        {startIndex + index + 1}
-                      </td>
-
-                      {/* No. BIB */}
-                      {visibleColumns.includes('no_bib') && (
-                        <td className="py-3.5 px-4 font-bold text-[#e9c176]">
-                          <span className="px-2 py-0.5 rounded bg-[#e9c176]/10 border border-[#e9c176]/30">
-                            {row.no_bib || '-'}
-                          </span>
-                        </td>
-                      )}
-
-                      {/* Nama */}
-                      {visibleColumns.includes('nama') && (
-                        <td className="py-3.5 px-4 font-bold text-white whitespace-nowrap">
-                          {row.nama}
-                        </td>
-                      )}
-
-                      {/* Kategori */}
-                      {visibleColumns.includes('kategori') && (
-                        <td className="py-3.5 px-4 whitespace-nowrap">
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-white/10 text-slate-200 border border-white/10">
-                            {row.kategori}
-                          </span>
-                        </td>
-                      )}
-
-                      {/* Status Pembayaran */}
-                      {visibleColumns.includes('status') && (
-                        <td className="py-3.5 px-4 whitespace-nowrap">
-                          {isPaid ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                              <CheckCircle2 className="w-3.5 h-3.5" />
-                              LUNAS (PAID)
-                            </span>
-                          ) : isConfirmed ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-sky-500/15 text-sky-400 border border-sky-500/30">
-                              <Clock className="w-3.5 h-3.5" />
-                              Dikonfirmasi
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                              <Clock className="w-3.5 h-3.5" />
-                              Menunggu Bayar
-                            </span>
-                          )}
-                        </td>
-                      )}
-
-                      {/* Nominal Bayar */}
-                      {visibleColumns.includes('total_payment') && (
-                        <td className="py-3.5 px-4 font-semibold text-slate-200 whitespace-nowrap">
-                          {row.payment?.total_payment ? (
-                            formatCurrency(row.payment.total_payment)
-                          ) : row.payment?.amount ? (
-                            formatCurrency(row.payment.amount)
-                          ) : (
-                            <span className="text-slate-500">-</span>
-                          )}
-                        </td>
-                      )}
-
-                      {/* Profit Fee Admin */}
-                      {visibleColumns.includes('admin_profit') && (
-                        <td className="py-3.5 px-4 whitespace-nowrap font-mono">
-                          {isPaid ? (
-                            <span className="inline-flex items-center gap-1 font-bold text-emerald-400 text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/25">
-                              +{formatCurrency(getRowFinancials(row).adminProfit)}
-                            </span>
-                          ) : (
-                            <span className="text-slate-500 text-[11px]">
-                              ~{formatCurrency(getRowFinancials(row).adminProfit)}
-                            </span>
-                          )}
-                        </td>
-                      )}
-
-                      {/* Biaya Admin */}
-                      {visibleColumns.includes('admin_fee') && (
-                        <td className="py-3.5 px-4 whitespace-nowrap text-slate-300 font-mono text-[11px]">
-                          {formatCurrency(getRowFinancials(row).adminFee)}
-                        </td>
-                      )}
-
-                      {/* Biaya Tx Gateway */}
-                      {visibleColumns.includes('gateway_fee') && (
-                        <td className="py-3.5 px-4 whitespace-nowrap text-rose-300/80 font-mono text-[11px]">
-                          -{formatCurrency(getRowFinancials(row).gatewayFee)}
-                        </td>
-                      )}
-
-                      {/* Metode Bayar */}
-                      {visibleColumns.includes('payment_method') && (
-                        <td className="py-3.5 px-4 uppercase text-[11px] font-semibold text-slate-300 whitespace-nowrap">
-                          {row.payment?.payment_method ? (
-                            <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10">
-                              {row.payment.payment_method.replace('_', ' ')}
-                            </span>
-                          ) : (
-                            <span className="text-slate-500">-</span>
-                          )}
-                        </td>
-                      )}
-
-                      {/* Email */}
-                      {visibleColumns.includes('email') && (
-                        <td className="py-3.5 px-4 text-slate-400 whitespace-nowrap text-[11px]">
-                          {row.email}
-                        </td>
-                      )}
-
-                      {/* WhatsApp / No. HP */}
-                      {visibleColumns.includes('no_hp') && (
-                        <td className="py-3.5 px-4 whitespace-nowrap">
-                          <a
-                            href={`https://wa.me/${row.no_hp.replace(/^0/, '62').replace(/[^0-9]/g, '')}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 hover:underline text-[11px]"
-                          >
-                            <Phone className="w-3 h-3" />
-                            <span>{row.no_hp}</span>
-                          </a>
-                        </td>
-                      )}
-
-                      {/* Waktu Daftar */}
-                      {visibleColumns.includes('created_at') && (
-                        <td className="py-3.5 px-4 text-slate-400 text-[11px] whitespace-nowrap">
-                          {new Date(row.created_at).toLocaleDateString('id-ID', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </td>
-                      )}
-
-                      {/* Additional Columns */}
-                      {visibleColumns.includes('jenis_kelamin') && (
-                        <td className="py-3.5 px-4 text-slate-300 whitespace-nowrap">
-                          {row.jenis_kelamin || '-'}
-                        </td>
-                      )}
-                      {visibleColumns.includes('tanggal_lahir') && (
-                        <td className="py-3.5 px-4 text-slate-300 whitespace-nowrap">
-                          {row.tanggal_lahir || '-'}
-                        </td>
-                      )}
-                      {visibleColumns.includes('nama_komunitas') && (
-                        <td className="py-3.5 px-4 text-slate-300 whitespace-nowrap">
-                          {row.nama_komunitas || '-'}
-                        </td>
-                      )}
-                      {visibleColumns.includes('kota_provinsi') && (
-                        <td className="py-3.5 px-4 text-slate-300 whitespace-nowrap">
-                          {[row.kota, row.provinsi].filter(Boolean).join(', ') || '-'}
-                        </td>
-                      )}
-                      {visibleColumns.includes('alamat') && (
-                        <td className="py-3.5 px-4 text-slate-300 max-w-[200px] truncate" title={row.alamat}>
-                          {row.alamat || '-'}
-                        </td>
-                      )}
-                      {visibleColumns.includes('golongan_darah') && (
-                        <td className="py-3.5 px-4 text-slate-300 font-bold text-center">
-                          {row.golongan_darah || '-'}
-                        </td>
-                      )}
-                      {visibleColumns.includes('riwayat_medis') && (
-                        <td
-                          className="py-3.5 px-4 text-slate-300 max-w-[180px] truncate"
-                          title={row.riwayat_medis || undefined}
-                        >
-                          {row.riwayat_medis || '-'}
-                        </td>
-                      )}
-                      {visibleColumns.includes('kontak_darurat') && (
-                        <td className="py-3.5 px-4 text-slate-300 whitespace-nowrap">
-                          {row.kontak_darurat || '-'}
-                        </td>
-                      )}
-                      {visibleColumns.includes('txn_id') && (
-                        <td className="py-3.5 px-4 text-[10px] text-slate-400 whitespace-nowrap">
-                          {row.payment?.txn_id || '-'}
-                        </td>
-                      )}
-                      {visibleColumns.includes('order_id') && (
-                        <td className="py-3.5 px-4 text-[10px] text-slate-400 whitespace-nowrap">
-                          {row.payment?.order_id || '-'}
-                        </td>
-                      )}
-
-                      {/* Aksi */}
-                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                        <div
-                          className="flex items-center justify-center gap-1.5"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <button
-                            type="button"
-                            onClick={() => setSelectedRow(row)}
-                            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/15 text-slate-300 hover:text-white transition-all cursor-pointer"
-                            title="Lihat Detail Peserta"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                          </button>
-
-                          {row.status !== 'paid' ? (
-                            <button
-                              type="button"
-                              disabled={updatingId === row.id}
-                              onClick={() => handleUpdateStatus(row.id, 'paid')}
-                              className="px-2.5 py-1 rounded-lg bg-emerald-600/80 hover:bg-emerald-600 text-white font-semibold text-[11px] transition-all cursor-pointer flex items-center gap-1 disabled:opacity-50"
-                              title="Tandai Sudah Bayar (Lunas)"
-                            >
-                              <Check className="w-3 h-3" />
-                              <span>Set Lunas</span>
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              disabled={updatingId === row.id}
-                              onClick={() => handleUpdateStatus(row.id, 'pending')}
-                              className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-amber-400 text-[11px] font-semibold transition-all cursor-pointer flex items-center gap-1 disabled:opacity-50"
-                              title="Kembalikan ke status Pending"
-                            >
-                              <RotateCcw className="w-3 h-3" />
-                              <span>Batalkan</span>
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Table Footer with Pagination Controls */}
-        <div className="px-6 py-4 bg-white/[0.02] border-t border-white/5 flex flex-col md:flex-row justify-between md:items-center gap-4 text-xs text-slate-400">
-          {/* Left: Summary range & Page size */}
-          <div className="flex flex-wrap items-center gap-4">
-            <div>
-              Menampilkan{' '}
-              <strong className="text-white">
-                {filteredData.length > 0 ? startIndex + 1 : 0} - {endIndex}
-              </strong>{' '}
-              dari <strong className="text-white">{filteredData.length}</strong> peserta
-              {filteredData.length !== data.length && (
-                <span className="text-slate-500"> (difilter dari {data.length} total)</span>
-              )}
-            </div>
-
-            {/* Page Size Selector */}
-            <div className="flex items-center gap-2 pl-2 border-l border-white/10">
-              <span className="text-[11px] text-slate-500">Baris:</span>
-              <select
-                value={pageSize}
-                onChange={(e) => setPageSize(Number(e.target.value))}
-                className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-white text-xs outline-none cursor-pointer focus:border-[#e9c176]"
-              >
-                <option value={10} className="bg-[#0a1424]">10 / hal</option>
-                <option value={25} className="bg-[#0a1424]">25 / hal</option>
-                <option value={50} className="bg-[#0a1424]">50 / hal</option>
-                <option value={100} className="bg-[#0a1424]">100 / hal</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Right: Pagination buttons & Column summary */}
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Page Navigation */}
-            <div className="flex items-center gap-1">
-              {/* First Page */}
-              <button
-                type="button"
-                onClick={() => setCurrentPage(1)}
-                disabled={safeCurrentPage <= 1}
-                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
-                title="Halaman Pertama"
-              >
-                <ChevronsLeft className="w-4 h-4" />
-              </button>
-
-              {/* Prev Page */}
-              <button
-                type="button"
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={safeCurrentPage <= 1}
-                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
-                title="Halaman Sebelumnya"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-
-              {/* Current Page Indicator / Number Pills */}
-              <div className="flex items-center gap-1 px-1">
-                {Array.from({ length: totalPages }, (_, i) => i + 1)
-                  .filter((page) => {
-                    if (totalPages <= 5) return true;
-                    if (page === 1 || page === totalPages) return true;
-                    if (Math.abs(page - safeCurrentPage) <= 1) return true;
-                    return false;
-                  })
-                  .map((page, idx, arr) => {
-                    const prev = arr[idx - 1];
-                    const showEllipsis = prev && page - prev > 1;
-
-                    return (
-                      <React.Fragment key={page}>
-                        {showEllipsis && <span className="px-1 text-slate-500">...</span>}
-                        <button
-                          type="button"
-                          onClick={() => setCurrentPage(page)}
-                          className={`w-7 h-7 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                            safeCurrentPage === page
-                              ? 'bg-[#e9c176] text-[#0d1c32] font-bold shadow-sm'
-                              : 'bg-white/5 hover:bg-white/10 text-slate-300'
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      </React.Fragment>
-                    );
-                  })}
-              </div>
-
-              {/* Next Page */}
-              <button
-                type="button"
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={safeCurrentPage >= totalPages}
-                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
-                title="Halaman Selanjutnya"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-
-              {/* Last Page */}
-              <button
-                type="button"
-                onClick={() => setCurrentPage(totalPages)}
-                disabled={safeCurrentPage >= totalPages}
-                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
-                title="Halaman Terakhir"
-              >
-                <ChevronsRight className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Column indicator */}
-            <div className="pl-2 border-l border-white/10 hidden sm:flex items-center gap-1.5">
-              <span>Kolom:</span>
-              <button
-                type="button"
-                onClick={() => setShowColumnFilter(true)}
-                className="text-[#e9c176] hover:underline font-semibold cursor-pointer"
-              >
-                {visibleColumns.length} aktif
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 5. Detail Modal Popup */}
-      {selectedRow && (
-        <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
-          onClick={() => setSelectedRow(null)}
-        >
-          <div
-            className="bg-[#0a1424] border border-white/20 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl relative font-sans text-white p-6 sm:p-8 space-y-6"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className="flex justify-between items-start border-b border-white/10 pb-4">
-              <div>
-                <span className="text-[11px] font-bold text-[#e9c176] px-2.5 py-1 rounded-full bg-[#e9c176]/10 border border-[#e9c176]/30 inline-block mb-1.5">
-                  BIB {selectedRow.no_bib || 'Belum Diatur'}
-                </span>
-                <h3 className="text-xl sm:text-2xl font-bold text-white">
-                  {selectedRow.nama}
-                </h3>
-                <p className="text-xs text-slate-400">{selectedRow.kategori}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedRow(null)}
-                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-300 hover:text-white transition-colors cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Status & Quick Action Banner */}
-            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-              <div>
-                <span className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold block">
-                  Status Pembayaran Saat Ini
-                </span>
-                <div className="mt-1">
-                  {selectedRow.status === 'paid' ? (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
-                      <CheckCircle2 className="w-4 h-4" />
-                      LUNAS (PAID)
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40">
-                      <Clock className="w-4 h-4" />
-                      MENUNGGU PEMBAYARAN
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Action Buttons to toggle status */}
-              <div className="flex items-center gap-2">
-                {selectedRow.status !== 'paid' ? (
-                  <button
-                    type="button"
-                    disabled={updatingId === selectedRow.id}
-                    onClick={() => handleUpdateStatus(selectedRow.id, 'paid')}
-                    className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-md"
-                  >
-                    <Check className="w-3.5 h-3.5" />
-                    <span>Set Lunas</span>
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    disabled={updatingId === selectedRow.id}
-                    onClick={() => handleUpdateStatus(selectedRow.id, 'pending')}
-                    className="px-4 py-2.5 bg-amber-600/80 hover:bg-amber-600 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Ubah ke Pending</span>
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Info Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-              {/* Kontak & Bio */}
-              <div className="p-4 rounded-xl bg-white/[0.03] border border-white/5 space-y-3">
-                <h4 className="font-bold text-slate-300 text-xs flex items-center gap-2 uppercase tracking-wider">
-                  <User className="w-3.5 h-3.5 text-[#e9c176]" />
-                  Data Pribadi & Kontak
-                </h4>
-                <div className="space-y-1.5 text-slate-300">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Email:</span>
-                    <span className="text-white">{selectedRow.email}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-500">WhatsApp:</span>
-                    <a
-                      href={`https://wa.me/${selectedRow.no_hp.replace(/^0/, '62').replace(/[^0-9]/g, '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-emerald-400 flex items-center gap-1 hover:underline"
-                    >
-                      <Phone className="w-3 h-3" />
-                      <span>{selectedRow.no_hp}</span>
-                    </a>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Gender:</span>
-                    <span className="text-white">{selectedRow.jenis_kelamin || '-'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Tgl Lahir:</span>
-                    <span className="text-white">{selectedRow.tanggal_lahir || '-'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Kewarganegaraan:</span>
-                    <span className="text-white">{selectedRow.kewarganegaraan || '-'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Komunitas:</span>
-                    <span className="text-white">{selectedRow.nama_komunitas || '-'}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Medis & Darurat */}
-              <div className="p-4 rounded-xl bg-white/[0.03] border border-white/5 space-y-3">
-                <h4 className="font-bold text-slate-300 text-xs flex items-center gap-2 uppercase tracking-wider">
-                  <HeartPulse className="w-3.5 h-3.5 text-rose-400" />
-                  Kesehatan & Darurat
-                </h4>
-                <div className="space-y-1.5 text-slate-300">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Golongan Darah:</span>
-                    <span className="font-bold text-white px-2 py-0.5 rounded bg-white/10">
-                      {selectedRow.golongan_darah || '-'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 block mb-0.5">Kontak Darurat:</span>
-                    <span className="text-white font-medium block">
-                      {selectedRow.kontak_darurat || '-'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 block mb-0.5">Riwayat Medis:</span>
-                    <span className="text-amber-200/90 block bg-amber-500/10 p-2 rounded-lg border border-amber-500/20">
-                      {selectedRow.riwayat_medis || 'Tidak ada riwayat medis dilaporkan.'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Alamat Domisili */}
-              <div className="p-4 rounded-xl bg-white/[0.03] border border-white/5 space-y-3 sm:col-span-2">
-                <h4 className="font-bold text-slate-300 text-xs flex items-center gap-2 uppercase tracking-wider">
-                  <MapPin className="w-3.5 h-3.5 text-sky-400" />
-                  Alamat Lengkap
-                </h4>
-                <div className="text-slate-300 space-y-1">
-                  <p className="text-white">{selectedRow.alamat || '-'}</p>
-                  <p className="text-slate-400">
-                    {[selectedRow.kota, selectedRow.provinsi].filter(Boolean).join(', ')}
-                  </p>
-                </div>
-              </div>
-
-              {/* Rincian Transaksi */}
-              <div className="p-4 rounded-xl bg-white/[0.03] border border-white/5 space-y-3 sm:col-span-2">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-bold text-slate-300 text-xs flex items-center gap-2 uppercase tracking-wider">
-                    <CreditCard className="w-3.5 h-3.5 text-[#e9c176]" />
-                    Rincian Transaksi & Fee Payment Gateway
-                  </h4>
-                  <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
-                    Fee Flat Rp 5.000
-                  </span>
-                </div>
-
-                {(() => {
-                  const fin = getRowFinancials(selectedRow);
-                  return (
-                    <div className="space-y-3">
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-slate-300 pt-1">
-                        <div className="p-2.5 rounded-lg bg-white/5">
-                          <span className="text-[10px] text-slate-400 uppercase block">Metode</span>
-                          <span className="font-bold uppercase text-white">
-                            {selectedRow.payment?.payment_method?.replace('_', ' ') || '-'}
-                          </span>
-                        </div>
-                        <div className="p-2.5 rounded-lg bg-white/5">
-                          <span className="text-[10px] text-slate-400 uppercase block">Harga Tiket</span>
-                          <span className="font-bold text-white font-mono">
-                            {formatCurrency(fin.baseAmount)}
-                          </span>
-                        </div>
-                        <div className="p-2.5 rounded-lg bg-white/5">
-                          <span className="text-[10px] text-slate-400 uppercase block">Biaya Admin (Flat)</span>
-                          <span className="font-bold text-white font-mono">
-                            {formatCurrency(fin.adminFee)}
-                          </span>
-                        </div>
-                        <div className="p-2.5 rounded-lg bg-white/5">
-                          <span className="text-[10px] text-slate-400 uppercase block">Total Bayar Peserta</span>
-                          <span className="font-bold text-[#e9c176] font-mono">
-                            {formatCurrency(fin.totalPayment)}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Profit Breakdown Box */}
-                      <div className="p-3.5 rounded-xl bg-emerald-950/20 border border-emerald-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                        <div className="space-y-0.5">
-                          <span className="text-[10px] uppercase tracking-wider text-emerald-400 font-bold block">
-                            Keuntungan Fee Admin (Profit Bersih)
-                          </span>
-                          <p className="text-slate-400 text-[11px]">
-                            Biaya Admin ({formatCurrency(fin.adminFee)}) dikurangi Biaya Tx Gateway ({formatCurrency(fin.gatewayFee)} / 0.7% + 300)
-                          </p>
-                        </div>
-                        <div className="text-left sm:text-right">
-                          <span className="text-lg font-black text-emerald-400 font-mono block">
-                            +{formatCurrency(fin.adminProfit)}
-                          </span>
-                          <span className="text-[10px] text-emerald-300/80">
-                            {selectedRow.status === 'paid' ? 'Sudah masuk profit lunas' : 'Estimasi profit saat lunas'}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-slate-300 pt-1 text-[11px]">
-                        <div className="p-2.5 rounded-lg bg-white/5">
-                          <span className="text-[10px] text-slate-400 uppercase block">ID Transaksi</span>
-                          <span className="font-mono text-white truncate block" title={selectedRow.payment?.txn_id}>
-                            {selectedRow.payment?.txn_id || '-'}
-                          </span>
-                        </div>
-                        <div className="p-2.5 rounded-lg bg-white/5">
-                          <span className="text-[10px] text-slate-400 uppercase block">Order ID</span>
-                          <span className="font-mono text-white truncate block" title={selectedRow.payment?.order_id}>
-                            {selectedRow.payment?.order_id || '-'}
-                          </span>
-                        </div>
-                        <div className="p-2.5 rounded-lg bg-white/5 sm:col-span-1 col-span-2">
-                          <span className="text-[10px] text-slate-400 uppercase block">Waktu Selesai</span>
-                          <span className="text-slate-300 block">
-                            {selectedRow.payment?.completed_at
-                              ? new Date(selectedRow.payment.completed_at).toLocaleString('id-ID')
-                              : '-'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="pt-4 border-t border-white/10 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setSelectedRow(null)}
-                className="px-6 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-semibold cursor-pointer transition-all"
-              >
-                Tutup
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* 5. Detail Modal */}
+      <TrailrunDetailModal
+        selectedRow={selectedRow}
+        onClose={() => setSelectedRow(null)}
+        onUpdateStatus={handleUpdateStatus}
+        updatingId={updatingId}
+      />
     </div>
   );
 }
