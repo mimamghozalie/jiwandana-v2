@@ -12,6 +12,7 @@ import {
   HeartPulse,
   MapPin,
   CreditCard,
+  Trash2,
 } from 'lucide-react';
 import { TrailrunRow, formatCurrency, getRowFinancials } from './types';
 
@@ -20,6 +21,8 @@ interface TrailrunDetailModalProps {
   onClose: () => void;
   onUpdateStatus: (id: string, status: 'paid' | 'pending' | 'confirmed') => void;
   updatingId: string | null;
+  onDeleteRow?: (id: string, nama: string) => void;
+  isDeleting?: boolean;
 }
 
 export function TrailrunDetailModal({
@@ -27,6 +30,8 @@ export function TrailrunDetailModal({
   onClose,
   onUpdateStatus,
   updatingId,
+  onDeleteRow,
+  isDeleting,
 }: TrailrunDetailModalProps) {
   if (!selectedRow) return null;
 
@@ -85,7 +90,7 @@ export function TrailrunDetailModal({
             {selectedRow.status !== 'paid' ? (
               <button
                 type="button"
-                disabled={updatingId === selectedRow.id}
+                disabled={updatingId === selectedRow.id || isDeleting}
                 onClick={() => onUpdateStatus(selectedRow.id, 'paid')}
                 className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-md disabled:opacity-50"
               >
@@ -95,12 +100,25 @@ export function TrailrunDetailModal({
             ) : (
               <button
                 type="button"
-                disabled={updatingId === selectedRow.id}
+                disabled={updatingId === selectedRow.id || isDeleting}
                 onClick={() => onUpdateStatus(selectedRow.id, 'pending')}
                 className="px-4 py-2.5 bg-amber-600/80 hover:bg-amber-600 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 <span>Ubah ke Pending</span>
+              </button>
+            )}
+
+            {onDeleteRow && (
+              <button
+                type="button"
+                disabled={isDeleting || updatingId === selectedRow.id}
+                onClick={() => onDeleteRow(selectedRow.id, selectedRow.nama)}
+                className="px-3.5 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                title="Hapus pendaftar ini dari database"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{isDeleting ? 'Menghapus...' : 'Hapus Pendaftar'}</span>
               </button>
             )}
           </div>

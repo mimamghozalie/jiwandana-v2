@@ -23,6 +23,7 @@ export default function AdminTrailrunPage() {
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isCleaningUp, setIsCleaningUp] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Column visibility state
   const [visibleColumns, setVisibleColumns] = useState<string[]>(DEFAULT_VISIBLE_KEYS);
@@ -200,23 +201,64 @@ export default function AdminTrailrunPage() {
     }
   };
 
-  // Bersihkan data transaksi & pendaftaran kadaluarsa (> 1 jam 5 menit belum bayar)
-  const handleCleanupUnpaid = async () => {
+  // Hapus satu pendaftar langsung dari database
+  const handleDeleteRow = async (id: string, nama: string) => {
     const confirmed = window.confirm(
-      'Apakah Anda yakin ingin menghapus transaksi dan pendaftaran yang belum dibayar dan sudah lebih dari 1 jam 5 menit?'
+      `Apakah Anda yakin ingin menghapus peserta "${nama}"?\nNomor BIB akan dibebaskan dan data transaksi terkait akan dihapus.`
     );
     if (!confirmed) return;
 
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/trailrun/peserta?id=${id}`, {
+        method: 'DELETE',
+      });
+      const result = await res.json();
+
+      if (result.success) {
+        alert(`Peserta "${nama}" berhasil dihapus.`);
+        setSelectedRow(null);
+        await fetchData();
+      } else {
+        alert(result.message || 'Gagal menghapus peserta.');
+      }
+    } catch (err: any) {
+      alert(`Terjadi kesalahan: ${err.message || 'Gagal menghubungi server.'}`);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Bersihkan data transaksi & pendaftaran yang belum bayar
+  const handleCleanupUnpaid = async () => {
+    const choice = window.confirm(
+      'Pilih mode pembersihan data yang belum dibayar:\n\n' +
+      '[OK] : Bersihkan SEMUA pendaftaran "Menunggu Bayar" (Pending) sekarang juga (termasuk yang baru didaftarkan).\n\n' +
+      '[Cancel] : Hanya bersihkan data kadaluarsa yang sudah LEBIH DARI 1 jam 5 menit.'
+    );
+
+    let url = '/api/cron/cleanup-unpaid?source=admin';
+    if (choice) {
+      url += '&all_pending=true';
+    } else {
+      const confirmExpiredOnly = window.confirm(
+        'Lanjutkan pembersihan hanya untuk data yang sudah LEBIH DARI 1 jam 5 menit?'
+      );
+      if (!confirmExpiredOnly) return;
+    }
+
     setIsCleaningUp(true);
     try {
-      const res = await fetch('/api/cron/cleanup-unpaid?source=admin', {
+      const res = await fetch(url, {
         method: 'POST',
       });
       const result = await res.json();
 
       if (result.success) {
         alert(
-          `Pembersihan Selesai!\nDihapus: ${result.deleted.payments_count} transaksi pembayaran & ${result.deleted.registrations_count} pendaftaran kadaluarsa.`
+          `Pembersihan Selesai!\n` +
+          `Dihapus: ${result.deleted.payments_count} transaksi pembayaran & ${result.deleted.registrations_count} pendaftaran.\n` +
+          (result.deleted.registrations_count === 0 ? '\n(Catatan: Tidak ada data yang memenuhi kriteria pembersihan ini.)' : '')
         );
         await fetchData();
       } else {
@@ -672,6 +714,8 @@ export default function AdminTrailrunPage() {
         onClose={() => setSelectedRow(null)}
         onUpdateStatus={handleUpdateStatus}
         updatingId={updatingId}
+        onDeleteRow={handleDeleteRow}
+        isDeleting={isDeleting}
       />
     </div>
   );

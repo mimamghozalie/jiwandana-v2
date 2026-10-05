@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://gnbyrvileybbqfuzgbty.supabase.co';
 const supabaseKey =
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.SUPABASE_SECRET_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
   'sb_publishable_8p4hyisKhyQaYNJWa6G48Q_DILEiCO7';
 const supabase = createClient(supabaseUrl, supabaseKey);
@@ -89,6 +90,48 @@ export async function GET(request: NextRequest) {
     console.error('Error fetching participant detail by BIB:', error);
     return NextResponse.json(
       { success: false, message: error.message || 'Terjadi kesalahan sistem saat mencari peserta.' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * DELETE /api/trailrun/peserta?id=xxx
+ * Menghapus satu pendaftar dan transaksi pembayarannya langsung
+ */
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, message: 'ID pendaftaran wajib diisi.' },
+        { status: 400 }
+      );
+    }
+
+    // 1. Hapus transaksi pembayaran terkait terlebih dahulu
+    await supabase.from('trailrun_payments').delete().eq('registration_id', id);
+
+    // 2. Hapus data pendaftaran
+    const { error: delError } = await supabase
+      .from('trailrun_registrations')
+      .delete()
+      .eq('id', id);
+
+    if (delError) {
+      throw delError;
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Pendaftar berhasil dihapus dari database.',
+    });
+  } catch (error: any) {
+    console.error('Error deleting participant:', error);
+    return NextResponse.json(
+      { success: false, message: error.message || 'Gagal menghapus pendaftar.' },
       { status: 500 }
     );
   }

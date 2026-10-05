@@ -8,17 +8,18 @@ export const maxDuration = 60; // Izinkan eksekusi hingga 60 detik di Vercel
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://gnbyrvileybbqfuzgbty.supabase.co';
 const supabaseKey =
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.SUPABASE_SECRET_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
   'sb_publishable_8p4hyisKhyQaYNJWa6G48Q_DILEiCO7';
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Batas waktu: 1 jam 5 menit (65 menit)
-const CUTOFF_MINUTES = 65;
+// Default batas waktu: 65 menit (1 jam 5 menit)
+const DEFAULT_CUTOFF_MINUTES = 65;
 
 /**
  * Handler pembersihan transaksi & pendaftaran yang belum dibayar
- * Berjalan otomatis via Vercel Cron (setiap 1 jam) atau dipicu manual oleh Admin.
+ * Berjalan otomatis via Vercel Cron atau dipicu manual oleh Admin.
  */
 async function handleCleanup(request: NextRequest) {
   try {
@@ -40,20 +41,32 @@ async function handleCleanup(request: NextRequest) {
       }
     }
 
-    // 2. Hitung timestamp batas waktu (1 jam 5 menit yang lalu)
-    const cutoffTime = new Date(Date.now() - CUTOFF_MINUTES * 60 * 1000).toISOString();
+    // 2. Hitung timestamp batas waktu
+    // Parameter minutes=0 atau all_pending=true memungkinkan admin menghapus data pending saat ini juga tanpa menunggu 65 menit
+    const minutesParam = request.nextUrl.searchParams.get('minutes');
+    const isAllPending = request.nextUrl.searchParams.get('all_pending') === 'true' || minutesParam === '0';
+    const cutoffMinutes = isAllPending ? 0 : (minutesParam ? parseInt(minutesParam, 10) : DEFAULT_CUTOFF_MINUTES);
 
-    console.log(`[Cron Cleanup] Memulai pembersihan data kadaluarsa sebelum: ${cutoffTime}`);
+    const cutoffTime = new Date(Date.now() - cutoffMinutes * 60 * 1000).toISOString();
 
-    // 3. Ambil data pembayaran yang statusnya BELUM 'completed'/'paid' dan dibuat > 65 menit lalu
-    const { data: unpaidPayments, error: payError } = await supabase
+    console.log(`[Cron Cleanup] Mode: ${isAllPending ? 'Semua data pending' : `Usia > ${cutoffMinutes} menit`}`);
+
+    // 3. Ambil data pembayaran yang statusnya BELUM lunas
+    let payQuery = supabase
       .from('trailrun_payments')
       .select('id, registration_id, txn_id, order_id, status, created_at')
-      .lte('created_at', cutoffTime)
-      .not('status', 'in', '("completed","settled","paid")');
+      .neq('status', 'completed')
+      .neq('status', 'settled')
+      .neq('status', 'paid');
+
+    if (cutoffMinutes > 0) {
+      payQuery = payQuery.lte('created_at', cutoffTime);
+    }
+
+    const { data: unpaidPayments, error: payError } = await payQuery;
 
     if (payError) {
-      console.error('[Cron Cleanup] Gagal mengambil trailrun_payments:', payError);
+      console.error('[Cron Cleanup] Gagal membaca trailrun_payments:', payError);
       return NextResponse.json(
         { error: 'Gagal membaca tabel trailrun_payments', details: payError.message },
         { status: 500 }
@@ -92,8 +105,8 @@ async function handleCleanup(request: NextRequest) {
 
             console.log(`[Cron Cleanup] Transaksi ${payment.txn_id} ternyata lunas di gateway. Diupdate ke completed.`);
           }
-        } catch (apiErr) {
-          // Jika gagal hubungi Pakasir / 404 / expired, anggap unpaid
+        } catch {
+          // Jika gagal hubungi Pakasir / 404 / expired, lanjutkan proses pembersihan
         }
       }
 
@@ -105,21 +118,24 @@ async function handleCleanup(request: NextRequest) {
       }
     }
 
-    // 5. Cari pendaftaran di trailrun_registrations yang:
-    // a. Terkait dengan payment unpaid di atas, ATAU
-    // b. Belum pernah membuat pembayaran sama sekali (ditinggalkan di Step 3) dan usianya > 65 menit
-    const { data: oldUnpaidRegistrations, error: regError } = await supabase
+    // 5. Cari pendaftaran di trailrun_registrations yang belum lunas
+    let regQuery = supabase
       .from('trailrun_registrations')
       .select('id, nama, no_bib, status, created_at')
-      .lte('created_at', cutoffTime)
-      .not('status', 'in', '("completed","settled","paid")');
+      .neq('status', 'paid');
+
+    if (cutoffMinutes > 0) {
+      regQuery = regQuery.lte('created_at', cutoffTime);
+    }
+
+    const { data: oldUnpaidRegistrations, error: regError } = await regQuery;
 
     if (regError) {
-      console.error('[Cron Cleanup] Gagal mengambil trailrun_registrations:', regError);
+      console.error('[Cron Cleanup] Gagal membaca trailrun_registrations:', regError);
     }
 
     // 6. Ambil semua registration_id yang memiliki status pembayaran SUDAH LUNAS di trailrun_payments
-    // Ini perlindungan mutlak agar data peserta yang sah tidak akan pernah terhapus!
+    // Ini perlindungan mutlak agar peserta yang sah tidak akan pernah terhapus!
     const { data: paidPayments } = await supabase
       .from('trailrun_payments')
       .select('registration_id')
@@ -140,7 +156,7 @@ async function handleCleanup(request: NextRequest) {
       (id) => id && !paidRegIdSet.has(id)
     );
 
-    // Kumpulkan detail pendaftar yang akan dihapus untuk audit log
+    // Kumpulkan detail pendaftar yang akan dihapus untuk laporan
     const deletedParticipantsInfo = (oldUnpaidRegistrations || [])
       .filter((r: any) => finalRegIdsToDelete.includes(r.id))
       .map((r: any) => ({
@@ -152,22 +168,23 @@ async function handleCleanup(request: NextRequest) {
       }));
 
     // 7. Eksekusi Penghapusan
-    // A. Hapus data di tabel trailrun_payments terlebih dahulu (mencegah error foreign key)
+    // A. Hapus data di tabel trailrun_payments terlebih dahulu
     let deletedPaymentsCount = 0;
     if (paymentIdsToDelete.length > 0) {
-      const { error: delPayErr } = await supabase
+      const { data: delPayData, error: delPayErr } = await supabase
         .from('trailrun_payments')
         .delete()
-        .in('id', paymentIdsToDelete);
+        .in('id', paymentIdsToDelete)
+        .select('id');
 
       if (delPayErr) {
         console.error('[Cron Cleanup] Error menghapus trailrun_payments:', delPayErr);
       } else {
-        deletedPaymentsCount = paymentIdsToDelete.length;
+        deletedPaymentsCount = delPayData?.length || paymentIdsToDelete.length;
       }
     }
 
-    // Pastikan jika ada pembayaran tersisa yang berelasi dengan registration yang akan dihapus juga ikut dibersihkan
+    // Bersihkan pembayaran yang berelasi dengan pendaftaran yang akan dihapus
     if (finalRegIdsToDelete.length > 0) {
       await supabase
         .from('trailrun_payments')
@@ -178,15 +195,16 @@ async function handleCleanup(request: NextRequest) {
     // B. Hapus data di tabel trailrun_registrations
     let deletedRegistrationsCount = 0;
     if (finalRegIdsToDelete.length > 0) {
-      const { error: delRegErr } = await supabase
+      const { data: delRegData, error: delRegErr } = await supabase
         .from('trailrun_registrations')
         .delete()
-        .in('id', finalRegIdsToDelete);
+        .in('id', finalRegIdsToDelete)
+        .select('id');
 
       if (delRegErr) {
         console.error('[Cron Cleanup] Error menghapus trailrun_registrations:', delRegErr);
       } else {
-        deletedRegistrationsCount = finalRegIdsToDelete.length;
+        deletedRegistrationsCount = delRegData?.length || finalRegIdsToDelete.length;
       }
     }
 
@@ -194,8 +212,9 @@ async function handleCleanup(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Pembersihan berhasil. Dihapus ${deletedPaymentsCount} transaksi pembayaran dan ${deletedRegistrationsCount} pendaftaran yang belum dibayar (> ${CUTOFF_MINUTES} menit).`,
-      cutoff_minutes: CUTOFF_MINUTES,
+      message: `Pembersihan selesai. Dihapus ${deletedPaymentsCount} pembayaran dan ${deletedRegistrationsCount} pendaftaran yang belum dibayar.`,
+      mode: isAllPending ? 'Semua pending' : `Lebih dari ${cutoffMinutes} menit`,
+      cutoff_minutes: cutoffMinutes,
       cutoff_time: cutoffTime,
       deleted: {
         payments_count: deletedPaymentsCount,
@@ -213,12 +232,10 @@ async function handleCleanup(request: NextRequest) {
   }
 }
 
-// Vercel Cron memanggil route dengan metode GET
 export async function GET(request: NextRequest) {
   return handleCleanup(request);
 }
 
-// POST juga didukung untuk pemanggilan manual via tombol admin atau trigger eksternal
 export async function POST(request: NextRequest) {
   return handleCleanup(request);
 }
