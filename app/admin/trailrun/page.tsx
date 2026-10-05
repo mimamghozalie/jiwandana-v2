@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 import { supabase } from '@/lib/supabaseClient';
-import { Trophy, FileSpreadsheet, Download, RefreshCw } from 'lucide-react';
+import { Trophy, FileSpreadsheet, Download, RefreshCw, Trash2 } from 'lucide-react';
 
 import {
   TrailrunRow,
@@ -22,6 +22,7 @@ export default function AdminTrailrunPage() {
   const [data, setData] = useState<TrailrunRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isCleaningUp, setIsCleaningUp] = useState(false);
 
   // Column visibility state
   const [visibleColumns, setVisibleColumns] = useState<string[]>(DEFAULT_VISIBLE_KEYS);
@@ -196,6 +197,35 @@ export default function AdminTrailrunPage() {
       console.error('Failed to update status:', err);
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  // Bersihkan data transaksi & pendaftaran kadaluarsa (> 1 jam 5 menit belum bayar)
+  const handleCleanupUnpaid = async () => {
+    const confirmed = window.confirm(
+      'Apakah Anda yakin ingin menghapus transaksi dan pendaftaran yang belum dibayar dan sudah lebih dari 1 jam 5 menit?'
+    );
+    if (!confirmed) return;
+
+    setIsCleaningUp(true);
+    try {
+      const res = await fetch('/api/cron/cleanup-unpaid?source=admin', {
+        method: 'POST',
+      });
+      const result = await res.json();
+
+      if (result.success) {
+        alert(
+          `Pembersihan Selesai!\nDihapus: ${result.deleted.payments_count} transaksi pembayaran & ${result.deleted.registrations_count} pendaftaran kadaluarsa.`
+        );
+        await fetchData();
+      } else {
+        alert(result.error || 'Gagal membersihkan data.');
+      }
+    } catch (err: any) {
+      alert(`Terjadi kesalahan: ${err.message || 'Gagal memanggil API pembersihan.'}`);
+    } finally {
+      setIsCleaningUp(false);
     }
   };
 
@@ -560,6 +590,17 @@ export default function AdminTrailrunPage() {
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
             <span>{isRefreshing ? 'Memuat...' : 'Refresh'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleCleanupUnpaid}
+            disabled={isCleaningUp || isRefreshing}
+            className="px-3.5 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 rounded-xl border border-rose-500/30 text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+            title="Bersihkan transaksi & pendaftaran yang belum dibayar (> 1 jam 5 menit)"
+          >
+            <Trash2 className={`w-3.5 h-3.5 ${isCleaningUp ? 'animate-spin' : ''}`} />
+            <span>{isCleaningUp ? 'Membersihkan...' : 'Bersihkan Kadaluarsa'}</span>
           </button>
 
           <button
