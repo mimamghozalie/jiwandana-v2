@@ -229,27 +229,17 @@ export default function AdminTrailrunPage() {
     }
   };
 
-  // Bersihkan data transaksi & pendaftaran yang belum bayar
+  // Bersihkan data transaksi & pendaftaran yang belum bayar (> 1 jam 5 menit / 65 menit)
   const handleCleanupUnpaid = async () => {
-    const choice = window.confirm(
-      'Pilih mode pembersihan data yang belum dibayar:\n\n' +
-      '[OK] : Bersihkan SEMUA pendaftaran "Menunggu Bayar" (Pending) sekarang juga (termasuk yang baru didaftarkan).\n\n' +
-      '[Cancel] : Hanya bersihkan data kadaluarsa yang sudah LEBIH DARI 1 jam 5 menit.'
+    const confirmed = window.confirm(
+      'Apakah Anda yakin ingin membersihkan data transaksi & pendaftaran yang BELUM DIBAYAR dan sudah LEBIH DARI 1 jam 5 menit (65 menit)?\n\n' +
+      'Catatan: Peserta yang sudah lunas (PAID) dan peserta yang baru mendaftar (< 65 menit) TIDAK AKAN dihapus.'
     );
-
-    let url = '/api/cron/cleanup-unpaid?source=admin';
-    if (choice) {
-      url += '&all_pending=true';
-    } else {
-      const confirmExpiredOnly = window.confirm(
-        'Lanjutkan pembersihan hanya untuk data yang sudah LEBIH DARI 1 jam 5 menit?'
-      );
-      if (!confirmExpiredOnly) return;
-    }
+    if (!confirmed) return;
 
     setIsCleaningUp(true);
     try {
-      const res = await fetch(url, {
+      const res = await fetch('/api/cron/cleanup-unpaid?source=admin', {
         method: 'POST',
       });
       const result = await res.json();
@@ -257,8 +247,8 @@ export default function AdminTrailrunPage() {
       if (result.success) {
         alert(
           `Pembersihan Selesai!\n` +
-          `Dihapus: ${result.deleted.payments_count} transaksi pembayaran & ${result.deleted.registrations_count} pendaftaran.\n` +
-          (result.deleted.registrations_count === 0 ? '\n(Catatan: Tidak ada data yang memenuhi kriteria pembersihan ini.)' : '')
+          `Dihapus: ${result.deleted.payments_count} transaksi pembayaran & ${result.deleted.registrations_count} pendaftaran kadaluarsa (> 65 menit).\n` +
+          (result.deleted.registrations_count === 0 ? '\n(Catatan: Belum ada data belum bayar yang usianya melebihi 65 menit.)' : '')
         );
         await fetchData();
       } else {
