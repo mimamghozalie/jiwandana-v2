@@ -18,9 +18,9 @@ export default function StepKategoriLomba({
   pricingInfoMap,
 }: StepKategoriLombaProps) {
   return (
-    <div className="p-6 sm:p-8 space-y-5 animate-[fadeIn_0.4s_ease-out]">
-      <div className="flex items-center gap-3 pb-4 border-b border-black/5">
-        <div className="w-9 h-9 rounded-xl bg-[#C9A227]/10 border border-[#C9A227]/30 flex items-center justify-center text-[#C9A227]">
+    <div className="p-4 sm:p-8 space-y-4 sm:space-y-5 animate-[fadeIn_0.4s_ease-out]">
+      <div className="flex items-center gap-3 pb-3 sm:pb-4 border-b border-black/5">
+        <div className="w-9 h-9 rounded-xl bg-[#C9A227]/10 border border-[#C9A227]/30 flex items-center justify-center text-[#C9A227] shrink-0">
           <span className="material-symbols-outlined text-lg">directions_run</span>
         </div>
         <div>
@@ -36,18 +36,24 @@ export default function StepKategoriLomba({
           const isSoldOut = Boolean(info?.isSoldOut || (cat as any).isSoldOut);
           const startingPrice = getCategoryStartingPrice(cat.id, info);
 
+          // Format singkat cut off time untuk mobile agar tidak wrap berantakan
+          const shortCutOff = cat.cutOffTime.includes('/')
+            ? `${cat.cutOffTime.split('/')[0].trim()} (COT)`
+            : `COT: ${cat.cutOffTime}`;
+
           return (
             <button
               key={cat.id}
               type="button"
               disabled={isSoldOut}
               onClick={() => !isSoldOut && onSelect(cat.id)}
-              className={`w-full text-left p-4 sm:p-5 rounded-xl border-2 transition-all duration-300 relative overflow-hidden group ${isSoldOut
+              className={`w-full text-left p-3.5 sm:p-5 rounded-2xl border-2 transition-all duration-300 relative overflow-hidden group ${
+                isSoldOut
                   ? 'border-slate-200 bg-slate-50 opacity-70 cursor-not-allowed'
                   : isSelected
-                    ? 'border-[#C9A227] bg-[#C9A227]/5 shadow-md cursor-pointer'
-                    : 'border-black/10 bg-white hover:border-[#C9A227]/40 hover:bg-[#f8f8f8] cursor-pointer'
-                }`}
+                  ? 'border-[#C9A227] bg-[#C9A227]/5 shadow-md cursor-pointer'
+                  : 'border-black/10 bg-white hover:border-[#C9A227]/40 hover:bg-[#f8f8f8] cursor-pointer'
+              }`}
             >
               {isSoldOut && (
                 <div className="absolute top-0 right-0 w-20 h-20 overflow-hidden pointer-events-none z-10">
@@ -56,51 +62,82 @@ export default function StepKategoriLomba({
                   </div>
                 </div>
               )}
-              <div className="flex items-center gap-4">
+              <div className="flex items-start sm:items-center gap-3 sm:gap-4">
+                {/* Radio Circle Indicator */}
                 <div
-                  className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${isSoldOut
+                  className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center shrink-0 mt-1 sm:mt-0 transition-all ${
+                    isSoldOut
                       ? 'border-slate-200 bg-slate-100'
                       : isSelected
-                        ? 'border-[#C9A227] bg-[#C9A227]'
-                        : 'border-slate-300 group-hover:border-[#C9A227]/50'
-                    }`}
+                      ? 'border-[#C9A227] bg-[#C9A227]'
+                      : 'border-slate-300 group-hover:border-[#C9A227]/50'
+                  }`}
                 >
-                  {isSelected && <span className="material-symbols-outlined text-white text-sm">check</span>}
+                  {isSelected && <span className="material-symbols-outlined text-white text-xs sm:text-sm font-bold">check</span>}
                 </div>
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border border-black/10 shrink-0 bg-slate-100">
+
+                {/* Thumbnail Image */}
+                <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-xl overflow-hidden border border-black/10 shrink-0 bg-slate-100 self-start sm:self-auto shadow-sm">
                   <img src={cat.bannerImage} alt={cat.categoryName} className="w-full h-full object-cover" />
                 </div>
+
+                {/* Main Content */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className={`text-sm sm:text-base font-bold transition-colors ${isSelected ? 'text-[#C9A227]' : 'text-slate-900'}`}>
-                      {cat.categoryName}
-                    </h3>
-                    <span className="px-2 py-0.5 rounded-full bg-slate-100 text-[10px] font-semibold text-slate-600 border border-black/5">
-                      {cat.badge}
-                    </span>
+                  {/* Title, Badge & Mobile Price */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                        <h3 className={`text-sm sm:text-base font-bold transition-colors leading-tight ${isSelected ? 'text-[#C9A227]' : 'text-slate-900'}`}>
+                          {cat.categoryName}
+                        </h3>
+                        <span className="px-1.5 sm:px-2 py-0.5 rounded-full bg-slate-100 text-[9px] sm:text-[10px] font-semibold text-slate-600 border border-black/5 whitespace-nowrap">
+                          {cat.badge}
+                        </span>
+                      </div>
+                      <p className="text-[11px] sm:text-xs text-slate-500 mt-1 line-clamp-1">{cat.description}</p>
+                    </div>
+
+                    {/* Mobile Price: Diposisikan di kanan atas agar tidak menabrak stat pills */}
+                    <div className="sm:hidden text-right shrink-0 pl-1">
+                      <span className="text-[9px] text-slate-400 font-semibold uppercase block leading-none">Mulai</span>
+                      <span className={`text-xs font-bold font-mono ${isSelected ? 'text-[#C9A227]' : 'text-slate-900'}`}>
+                        {startingPrice}
+                      </span>
+                    </div>
                   </div>
-                  <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5 line-clamp-1">{cat.description}</p>
-                  <div className="flex items-center gap-3 mt-2 text-[10px] sm:text-[11px] text-slate-500">
-                    <span className="flex items-center gap-1">
-                      <span className="material-symbols-outlined text-xs text-[#C9A227]">route</span>
-                      {cat.distance}
+
+                  {/* Stats Badges: Format pill rapi, flex-wrap & whitespace-nowrap agar tidak bertumpuk */}
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-2.5 text-[10px] sm:text-[11px] text-slate-600">
+                    {/* Jarak */}
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100/90 text-slate-700 font-medium whitespace-nowrap border border-black/5">
+                      <span className="material-symbols-outlined text-[13px] text-[#C9A227]">route</span>
+                      <span>{cat.distance}</span>
                     </span>
-                    <span className="flex items-center gap-1">
-                      <span className="material-symbols-outlined text-xs text-[#C9A227]">landscape</span>
-                      {cat.elevationGain}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <span className="material-symbols-outlined text-xs text-[#C9A227]">timer</span>
-                      {cat.cutOffTime}
-                    </span>
-                    <span className="sm:hidden font-bold text-[#C9A227] ml-auto">
-                      {startingPrice}
+
+                    {/* Elevation Gain */}
+                    {cat.elevationGain && cat.elevationGain !== '-' && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100/90 text-slate-700 font-medium whitespace-nowrap border border-black/5">
+                        <span className="material-symbols-outlined text-[13px] text-[#C9A227]">landscape</span>
+                        <span>{cat.elevationGain}</span>
+                      </span>
+                    )}
+
+                    {/* Cut Off Time */}
+                    <span
+                      title={cat.cutOffTime}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100/90 text-slate-700 font-medium whitespace-nowrap border border-black/5"
+                    >
+                      <span className="material-symbols-outlined text-[13px] text-[#C9A227]">timer</span>
+                      <span className="sm:hidden">{shortCutOff}</span>
+                      <span className="hidden sm:inline">{cat.cutOffTime}</span>
                     </span>
                   </div>
                 </div>
-                <div className="hidden sm:block text-right shrink-0">
+
+                {/* Desktop Price */}
+                <div className="hidden sm:block text-right shrink-0 pl-2">
                   <span className="text-[10px] text-slate-400 font-semibold uppercase block">Mulai</span>
-                  <span className={`text-base font-bold ${isSelected ? 'text-[#C9A227]' : 'text-slate-900'}`}>
+                  <span className={`text-base font-bold font-mono ${isSelected ? 'text-[#C9A227]' : 'text-slate-900'}`}>
                     {startingPrice}
                   </span>
                 </div>
