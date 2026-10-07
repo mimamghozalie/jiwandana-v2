@@ -26,6 +26,15 @@ export default function TrailrunCardItem({
   const earlyDisplay = pricingInfo?.prices?.early?.display || configPrices.early;
   const presaleDisplay = pricingInfo?.prices?.presale?.display || configPrices.presale;
   const regularDisplay = pricingInfo?.prices?.regular?.display || configPrices.regular;
+
+  // Visual marketing offset for Early Bird quota display (7K minus 14, 12K minus 16)
+  const catKey = (item.id || '').toLowerCase();
+  const earlyVisualOffset = catKey === '7k' ? 14 : catKey === '12k' ? 16 : 0;
+  const baseEarlyQuota = 50;
+  const realEarlyRemaining = typeof pricingInfo?.quotaRemaining === 'number'
+    ? pricingInfo.quotaRemaining
+    : baseEarlyQuota;
+  const displayEarlyRemaining = Math.max(0, realEarlyRemaining - earlyVisualOffset);
   const isEarlySoldOut = Boolean(
     pricingInfo?.isEarlyBirdSoldOut ||
     (pricingInfo?.tiersConfig?.early as any)?.isSoldOut ||
@@ -186,12 +195,10 @@ export default function TrailrunCardItem({
                     {earlyDisplay}
                   </span>
                   <span className="text-[8px] font-semibold block">
-                    {isEarlySoldOut ? (
+                    {isEarlySoldOut || displayEarlyRemaining === 0 ? (
                       <span className="text-rose-600 bg-rose-100 px-1 py-0.5 rounded font-bold">Sold Out</span>
-                    ) : typeof pricingInfo?.quotaRemaining === 'number' ? (
-                      <span className="text-rose-600 font-bold">Sisa {pricingInfo.quotaRemaining} Kuota</span>
                     ) : (
-                      <span className="text-rose-600">50 Kuota</span>
+                      <span className="text-rose-600 font-bold">Sisa {displayEarlyRemaining} Kuota</span>
                     )}
                   </span>
                 </div>
