@@ -95,16 +95,14 @@ export async function POST(request: NextRequest) {
     let globalSeq = 1;
     if (forceRegenerateAll) {
       if (isConsecutive) {
-        // If batch already had clean consecutive numbers, advance to next block
         const highestBatch = Math.max(...(batchNums as number[]));
         const highest = Math.max(maxDbNumber, highestBatch);
-        globalSeq = highest >= 99990 ? 1 : highest + 1;
+        globalSeq = highest >= 99990 ? 1 : (highest % 99999) + 1;
       } else {
-        // Was not consecutive (e.g. all 0001 or duplicates) -> start sequentially from lowest available
-        globalSeq = maxDbNumber + 1;
+        globalSeq = maxDbNumber >= 99990 ? 1 : maxDbNumber + 1;
       }
     } else {
-      globalSeq = maxDbNumber + 1;
+      globalSeq = maxDbNumber >= 99990 ? 1 : maxDbNumber + 1;
     }
 
     const batchBibSet = new Set<string>();
@@ -161,7 +159,7 @@ export async function POST(request: NextRequest) {
         const pref = getGenderPrefix(p.jenis_kelamin);
 
         // Find next sequential candidate that is neither in DB nor in current batch (F/M + 5 digits, max 6 chars)
-        let candidateNum = globalSeq;
+        let candidateNum = globalSeq > 99999 ? 1 : globalSeq;
         let candidateBib = `${pref}${String(candidateNum).padStart(5, '0')}`;
         let attempts = 0;
 
@@ -169,13 +167,12 @@ export async function POST(request: NextRequest) {
           (dbBibSet.has(candidateBib.toUpperCase()) || batchBibSet.has(candidateBib.toUpperCase())) &&
           attempts < 99999
         ) {
-          candidateNum++;
-          if (candidateNum > 99999) candidateNum = 1;
+          candidateNum = (candidateNum % 99999) + 1;
           candidateBib = `${pref}${String(candidateNum).padStart(5, '0')}`;
           attempts++;
         }
 
-        globalSeq = candidateNum + 1;
+        globalSeq = (candidateNum % 99999) + 1;
         batchBibSet.add(candidateBib.toUpperCase());
 
         p.no_bib = candidateBib;

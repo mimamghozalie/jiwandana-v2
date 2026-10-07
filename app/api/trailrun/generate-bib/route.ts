@@ -43,45 +43,34 @@ export async function GET(request: NextRequest) {
     const { data } = await withTimeout(queryPromise, 3500).catch(() => ({ data: null }));
 
     const existingBibs = new Set<string>();
-    let maxNumber = 0;
 
     if (data && Array.isArray(data)) {
       for (const item of data) {
         if (!item.no_bib) continue;
         const clean = item.no_bib.trim().toUpperCase();
         existingBibs.add(clean);
-
-        if (clean.startsWith(prefix)) {
-          const numPart = clean.slice(prefix.length).replace(/\D/g, '');
-          const num = parseInt(numPart, 10);
-          if (!isNaN(num) && num > maxNumber && num < 100000) {
-            maxNumber = num;
-          }
-        }
       }
     }
 
-    // Determine start number
+    // Determine start number (1 to 99999)
     let startNumber = 1;
     if (currentParam && currentParam.toUpperCase().startsWith(prefix)) {
       const currentNumPart = currentParam.slice(prefix.length).replace(/\D/g, '');
       const parsedCurrent = parseInt(currentNumPart, 10);
-      if (!isNaN(parsedCurrent) && parsedCurrent >= 1) {
+      if (!isNaN(parsedCurrent) && parsedCurrent >= 1 && parsedCurrent < 99999) {
         startNumber = parsedCurrent + 1;
+      } else {
+        startNumber = 1;
       }
-    } else {
-      startNumber = maxNumber + 1;
     }
 
-    // Find first available number (5 digits with '-' separator, e.g. F-00001, M-00001)
+    // Find first available number strictly formatted with 5 digits (total 7 characters: M-XXXXX / F-XXXXX)
     let candidateNum = startNumber;
     let candidateBib = `${prefix}${String(candidateNum).padStart(5, '0')}`;
 
-    // Loop until we find a non-existing bib (up to 99999, then wrap to 1)
     let attempts = 0;
     while (existingBibs.has(candidateBib.toUpperCase()) && attempts < 99999) {
-      candidateNum++;
-      if (candidateNum > 99999) candidateNum = 1;
+      candidateNum = (candidateNum % 99999) + 1;
       candidateBib = `${prefix}${String(candidateNum).padStart(5, '0')}`;
       attempts++;
     }
