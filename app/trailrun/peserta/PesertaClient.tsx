@@ -26,6 +26,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { formatCurrency } from '@/components/trailrun/registration/types';
+import { BibPreviewCard } from '@/components/trailrun/bib';
 
 interface ParticipantData {
   id?: string;
@@ -354,47 +355,48 @@ export default function PesertaClient() {
                   <span>Bagikan</span>
                 </button>
 
-                <button
+                {/* <button
                   type="button"
                   onClick={handlePrint}
                   className="px-4 py-2 bg-[#0d1c32] hover:bg-slate-800 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
                 >
                   <Printer className="w-3.5 h-3.5 text-[#C9A227]" />
                   <span>Cetak / PDF</span>
-                </button>
+                </button> */}
               </div>
             </div>
 
-            {/* THE OFFICIAL RUNNER CARD (Optimized for Screen & Print) */}
+
+
+            {/* 2. RUNNER VERIFICATION DOSSIER & RACE DETAILS */}
             <div className="bg-white border-2 border-slate-900 rounded-3xl overflow-hidden shadow-xl print:shadow-none print:border-2 print:border-black print:rounded-2xl">
-              {/* Card Top Banner - Official Race Header */}
-              <div className="bg-[#0d1c32] text-white p-6 sm:p-7 relative overflow-hidden">
-                <div className="absolute -right-8 -top-8 w-44 h-44 rounded-full bg-[#C9A227]/10 pointer-events-none" />
+              {/* Card Top Banner - Official Race Header (Clean White Theme) */}
+              <div className="bg-white text-slate-900 p-6 sm:p-7 relative overflow-hidden border-b border-black/10">
                 <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="px-2.5 py-0.5 rounded-full bg-[#C9A227] text-[#0d1c32] text-[10px] font-extrabold uppercase tracking-widest">
-                        OFFICIAL PASS
+                      <span className="px-2.5 py-0.5 rounded-full bg-[#C9A227]/15 border border-[#C9A227]/30 text-[#b45309] text-[10px] font-extrabold uppercase tracking-widest">
+                        OFFICIAL DOSSIER
                       </span>
-                      <span className="text-[11px] text-slate-300 font-semibold tracking-wider uppercase">
+                      <span className="text-[11px] text-slate-500 font-semibold tracking-wider uppercase">
                         Trailrun Lintas Candi Majapahit 2026
                       </span>
                     </div>
-                    <h1 className="text-xl sm:text-2xl font-serif font-bold text-white tracking-wide">
-                      Kartu Peserta Resmi
+                    <h1 className="text-xl sm:text-2xl font-serif font-bold text-slate-900 tracking-wide">
+                      Data Verifikasi Peserta
                     </h1>
                   </div>
 
                   {/* Status Badge */}
                   <div className="flex items-center gap-2 self-start sm:self-center">
                     {isPaid ? (
-                      <div className="px-3 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-400 text-emerald-300 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-xs">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      <div className="px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-300 text-emerald-700 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-xs">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                         <span>Terverifikasi • Lunas</span>
                       </div>
                     ) : (
-                      <div className="px-3 py-1.5 rounded-full bg-amber-500/20 border border-amber-400 text-amber-300 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
-                        <Clock className="w-4 h-4 text-amber-400" />
+                      <div className="px-3 py-1.5 rounded-full bg-amber-50 border border-amber-300 text-amber-700 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
+                        <Clock className="w-4 h-4 text-amber-600" />
                         <span>Menunggu Pembayaran</span>
                       </div>
                     )}
@@ -402,75 +404,8 @@ export default function PesertaClient() {
                 </div>
               </div>
 
-              {/* Card Main Body: 2 Columns (Runner & BIB vs QR Code) */}
+              {/* Card Main Body */}
               <div className="p-6 sm:p-8 space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center border-b border-black/10 pb-8">
-                  {/* Left Column: Big BIB Number & Runner Identity */}
-                  <div className="md:col-span-8 space-y-4">
-                    <div className="space-y-1">
-                      <span className="text-[11px] uppercase font-bold tracking-widest text-[#C9A227] block">
-                        Kategori Lomba
-                      </span>
-                      <h2 className="text-xl sm:text-2xl font-bold font-serif text-slate-900">
-                        {participant.kategori}
-                      </h2>
-                    </div>
-
-                    {/* Huge BIB Badge */}
-                    <div className="inline-block bg-slate-50 border-2 border-slate-900 rounded-2xl p-4 sm:p-5 shadow-inner">
-                      <div className="text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-1">
-                        NOMOR BIB RESMI
-                      </div>
-                      <div className="text-4xl sm:text-5xl md:text-6xl font-extrabold font-mono tracking-wider text-slate-900">
-                        {participant.no_bib}
-                      </div>
-                    </div>
-
-                    {/* Runner Name */}
-                    <div className="space-y-0.5 pt-1">
-                      <div className="text-xs uppercase font-semibold text-slate-400 tracking-wider">
-                        Nama Peserta
-                      </div>
-                      <div className="text-xl sm:text-2xl font-serif font-bold text-slate-900">
-                        {participant.nama}
-                      </div>
-                      {participant.nama_komunitas && (
-                        <div className="text-xs font-semibold text-[#C9A227] flex items-center gap-1 mt-0.5">
-                          <span>🏃‍♂️</span>
-                          <span>{participant.nama_komunitas}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Right Column: QR Code Box */}
-                  <div className="md:col-span-4 flex flex-col items-center justify-center text-center p-5 bg-[#fbfbfb] border border-black/10 rounded-2xl space-y-3">
-                    <div className="relative p-2 bg-white rounded-xl shadow-xs border border-black/5">
-                      {/* Viewfinder Corners Accent */}
-                      <div className="absolute top-1 left-1 w-3 h-3 border-t-2 border-l-2 border-[#C9A227]" />
-                      <div className="absolute top-1 right-1 w-3 h-3 border-t-2 border-r-2 border-[#C9A227]" />
-                      <div className="absolute bottom-1 left-1 w-3 h-3 border-b-2 border-l-2 border-[#C9A227]" />
-                      <div className="absolute bottom-1 right-1 w-3 h-3 border-b-2 border-r-2 border-[#C9A227]" />
-
-                      {/* QR Code Image */}
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={qrImageUrl}
-                        alt={`QR Code BIB ${participant.no_bib}`}
-                        className="w-44 h-44 sm:w-48 sm:h-48 object-contain"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <div className="text-[11px] font-bold uppercase tracking-wider text-slate-800">
-                        Pindai Untuk Verifikasi
-                      </div>
-                      <p className="text-[10px] text-slate-500 leading-tight max-w-[200px]">
-                        Tunjukkan QR ini saat pengambilan Race Pack & Technical Meeting.
-                      </p>
-                    </div>
-                  </div>
-                </div>
 
                 {/* Details Section: Grid of Data Diri, Medis, & Transaksi */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -704,6 +639,15 @@ export default function PesertaClient() {
                 </div>
               </div>
             </div>
+
+            {/* 1. THE OFFICIAL HIGH-RES E-BIB PASS (A5 300 DPI with Customizer) */}
+            <BibPreviewCard
+              bibNumber={participant.no_bib}
+              runnerName={participant.nama}
+              category={participant.kategori}
+              gender={participant.jenis_kelamin}
+              showCustomizer={true}
+            />
 
             {/* Bottom Actions - Hidden on Print */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 print:hidden">
