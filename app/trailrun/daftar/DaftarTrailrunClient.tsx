@@ -22,6 +22,7 @@ import StepDataPribadi from '@/components/trailrun/registration/StepDataPribadi'
 import StepAlamatMedis from '@/components/trailrun/registration/StepAlamatMedis';
 import StepPembayaran from '@/components/trailrun/registration/StepPembayaran';
 import RegistrationSuccessModal from '@/components/trailrun/registration/RegistrationSuccessModal';
+import PaymentTimeLimitModal from '@/components/trailrun/registration/PaymentTimeLimitModal';
 
 
 const categories = trailrunData.categories as TrailrunCard[];
@@ -43,6 +44,7 @@ export default function DaftarTrailrunClient() {
   const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<'idle' | 'pending' | 'completed' | 'expired' | 'error'>('idle');
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showTimeLimitModal, setShowTimeLimitModal] = useState(true);
   const [pricingInfoMap, setPricingInfoMap] = useState<Record<string, any>>({});
   const [checkingStatus, setCheckingStatus] = useState(false);
 
@@ -538,6 +540,26 @@ export default function DaftarTrailrunClient() {
           <TrailrunBulkRegister />
         ) : (
           <>
+            {/* PAYMENT TIME LIMIT BANNER (1 JAM AUTO-HAPUS) */}
+            <div className="mb-4 p-3.5 sm:p-4 rounded-2xl bg-amber-50 border-2 border-amber-300/80 text-amber-950 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-center gap-2.5">
+                <span className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-800 flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-base">timer</span>
+                </span>
+                <div>
+                  <span className="font-extrabold text-amber-900 block sm:inline">Wajib Bayar Dalam 1 Jam: </span>
+                  <span className="text-amber-800">Pendaftaran akan otomatis dibatalkan & dihapus dari sistem jika tidak diselesaikan dalam 1 jam.</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTimeLimitModal(true)}
+                className="px-3 py-1.5 rounded-xl bg-amber-200/60 hover:bg-amber-200 text-amber-900 font-bold text-[11px] uppercase tracking-wider shrink-0 transition-colors cursor-pointer self-end sm:self-auto"
+              >
+                Baca Info Lengkap
+              </button>
+            </div>
+
             {/* STEP INDICATOR */}
             <RegistrationStepIndicator currentStep={currentStep} />
 
@@ -739,6 +761,12 @@ export default function DaftarTrailrunClient() {
         email={formData.email}
         selectedCategory={selectedCategory}
         onReset={handleResetForm}
+      />
+
+      {/* ===== PAYMENT TIME LIMIT ALERT MODAL (1 JAM AUTO-HAPUS) ===== */}
+      <PaymentTimeLimitModal
+        isOpen={showTimeLimitModal}
+        onClose={() => setShowTimeLimitModal(false)}
       />
     </main>
   );
