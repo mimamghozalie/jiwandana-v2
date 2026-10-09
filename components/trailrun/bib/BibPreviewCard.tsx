@@ -103,9 +103,9 @@ export default function BibPreviewCard({
 
   // Styling Customization State (Same as bib-generator)
   const [bibFontSize, setBibFontSize] = useState<number>(340);
-  const [nameFontSize, setNameFontSize] = useState<number>(76);
-  const [bibOffsetY, setBibOffsetY] = useState<number>(880);
-  const [nameOffsetY, setNameOffsetY] = useState<number>(1175);
+  const [nameFontSize, setNameFontSize] = useState<number>(96);
+  const [bibOffsetY, setBibOffsetY] = useState<number>(835);
+  const [nameOffsetY, setNameOffsetY] = useState<number>(1120);
   const [isItalic, setIsItalic] = useState<boolean>(true);
   const [letterSpacing, setLetterSpacing] = useState<number>(14);
 
@@ -368,8 +368,8 @@ export default function BibPreviewCard({
                   type="button"
                   onClick={() => setSelectedCategory(catKey)}
                   className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${isSelected
-                      ? 'bg-[#C9A227] text-[#0d1c32] shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-[#C9A227] text-[#0d1c32] shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
                     }`}
                 >
                   {cfg.badge}
@@ -551,13 +551,13 @@ export default function BibPreviewCard({
               type="button"
               onClick={() => {
                 setBibFontSize(340);
-                setNameFontSize(76);
-                setBibOffsetY(880);
-                setNameOffsetY(1175);
+                setNameFontSize(96);
+                setBibOffsetY(835);
+                setNameOffsetY(1170);
                 setIsItalic(true);
                 setLetterSpacing(14);
                 setShowBioQr(true);
-                setShowGpxQr(true);
+                setShowGpxQr(false);
               }}
               className="text-[11px] font-semibold text-[#C9A227] hover:underline flex items-center gap-1 cursor-pointer"
             >
