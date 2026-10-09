@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import * as XLSX from 'xlsx';
 import { supabase } from '@/lib/supabaseClient';
-import { Trophy, FileSpreadsheet, Download, RefreshCw, Trash2 } from 'lucide-react';
+import { Trophy, FileSpreadsheet, Download, RefreshCw, Trash2, Printer } from 'lucide-react';
 
 import {
   TrailrunRow,
@@ -634,6 +635,15 @@ export default function AdminTrailrunPage() {
             <Trash2 className={`w-3.5 h-3.5 ${isCleaningUp ? 'animate-spin' : ''}`} />
             <span>{isCleaningUp ? 'Membersihkan...' : 'Bersihkan Kadaluarsa'}</span>
           </button>
+
+          <Link
+            href="/trailrun/bib-generator"
+            className="px-4 py-2.5 bg-[#C9A227] hover:bg-[#b08d20] text-[#0d1c32] rounded-xl text-xs font-bold flex items-center gap-2 shadow-md transition-all cursor-pointer"
+            title="Buka Halaman Generator & Download Kartu BIB"
+          >
+            <Printer className="w-4 h-4 text-[#0d1c32]" />
+            <span>Generator BIB</span>
+          </Link>
 
           <button
             type="button"
