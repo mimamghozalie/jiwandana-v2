@@ -291,30 +291,46 @@ export async function submitTrailrunRegistration(
       };
     }
 
-    const insertPromise = supabase
-      .from('trailrun_registrations')
-      .insert([{
-        nama: formData.nama,
-        email: formData.email,
-        no_bib: cleanBib,
-        no_hp: formData.no_hp,
-        alamat: formData.alamat,
-        kota: formData.kota,
-        provinsi: formData.provinsi,
-        kewarganegaraan: formData.kewarganegaraan,
-        tanggal_lahir: formData.tanggal_lahir,
-        jenis_kelamin: formData.jenis_kelamin,
-        nama_komunitas: formData.nama_komunitas || null,
-        golongan_darah: formData.golongan_darah,
-        riwayat_medis: formData.riwayat_medis || null,
-        kontak_darurat: formData.kontak_darurat,
-        kategori: formData.kategori,
-        status: 'pending',
-      }])
-      .select('id')
-      .single();
+    const basePayload: Record<string, any> = {
+      nama: formData.nama,
+      email: formData.email,
+      no_bib: cleanBib,
+      no_hp: formData.no_hp,
+      alamat: formData.alamat,
+      kota: formData.kota,
+      provinsi: formData.provinsi,
+      kewarganegaraan: formData.kewarganegaraan,
+      tanggal_lahir: formData.tanggal_lahir,
+      jenis_kelamin: formData.jenis_kelamin,
+      nama_komunitas: formData.nama_komunitas || null,
+      golongan_darah: formData.golongan_darah,
+      riwayat_medis: formData.riwayat_medis || null,
+      kontak_darurat: formData.kontak_darurat,
+      kategori: formData.kategori,
+      status: 'pending',
+    };
 
-    const { data, error } = await withTimeout(insertPromise, 5000);
+    // Primary payload includes ukuran_jersey
+    const primaryPayload = {
+      ...basePayload,
+      ukuran_jersey: formData.ukuran_jersey || 'M',
+    };
+
+    let { data, error } = await withTimeout(
+      supabase.from('trailrun_registrations').insert([primaryPayload]).select('id').single(),
+      5000
+    );
+
+    // If column ukuran_jersey has not been migrated yet in Supabase, retry without it
+    if (error && error.message?.toLowerCase().includes('ukuran_jersey')) {
+      console.warn('Column ukuran_jersey not found in Supabase, fallback to base insert:', error.message);
+      const fallbackRes = await withTimeout(
+        supabase.from('trailrun_registrations').insert([basePayload]).select('id').single(),
+        5000
+      );
+      data = fallbackRes.data;
+      error = fallbackRes.error;
+    }
 
     if (error) {
       if (

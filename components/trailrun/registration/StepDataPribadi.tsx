@@ -115,110 +115,185 @@ export default function StepDataPribadi({
         </div>
       </div>
 
-      {/* 2. No. BIB (Otomatis F- / M- + 5 Angka, tepat 7 karakter, contoh F-00001, M-00001) */}
-      <div className="space-y-1.5">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <label htmlFor="no_bib" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
-              No. BIB <span className="text-rose-500">*</span>
-            </label>
-            <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#C9A227]/10 text-[#C9A227] font-bold border border-[#C9A227]/30">
-              {hasGender ? `Format: ${genderPrefix} + 5 Angka (Tepat 7 Karakter)` : 'Format: F- / M- + 5 Angka (Tepat 7 Karakter)'}
-            </span>
-            {formData.no_bib.length > 0 && formData.no_bib.length !== 7 && (
-              <span className="text-[10px] text-rose-500 font-semibold">
-                ({formData.no_bib.length}/7 karakter)
-              </span>
-            )}
-          </div>
+      {/* 2. No. BIB & Ukuran Jersey (Berdampingan 2 Kolom) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Kolom Kiri: No. BIB */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between gap-1">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <label htmlFor="no_bib" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                No. BIB <span className="text-rose-500">*</span>
+              </label>
+              {formData.no_bib.length > 0 && formData.no_bib.length !== 7 && (
+                <span className="text-[10px] text-rose-500 font-semibold">
+                  ({formData.no_bib.length}/7)
+                </span>
+              )}
+            </div>
 
-          {/* Tombol Generate BIB */}
-          {onGenerateBib && (
-            <button
-              type="button"
-              onClick={onGenerateBib}
-              disabled={generatingBib}
-              className="inline-flex items-center gap-1 text-[11px] font-bold text-[#0d1c32] bg-[#C9A227] hover:bg-[#b08d20] px-2.5 py-1 rounded-lg transition-all shadow-xs active:scale-95 cursor-pointer disabled:opacity-50"
-              title={`Generate nomor BIB otomatis format ${hasGender ? genderPrefix : 'F-/M-'} + 5 angka (tepat 7 karakter)`}
-            >
-              <span className={`material-symbols-outlined text-xs ${generatingBib ? 'animate-spin' : ''}`}>
-                {generatingBib ? 'progress_activity' : 'auto_fix_high'}
-              </span>
-              <span>{generatingBib ? 'Mengenerate...' : 'Generate BIB'}</span>
-            </button>
-          )}
-        </div>
-
-        <div className="relative">
-          <input
-            type="text"
-            id="no_bib"
-            name="no_bib"
-            required
-            minLength={7}
-            maxLength={7}
-            value={formData.no_bib}
-            onChange={onChange}
-            placeholder={hasGender ? `Contoh: ${genderPrefix}00001` : 'Pilih jenis kelamin untuk auto BIB'}
-            className={`w-full bg-[#f8f8f8] border text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3.5 pr-18 transition-all text-sm outline-none font-mono font-bold tracking-wider ${
-              bibStatus === 'taken' || (formData.no_bib.length > 0 && formData.no_bib.length !== 7)
-                ? 'border-rose-500 focus:border-rose-600 focus:ring-1 focus:ring-rose-500'
-                : bibStatus === 'available'
-                ? 'border-emerald-500 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-500'
-                : 'border-black/10 focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227]'
-            }`}
-          />
-          {onCheckBib && (
-            <button
-              type="button"
-              onClick={onCheckBib}
-              disabled={!formData.no_bib.trim() || formData.no_bib.length !== 7 || bibStatus === 'checking'}
-              className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider rounded-lg bg-black/5 hover:bg-[#C9A227] hover:text-[#0d1c32] text-slate-700 transition-colors disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
-            >
-              {bibStatus === 'checking' ? '...' : 'Cek'}
-            </button>
-          )}
-        </div>
-
-        {/* Feedback & Status Indicators */}
-        {bibStatus === 'checking' && (
-          <p className="text-[11px] text-amber-600 font-medium flex items-center gap-1 animate-pulse">
-            <span className="material-symbols-outlined text-xs animate-spin">progress_activity</span>
-            Mengecek ketersediaan BIB...
-          </p>
-        )}
-
-        {bibStatus === 'taken' && (
-          <div className="flex items-center justify-between text-[11px] text-rose-600">
-            <span className="flex items-center gap-1">
-              <span className="material-symbols-outlined text-xs">error</span>
-              {bibMessage || `Nomor BIB "${formData.no_bib}" sudah digunakan peserta lain.`}
-            </span>
+            {/* Tombol Generate BIB */}
             {onGenerateBib && (
               <button
                 type="button"
                 onClick={onGenerateBib}
-                className="font-bold underline hover:text-rose-800 cursor-pointer ml-1"
+                disabled={generatingBib}
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-[#0d1c32] bg-[#C9A227] hover:bg-[#b08d20] px-2 py-0.5 rounded-lg transition-all shadow-xs active:scale-95 cursor-pointer disabled:opacity-50"
+                title={`Generate nomor BIB otomatis format ${hasGender ? genderPrefix : 'F-/M-'} + 5 angka`}
               >
-                Generate Lain
+                <span className={`material-symbols-outlined text-xs ${generatingBib ? 'animate-spin' : ''}`}>
+                  {generatingBib ? 'progress_activity' : 'auto_fix_high'}
+                </span>
+                <span>{generatingBib ? '...' : 'Auto BIB'}</span>
               </button>
             )}
           </div>
-        )}
 
-        {bibStatus === 'available' && (
-          <p className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
-            <span className="material-symbols-outlined text-xs">verified</span>
-            {bibMessage || `Nomor BIB "${formData.no_bib}" tersedia dan dapat digunakan.`}
-          </p>
-        )}
+          <div className="relative">
+            <input
+              type="text"
+              id="no_bib"
+              name="no_bib"
+              required
+              minLength={7}
+              maxLength={7}
+              value={formData.no_bib}
+              onChange={onChange}
+              placeholder={hasGender ? `Contoh: ${genderPrefix}00001` : 'Pilih gender untuk auto BIB'}
+              className={`w-full bg-[#f8f8f8] border text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3.5 pr-18 transition-all text-sm outline-none font-mono font-bold tracking-wider ${
+                bibStatus === 'taken' || (formData.no_bib.length > 0 && formData.no_bib.length !== 7)
+                  ? 'border-rose-500 focus:border-rose-600 focus:ring-1 focus:ring-rose-500'
+                  : bibStatus === 'available'
+                  ? 'border-emerald-500 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-500'
+                  : 'border-black/10 focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227]'
+              }`}
+            />
+            {onCheckBib && (
+              <button
+                type="button"
+                onClick={onCheckBib}
+                disabled={!formData.no_bib.trim() || formData.no_bib.length !== 7 || bibStatus === 'checking'}
+                className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider rounded-lg bg-black/5 hover:bg-[#C9A227] hover:text-[#0d1c32] text-slate-700 transition-colors disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+              >
+                {bibStatus === 'checking' ? '...' : 'Cek'}
+              </button>
+            )}
+          </div>
 
-        {bibStatus === 'idle' && (
-          <p className="text-[10px] text-slate-500">
-            Format BIB otomatis: <strong>{genderLabel} + 5 angka</strong> (tepat 7 karakter, contoh: <strong>M-00001</strong> untuk laki-laki, <strong>F-00001</strong> untuk perempuan). Klik <em>Generate BIB</em> atau ketik nomor Anda.
-          </p>
-        )}
+          {/* Feedback & Status Indicators */}
+          {bibStatus === 'checking' && (
+            <p className="text-[11px] text-amber-600 font-medium flex items-center gap-1 animate-pulse">
+              <span className="material-symbols-outlined text-xs animate-spin">progress_activity</span>
+              Mengecek ketersediaan BIB...
+            </p>
+          )}
+
+          {bibStatus === 'taken' && (
+            <div className="flex items-center justify-between text-[11px] text-rose-600">
+              <span className="flex items-center gap-1">
+                <span className="material-symbols-outlined text-xs">error</span>
+                {bibMessage || `Nomor BIB "${formData.no_bib}" sudah digunakan.`}
+              </span>
+              {onGenerateBib && (
+                <button
+                  type="button"
+                  onClick={onGenerateBib}
+                  className="font-bold underline hover:text-rose-800 cursor-pointer ml-1 text-xs"
+                >
+                  Lain
+                </button>
+              )}
+            </div>
+          )}
+
+          {bibStatus === 'available' && (
+            <p className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
+              <span className="material-symbols-outlined text-xs">verified</span>
+              {bibMessage || `Nomor BIB "${formData.no_bib}" tersedia.`}
+            </p>
+          )}
+
+          {bibStatus === 'idle' && (
+            <p className="text-[10px] text-slate-500">
+              Format: <strong>{genderLabel} + 5 angka</strong> (7 karakter, contoh: <strong>M-00001</strong>).
+            </p>
+          )}
+        </div>
+
+        {/* Kolom Kanan: Ukuran Jersey */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between gap-1">
+            <label htmlFor="ukuran_jersey" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+              Ukuran Jersey <span className="text-rose-500">*</span>
+            </label>
+            <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#C9A227]/10 text-[#C9A227] font-bold border border-[#C9A227]/30">
+              {formData.ukuran_jersey === 'XXL'
+                ? '+Rp 5.000'
+                : formData.ukuran_jersey === 'XXXL'
+                ? '+Rp 10.000'
+                : formData.ukuran_jersey === 'Custom'
+                ? 'Dihitung per X'
+                : 'S, M, L, XL Termasuk'}
+            </span>
+          </div>
+
+          <div className="relative">
+            <select
+              id="ukuran_jersey"
+              name="ukuran_jersey"
+              required
+              value={formData.ukuran_jersey || ''}
+              onChange={onChange}
+              className="w-full bg-[#f8f8f8] border border-black/10 focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227] text-slate-800 rounded-xl px-4 py-3.5 transition-all text-sm outline-none appearance-none cursor-pointer font-medium"
+            >
+              <option value="" disabled>Pilih Ukuran Jersey...</option>
+              <option value="S">S (Small) — Standar</option>
+              <option value="M">M (Medium) — Standar</option>
+              <option value="L">L (Large) — Standar</option>
+              <option value="XL">XL (Extra Large) — Standar</option>
+              <option value="XXL">XXL (+Rp 5.000)</option>
+              <option value="XXXL">XXXL (+Rp 10.000)</option>
+              <option value="Custom">Custom (Ukuran Khusus)</option>
+            </select>
+            <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-lg">
+              keyboard_arrow_down
+            </span>
+          </div>
+
+          {/* Input Tambahan Jika Memilih Custom */}
+          {formData.ukuran_jersey === 'Custom' && (
+            <div className="pt-1 space-y-1 animate-[fadeIn_0.3s_ease-out]">
+              <input
+                type="text"
+                id="custom_jersey"
+                name="custom_jersey"
+                required
+                value={formData.custom_jersey || ''}
+                onChange={onChange}
+                placeholder="Tuliskan ukuran custom (contoh: 4XL / 5XL / LD 125cm)"
+                className="w-full bg-[#f8f8f8] border border-amber-400 focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227] text-slate-800 placeholder-slate-400 rounded-xl px-4 py-2.5 transition-all text-xs outline-none font-medium"
+              />
+              <p className="text-[10px] text-amber-700">
+                * Di atas XL dikenakan tambahan Rp 5.000 per X (contoh 4XL: +Rp 15.000).
+              </p>
+            </div>
+          )}
+
+          {formData.ukuran_jersey && formData.ukuran_jersey !== 'Custom' && (
+            <p className="text-[10px] text-slate-500">
+              {['XXL', 'XXXL'].includes(formData.ukuran_jersey)
+                ? `Ukuran ${formData.ukuran_jersey} dikenakan penyesuaian biaya bahan (+Rp ${formData.ukuran_jersey === 'XXL' ? '5.000' : '10.000'}).`
+                : 'Ukuran standar S, M, L, XL sudah termasuk dalam biaya pendaftaran.'}
+            </p>
+          )}
+
+          {!formData.ukuran_jersey && (
+            <p className="text-[10px] text-slate-500">
+              Pilih ukuran jersey (di atas XL dikenakan +Rp 5.000 per penambahan 'X').
+            </p>
+          )}
+        </div>
       </div>
+
 
       {/* 3. Kontak: Email & No. HP */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

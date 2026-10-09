@@ -44,6 +44,7 @@ interface ParticipantData {
   riwayat_medis?: string;
   kontak_darurat?: string;
   kategori: string;
+  ukuran_jersey?: string;
   status: string;
   created_at?: string;
   payment?: {
@@ -487,6 +488,14 @@ export default function PesertaClient() {
                         </span>
                         <span className="font-semibold text-slate-800">
                           {participant.jenis_kelamin || '—'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">
+                          Ukuran Jersey
+                        </span>
+                        <span className="font-semibold text-[#C9A227] px-2 py-0.5 rounded bg-[#C9A227]/10 inline-block mt-0.5">
+                          {participant.ukuran_jersey || '—'}
                         </span>
                       </div>
                       <div>

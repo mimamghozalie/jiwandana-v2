@@ -129,6 +129,7 @@ export default function AdminTrailrunPage() {
             riwayat_medis: r.riwayat_medis,
             kontak_darurat: r.kontak_darurat,
             kategori: r.kategori,
+            ukuran_jersey: r.ukuran_jersey || '-',
             status: r.status || (pay?.status === 'completed' ? 'paid' : 'pending'),
             created_at: r.created_at,
             payment: pay,
@@ -395,6 +396,7 @@ export default function AdminTrailrunPage() {
       'No. BIB',
       'Nama Peserta',
       'Kategori',
+      'Ukuran Jersey',
       'Status Pembayaran',
       'Harga Tiket (Rp)',
       'Biaya Admin (Rp)',
@@ -426,6 +428,7 @@ export default function AdminTrailrunPage() {
         row.no_bib || '-',
         row.nama || '-',
         row.kategori || '-',
+        row.ukuran_jersey || '-',
         row.status === 'paid' ? 'Lunas (Paid)' : row.status === 'confirmed' ? 'Dikonfirmasi' : 'Menunggu Bayar',
         fin.baseAmount,
         fin.adminFee,
@@ -459,6 +462,7 @@ export default function AdminTrailrunPage() {
       { wch: 14 },  // No. BIB
       { wch: 26 },  // Nama Peserta
       { wch: 14 },  // Kategori
+      { wch: 14 },  // Ukuran Jersey
       { wch: 20 },  // Status Pembayaran
       { wch: 16 },  // Harga Tiket
       { wch: 16 },  // Biaya Admin
@@ -512,6 +516,9 @@ export default function AdminTrailrunPage() {
               break;
             case 'kategori':
               val = row.kategori;
+              break;
+            case 'ukuran_jersey':
+              val = row.ukuran_jersey || '-';
               break;
             case 'status':
               val = row.status === 'paid' ? 'LUNAS (PAID)' : row.status === 'confirmed' ? 'Dikonfirmasi' : 'Menunggu Bayar';

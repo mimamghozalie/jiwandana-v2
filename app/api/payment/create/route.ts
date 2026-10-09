@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createPakasirTransaction, parsePriceToNumber } from '@/lib/pakasir';
 import { createClient } from '@supabase/supabase-js';
 import trailrunData from '@/data/trailrun.json';
-import { getActivePricingTier } from '@/lib/pricing';
+import { getActivePricingTier, getJerseyExtraFee } from '@/lib/pricing';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -11,7 +11,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { registration_id, kategori, payment_method } = body;
+    const { registration_id, kategori, payment_method, ukuran_jersey } = body;
 
     if (!registration_id || !kategori || !payment_method) {
       return NextResponse.json(
@@ -56,9 +56,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 3. Resolve jersey size and surcharge (+Rp 5.000 per extra 'X' above XL)
+    let finalUkuranJersey = ukuran_jersey;
+    if (!finalUkuranJersey && registration_id) {
+      try {
+        const { data: regData } = await supabase
+          .from('trailrun_registrations')
+          .select('ukuran_jersey')
+          .eq('id', registration_id)
+          .maybeSingle();
+        if (regData?.ukuran_jersey) {
+          finalUkuranJersey = regData.ukuran_jersey;
+        }
+      } catch (err) {
+        console.warn('Could not query ukuran_jersey from registration:', err);
+      }
+    }
+
+    const jerseyExtraFee = getJerseyExtraFee(finalUkuranJersey);
+    const subtotalAmount = baseAmount + jerseyExtraFee;
+
     // Biaya Admin Flat Rp 5.000 ke peserta
     const ADMIN_FEE = 5000;
-    const targetTotalPayment = baseAmount + ADMIN_FEE; // Contoh: 240.000 + 5.000 = 245.000
+    const targetTotalPayment = subtotalAmount + ADMIN_FEE;
 
     // Biaya transaksi gateway: 0.7% + Rp 300
     // Agar Pakasir menghasilkan QRIS/VA dengan nominal pas targetTotalPayment (245.000),
@@ -107,7 +127,7 @@ export async function POST(request: NextRequest) {
       registration_id,
       order_id: orderId,
       txn_id: transaction.txn_id,
-      amount: baseAmount,
+      amount: subtotalAmount,
       fee: ADMIN_FEE, // Flat Rp 5.000
       total_payment: finalTotalPayment,
       payment_method: transaction.payment_method,
@@ -145,7 +165,10 @@ export async function POST(request: NextRequest) {
       data: {
         txn_id: transaction.txn_id,
         order_id: orderId,
-        amount: baseAmount,
+        amount: subtotalAmount,
+        base_amount: baseAmount,
+        jersey_fee: jerseyExtraFee,
+        ukuran_jersey: finalUkuranJersey || 'M',
         total_payment: finalTotalPayment,
         fee: ADMIN_FEE, // Flat Rp 5.000
         admin_fee: ADMIN_FEE,

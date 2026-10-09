@@ -65,6 +65,8 @@ export default function DaftarTrailrunClient() {
     nama: '',
     email: '',
     no_bib: '',
+    ukuran_jersey: '',
+    custom_jersey: '',
     no_hp: '',
     alamat: '',
     kota: '',
@@ -245,6 +247,10 @@ export default function DaftarTrailrunClient() {
           return fail('Email tidak valid.');
         if (!formData.no_hp.trim()) return fail('No. telepon/WhatsApp wajib diisi.');
         if (!formData.tanggal_lahir) return fail('Tanggal lahir wajib diisi.');
+        if (!formData.ukuran_jersey) return fail('Ukuran jersey wajib dipilih.');
+        if (formData.ukuran_jersey === 'Custom' && !formData.custom_jersey?.trim()) {
+          return fail('Silakan isi rincian ukuran jersey custom.');
+        }
         if (bibStatus === 'taken')
           return fail(bibMessage || `Nomor BIB "${formData.no_bib}" sudah digunakan oleh peserta lain.`);
         return true;
@@ -330,11 +336,17 @@ export default function DaftarTrailrunClient() {
       return;
     }
 
+    const finalUkuranJersey =
+      formData.ukuran_jersey === 'Custom'
+        ? `Custom (${formData.custom_jersey?.trim() || ''})`
+        : formData.ukuran_jersey;
+
     try {
       const res = await submitTrailrunRegistration({
         nama: formData.nama,
         email: formData.email,
         no_bib: formData.no_bib.trim(),
+        ukuran_jersey: finalUkuranJersey,
         no_hp: formData.no_hp,
         alamat: formData.alamat,
         kota: formData.kota,
@@ -375,6 +387,11 @@ export default function DaftarTrailrunClient() {
     setLoading(true);
     setErrorMsg('');
 
+    const finalUkuranJersey =
+      formData.ukuran_jersey === 'Custom'
+        ? `Custom (${formData.custom_jersey?.trim() || ''})`
+        : formData.ukuran_jersey;
+
     try {
       const res = await fetch('/api/payment/create', {
         method: 'POST',
@@ -382,6 +399,7 @@ export default function DaftarTrailrunClient() {
         body: JSON.stringify({
           registration_id: registrationId,
           kategori: formData.kategori,
+          ukuran_jersey: finalUkuranJersey,
           payment_method: paymentMethod,
         }),
       });
@@ -445,6 +463,8 @@ export default function DaftarTrailrunClient() {
       nama: '',
       email: '',
       no_bib: '',
+      ukuran_jersey: '',
+      custom_jersey: '',
       no_hp: '',
       alamat: '',
       kota: '',
@@ -570,6 +590,7 @@ export default function DaftarTrailrunClient() {
                 {/* STEP 4: PEMBAYARAN */}
                 {currentStep === 4 && (
                   <StepPembayaran
+                    formData={formData}
                     selectedCategory={selectedCategory}
                     pricingInfoMap={pricingInfoMap}
                     paymentMethod={paymentMethod}

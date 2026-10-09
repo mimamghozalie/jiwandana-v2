@@ -30,6 +30,7 @@ export interface TrailrunRow {
   riwayat_medis?: string | null;
   kontak_darurat?: string;
   kategori: string;
+  ukuran_jersey?: string;
   status: 'pending' | 'confirmed' | 'paid';
   created_at: string;
   payment?: TrailrunPayment;
@@ -113,6 +114,7 @@ export const ALL_COLUMNS: ColumnConfig[] = [
   { key: 'no_bib', label: 'No. BIB', category: 'Utama', defaultVisible: true },
   { key: 'nama', label: 'Nama Peserta', category: 'Utama', defaultVisible: true },
   { key: 'kategori', label: 'Kategori', category: 'Utama', defaultVisible: true },
+  { key: 'ukuran_jersey', label: 'Ukuran Jersey', category: 'Utama', defaultVisible: true },
   { key: 'status', label: 'Status Bayar', category: 'Pembayaran', defaultVisible: true },
   { key: 'total_payment', label: 'Nominal Bayar', category: 'Pembayaran', defaultVisible: true },
   { key: 'base_amount', label: 'Fee Pendaftaran (Tiket)', category: 'Pembayaran', defaultVisible: false },

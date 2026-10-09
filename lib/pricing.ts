@@ -295,3 +295,43 @@ export function getCategoryTierPrice(categoryInput: string, tierId: PricingTierI
 export function getPricingConfig() {
   return pricingConfig;
 }
+
+/**
+ * Calculates extra fee for jersey sizes above XL (+Rp 5.000 per extra 'X')
+ */
+export function getJerseyExtraFee(size?: string, customText?: string): number {
+  if (!size) return 0;
+  const upper = size.toUpperCase().trim();
+
+  if (upper === 'XXL' || upper === '2XL') return 5000;
+  if (upper === 'XXXL' || upper === '3XL') return 10000;
+  if (upper === 'XXXXL' || upper === '4XL') return 15000;
+  if (upper === 'XXXXXL' || upper === '5XL') return 20000;
+
+  if (upper.startsWith('CUSTOM')) {
+    const textToCheck = customText ? customText.toUpperCase() : upper;
+    const matchNXL = textToCheck.match(/(\d+)\s*XL/);
+    if (matchNXL) {
+      const n = parseInt(matchNXL[1], 10);
+      if (n > 1) return Math.max(0, (n - 1) * 5000);
+    }
+    const xCount = (textToCheck.match(/X/g) || []).length;
+    if (xCount > 1) {
+      return (xCount - 1) * 5000;
+    }
+    return 0;
+  }
+
+  const matchN = upper.match(/^(\d+)XL$/);
+  if (matchN) {
+    const n = parseInt(matchN[1], 10);
+    if (n > 1) return (n - 1) * 5000;
+  }
+  const xMatches = upper.match(/X/g);
+  if (xMatches && xMatches.length > 1) {
+    return (xMatches.length - 1) * 5000;
+  }
+
+  return 0;
+}
+

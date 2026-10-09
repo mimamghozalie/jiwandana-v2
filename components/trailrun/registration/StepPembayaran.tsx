@@ -1,10 +1,9 @@
-'use client';
-
 import React from 'react';
 import { TrailrunCard } from '@/lib/types';
-import { PaymentData, PAYMENT_METHODS } from './types';
+import { PaymentData, PAYMENT_METHODS, TrailrunFormData, getJerseyExtraFee } from './types';
 
 interface StepPembayaranProps {
+  formData?: TrailrunFormData;
   selectedCategory?: TrailrunCard;
   pricingInfoMap: Record<string, any>;
   paymentMethod: string;
@@ -20,6 +19,7 @@ interface StepPembayaranProps {
 }
 
 export default function StepPembayaran({
+  formData,
   selectedCategory,
   pricingInfoMap,
   paymentMethod,
@@ -33,6 +33,9 @@ export default function StepPembayaran({
   formatCurrency,
   formatExpiry,
 }: StepPembayaranProps) {
+  const jerseyExtra = formData
+    ? getJerseyExtraFee(formData.ukuran_jersey, formData.custom_jersey)
+    : 0;
   return (
     <div className="p-6 sm:p-8 space-y-5 animate-[fadeIn_0.4s_ease-out]">
       <div className="flex items-center justify-between pb-4 border-b border-black/5">
@@ -80,6 +83,7 @@ export default function StepPembayaran({
                     <h4 className="text-sm font-bold text-slate-900">{selectedCategory.categoryName}</h4>
                     <p className="text-[11px] text-slate-500">
                       {selectedCategory.distance} • {selectedCategory.elevationGain}
+                      {formData?.ukuran_jersey && ` • Jersey: ${formData.ukuran_jersey}`}
                     </p>
                   </div>
                 </div>
@@ -90,11 +94,18 @@ export default function StepPembayaran({
                   <span className="text-lg font-bold text-[#C9A227]">
                     {(pricingInfoMap[selectedCategory.id.toLowerCase()] || pricingInfoMap[selectedCategory.id])?.amount
                       ? formatCurrency(
-                          (pricingInfoMap[selectedCategory.id.toLowerCase()] || pricingInfoMap[selectedCategory.id]).amount + 5000
+                          (pricingInfoMap[selectedCategory.id.toLowerCase()] || pricingInfoMap[selectedCategory.id]).amount + 5000 + jerseyExtra
                         )
                       : selectedCategory.prices.early}
                   </span>
-                  <span className="text-[9px] text-slate-500 block font-medium">+ Biaya Admin Rp 5.000</span>
+                  <div className="text-[9px] text-slate-500 space-y-0.5 mt-0.5">
+                    {jerseyExtra > 0 && (
+                      <span className="block font-semibold text-amber-700">
+                        + Tambahan Jersey ({formData?.ukuran_jersey}): {formatCurrency(jerseyExtra)}
+                      </span>
+                    )}
+                    <span className="block font-medium">+ Biaya Admin Rp 5.000</span>
+                  </div>
                 </div>
               </div>
             </div>

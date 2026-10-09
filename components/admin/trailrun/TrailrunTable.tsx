@@ -152,6 +152,15 @@ export default function TrailrunTable({
                       </td>
                     )}
 
+                    {/* Ukuran Jersey */}
+                    {visibleColumns.includes('ukuran_jersey') && (
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <span className="px-2 py-0.5 rounded font-mono font-bold text-xs bg-white/5 border border-white/10 text-[#C9A227]">
+                          {row.ukuran_jersey || '-'}
+                        </span>
+                      </td>
+                    )}
+
                     {/* Status Pembayaran */}
                     {visibleColumns.includes('status') && (
                       <td className="py-3.5 px-4 whitespace-nowrap">

@@ -47,9 +47,14 @@ export function TrailrunDetailModal({
         {/* Modal Header */}
         <div className="flex justify-between items-start border-b border-white/10 pb-4">
           <div>
-            <span className="text-[11px] font-bold text-[#e9c176] px-2.5 py-1 rounded-full bg-[#e9c176]/10 border border-[#e9c176]/30 inline-block mb-1.5">
-              BIB {selectedRow.no_bib || 'Belum Diatur'}
-            </span>
+            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+              <span className="text-[11px] font-bold text-[#e9c176] px-2.5 py-1 rounded-full bg-[#e9c176]/10 border border-[#e9c176]/30 inline-block">
+                BIB {selectedRow.no_bib || 'Belum Diatur'}
+              </span>
+              <span className="text-[11px] font-bold text-[#C9A227] px-2.5 py-1 rounded-full bg-[#C9A227]/15 border border-[#C9A227]/30 inline-block">
+                Jersey: {selectedRow.ukuran_jersey || '-'}
+              </span>
+            </div>
             <h3 className="text-xl sm:text-2xl font-bold text-white">
               {selectedRow.nama}
             </h3>
@@ -164,6 +169,10 @@ export function TrailrunDetailModal({
               <div className="flex justify-between">
                 <span className="text-slate-500">Komunitas:</span>
                 <span className="text-white">{selectedRow.nama_komunitas || '-'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Ukuran Jersey:</span>
+                <span className="font-bold text-[#C9A227]">{selectedRow.ukuran_jersey || '-'}</span>
               </div>
             </div>
           </div>

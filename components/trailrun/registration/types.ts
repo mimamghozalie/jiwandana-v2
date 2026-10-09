@@ -4,6 +4,8 @@ export interface TrailrunFormData {
   nama: string;
   email: string;
   no_bib: string;
+  ukuran_jersey: string;
+  custom_jersey?: string;
   no_hp: string;
   alamat: string;
   kota: string;
@@ -17,6 +19,56 @@ export interface TrailrunFormData {
   kontak_darurat: string;
   kategori: string;
 }
+
+export const JERSEY_SIZES = [
+  { id: 'S', label: 'S (Small)', extraFee: 0 },
+  { id: 'M', label: 'M (Medium)', extraFee: 0 },
+  { id: 'L', label: 'L (Large)', extraFee: 0 },
+  { id: 'XL', label: 'XL (Extra Large)', extraFee: 0 },
+  { id: 'XXL', label: 'XXL (+Rp 5.000)', extraFee: 5000 },
+  { id: 'XXXL', label: 'XXXL (+Rp 10.000)', extraFee: 10000 },
+  { id: 'Custom', label: 'Custom (Spesifik)', extraFee: 0 },
+] as const;
+
+export function getJerseyExtraFee(size?: string, customText?: string): number {
+  if (!size) return 0;
+  const upper = size.toUpperCase().trim();
+
+  // Known options
+  if (upper === 'XXL' || upper === '2XL') return 5000;
+  if (upper === 'XXXL' || upper === '3XL') return 10000;
+  if (upper === 'XXXXL' || upper === '4XL') return 15000;
+  if (upper === 'XXXXXL' || upper === '5XL') return 20000;
+
+  // Custom text evaluation
+  if (upper.startsWith('CUSTOM')) {
+    const textToCheck = customText ? customText.toUpperCase() : upper;
+    const matchNXL = textToCheck.match(/(\d+)\s*XL/);
+    if (matchNXL) {
+      const n = parseInt(matchNXL[1], 10);
+      if (n > 1) return (n - 1) * 5000;
+    }
+    const xCount = (textToCheck.match(/X/g) || []).length;
+    if (xCount > 1) {
+      return (xCount - 1) * 5000;
+    }
+    return 0;
+  }
+
+  // Pattern N-XL (misal 4XL)
+  const matchN = upper.match(/^(\d+)XL$/);
+  if (matchN) {
+    const n = parseInt(matchN[1], 10);
+    if (n > 1) return (n - 1) * 5000;
+  }
+  const xMatches = upper.match(/X/g);
+  if (xMatches && xMatches.length > 1) {
+    return (xMatches.length - 1) * 5000;
+  }
+
+  return 0;
+}
+
 
 export type FormStep = 1 | 2 | 3 | 4;
 

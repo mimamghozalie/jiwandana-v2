@@ -155,6 +155,7 @@ export interface TrailrunRegistration {
   riwayat_medis?: string;
   kontak_darurat: string;
   kategori: string;
+  ukuran_jersey?: string;
   status?: 'pending' | 'confirmed' | 'paid';
   created_at?: string;
 }
