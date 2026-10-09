@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { TrailrunCard } from '@/lib/types';
 import { TrailrunFormData, BibStatus } from './types';
 
@@ -27,6 +27,23 @@ export default function StepDataPribadi({
   onGenerateBib,
   generatingBib = false,
 }: StepDataPribadiProps) {
+  const [showSizeChart, setShowSizeChart] = useState(false);
+
+  // Close size chart popup on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowSizeChart(false);
+      }
+    };
+    if (showSizeChart) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showSizeChart]);
+
   const isFemale = formData.jenis_kelamin === 'Perempuan';
   const hasGender = !!formData.jenis_kelamin;
   const genderPrefix = isFemale ? 'F-' : 'M-';
@@ -159,13 +176,12 @@ export default function StepDataPribadi({
               value={formData.no_bib}
               onChange={onChange}
               placeholder={hasGender ? `Contoh: ${genderPrefix}00001` : 'Pilih gender untuk auto BIB'}
-              className={`w-full bg-[#f8f8f8] border text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3.5 pr-18 transition-all text-sm outline-none font-mono font-bold tracking-wider ${
-                bibStatus === 'taken' || (formData.no_bib.length > 0 && formData.no_bib.length !== 7)
-                  ? 'border-rose-500 focus:border-rose-600 focus:ring-1 focus:ring-rose-500'
-                  : bibStatus === 'available'
+              className={`w-full bg-[#f8f8f8] border text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3.5 pr-18 transition-all text-sm outline-none font-mono font-bold tracking-wider ${bibStatus === 'taken' || (formData.no_bib.length > 0 && formData.no_bib.length !== 7)
+                ? 'border-rose-500 focus:border-rose-600 focus:ring-1 focus:ring-rose-500'
+                : bibStatus === 'available'
                   ? 'border-emerald-500 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-500'
                   : 'border-black/10 focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227]'
-              }`}
+                }`}
             />
             {onCheckBib && (
               <button
@@ -225,15 +241,34 @@ export default function StepDataPribadi({
             <label htmlFor="ukuran_jersey" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
               Ukuran Jersey <span className="text-rose-500">*</span>
             </label>
-            <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#C9A227]/10 text-[#C9A227] font-bold border border-[#C9A227]/30">
-              {formData.ukuran_jersey === 'XXL'
-                ? '+Rp 5.000'
-                : formData.ukuran_jersey === 'XXXL'
-                ? '+Rp 10.000'
-                : formData.ukuran_jersey === 'Custom'
-                ? 'Dihitung per X'
-                : 'S, M, L, XL Termasuk'}
-            </span>
+            <div className="flex items-center gap-1.5">
+              {formData.ukuran_jersey === 'XXL' && (
+                <span className="text-[10px] px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 font-bold border border-amber-300">
+                  +Rp 5.000
+                </span>
+              )}
+              {formData.ukuran_jersey === 'XXXL' && (
+                <span className="text-[10px] px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 font-bold border border-amber-300">
+                  +Rp 10.000
+                </span>
+              )}
+              {formData.ukuran_jersey === 'Custom' && (
+                <span className="text-[10px] px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 font-bold border border-amber-300">
+                  Dihitung per X
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowSizeChart(true)}
+                className="inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-md bg-[#C9A227]/15 hover:bg-[#C9A227]/25 text-[#92600b] hover:text-[#784d03] font-bold border border-[#C9A227]/40 transition-all cursor-pointer shadow-2xs hover:shadow-xs active:scale-95 group"
+                title="Buka panduan ukuran (Size Chart)"
+              >
+                <span className="material-symbols-outlined text-[13px] text-[#C9A227] group-hover:scale-110 transition-transform">
+                  straighten
+                </span>
+                <span>Size Chart</span>
+              </button>
+            </div>
           </div>
 
           <div className="relative">
@@ -279,16 +314,32 @@ export default function StepDataPribadi({
           )}
 
           {formData.ukuran_jersey && formData.ukuran_jersey !== 'Custom' && (
-            <p className="text-[10px] text-slate-500">
-              {['XXL', 'XXXL'].includes(formData.ukuran_jersey)
-                ? `Ukuran ${formData.ukuran_jersey} dikenakan penyesuaian biaya bahan (+Rp ${formData.ukuran_jersey === 'XXL' ? '5.000' : '10.000'}).`
-                : 'Ukuran standar S, M, L, XL sudah termasuk dalam biaya pendaftaran.'}
+            <p className="text-[10px] text-slate-500 flex items-center justify-between flex-wrap gap-1">
+              <span>
+                {['XXL', 'XXXL'].includes(formData.ukuran_jersey)
+                  ? `Ukuran ${formData.ukuran_jersey} dikenakan penyesuaian biaya bahan (+Rp ${formData.ukuran_jersey === 'XXL' ? '5.000' : '10.000'}).`
+                  : 'Ukuran standar S, M, L, XL sudah termasuk dalam biaya pendaftaran.'}
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowSizeChart(true)}
+                className="text-[#92600b] hover:underline font-semibold cursor-pointer"
+              >
+                Lihat size chart →
+              </button>
             </p>
           )}
 
           {!formData.ukuran_jersey && (
-            <p className="text-[10px] text-slate-500">
-              Pilih ukuran jersey (di atas XL dikenakan +Rp 5.000 per penambahan 'X').
+            <p className="text-[10px] text-slate-500 flex items-center justify-between flex-wrap gap-1">
+              <span>Pilih ukuran jersey (di atas XL dikenakan +Rp 5.000 per penambahan 'X').</span>
+              <button
+                type="button"
+                onClick={() => setShowSizeChart(true)}
+                className="text-[#92600b] hover:underline font-semibold cursor-pointer"
+              >
+                Lihat size chart →
+              </button>
             </p>
           )}
         </div>
@@ -362,6 +413,81 @@ export default function StepDataPribadi({
           />
         </div>
       </div>
+
+      {/* Modal Popup Size Chart Jersey */}
+      {showSizeChart && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]"
+          onClick={() => setShowSizeChart(false)}
+        >
+          <div
+            className="bg-white rounded-3xl max-w-lg w-full max-h-[92vh] flex flex-col shadow-2xl border border-black/10 overflow-hidden relative animate-[scaleUp_0.2s_ease-out]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-black/10 bg-slate-50/80">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-[#C9A227]/15 border border-[#C9A227]/30 flex items-center justify-center text-[#92600b]">
+                  <span className="material-symbols-outlined text-lg">straighten</span>
+                </div>
+                <div>
+                  <h3 className="text-sm sm:text-base font-bold text-slate-900 font-serif">
+                    Size Chart Jersey
+                  </h3>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSizeChart(false)}
+                className="w-8 h-8 rounded-full bg-slate-200/70 hover:bg-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
+                title="Tutup Modal"
+              >
+                <span className="material-symbols-outlined text-base">close</span>
+              </button>
+            </div>
+
+            {/* Modal Body: Gambar Jersey & Info */}
+            <div className="p-4 sm:p-5 overflow-y-auto flex-1 flex flex-col items-center bg-white space-y-4">
+              <div className="relative w-full rounded-2xl overflow-hidden border border-black/10 shadow-sm bg-slate-50 flex items-center justify-center">
+                <img
+                  src="/trailrun_jersey.jpeg"
+                  alt="Size Chart Jersey Trailrun Lintas Candi"
+                  className="w-full h-auto max-h-[60vh] object-contain block"
+                  loading="eager"
+                />
+              </div>
+
+              {/* <div className="w-full p-3 rounded-xl bg-amber-50/80 border border-amber-200/80 text-slate-700 text-[11px] space-y-1">
+                <div className="flex items-start gap-1.5">
+                  <span className="material-symbols-outlined text-amber-600 text-sm shrink-0 mt-0.5">info</span>
+                  <div className="space-y-0.5">
+                    <p>
+                      <strong>Ukuran Standar:</strong> S, M, L, XL sudah termasuk dalam biaya pendaftaran (tanpa biaya tambahan).
+                    </p>
+                    <p className="text-slate-600">
+                      <strong>Ukuran Ekstra:</strong> XXL (+Rp 5.000) dan XXXL (+Rp 10.000), di atas XL dikenakan +Rp 5.000 per penambahan 'X'.
+                    </p>
+                  </div>
+                </div>
+              </div> */}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-5 sm:px-6 py-3.5 border-t border-black/10 bg-slate-50 flex items-center justify-between gap-3">
+              <span className="text-[11px] text-slate-500 font-medium">
+                Toleransi jahitan: ±1-2 cm
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowSizeChart(false)}
+                className="px-5 py-2 bg-[#0d1c32] hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-xs"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
