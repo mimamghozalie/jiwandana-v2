@@ -24,52 +24,97 @@ async function withTimeout<T>(promise: PromiseLike<T>, timeoutMs = 3500): Promis
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const bibParam = searchParams.get('no_bib') || searchParams.get('bib');
+    const queryParam =
+      searchParams.get('q') ||
+      searchParams.get('search') ||
+      searchParams.get('no_bib') ||
+      searchParams.get('bib') ||
+      searchParams.get('phone') ||
+      searchParams.get('no_hp') ||
+      searchParams.get('wa') ||
+      '';
 
-    if (!bibParam || !bibParam.trim()) {
+    if (!queryParam || !queryParam.trim()) {
       return NextResponse.json(
-        { success: false, message: 'Nomor BIB wajib diisi.' },
+        { success: false, message: 'Nomor BIB atau Nomor WhatsApp wajib diisi.' },
         { status: 400 }
       );
     }
 
-    const cleanBib = bibParam.trim().toUpperCase();
+    const raw = queryParam.trim();
+    const cleanBib = raw.toUpperCase();
+    const digitsOnly = raw.replace(/\D/g, '');
 
-    // Query langsung ke tabel trailrun_registrations di database
-    const regQuery = supabase
+    let matches: any[] = [];
+
+    // 1. Coba cari berdasarkan no_bib (exact atau partial)
+    const bibQuery = supabase
       .from('trailrun_registrations')
       .select('*')
-      .ilike('no_bib', cleanBib)
-      .limit(1)
-      .maybeSingle();
+      .or(`no_bib.ilike.${cleanBib},no_bib.ilike.%${cleanBib}%`)
+      .limit(5);
 
-    const { data: reg, error: regError } = await withTimeout(regQuery, 4000);
+    const { data: bibMatches, error: bibError } = await withTimeout(bibQuery, 3500);
 
-    if (regError) {
-      console.error('Supabase query error searching participant:', regError);
-      return NextResponse.json(
-        { success: false, message: 'Terjadi gangguan saat menghubungi database.' },
-        { status: 500 }
-      );
+    if (bibError) {
+      console.error('Supabase query error searching participant by BIB:', bibError);
     }
 
-    if (!reg) {
+    if (bibMatches && bibMatches.length > 0) {
+      matches = bibMatches;
+    } else if (digitsOnly.length >= 6) {
+      // 2. Jika tidak ditemukan via no_bib, cari berdasarkan no_hp / WhatsApp
+      const phoneCandidates = Array.from(
+        new Set(
+          [
+            raw,
+            digitsOnly,
+            digitsOnly.startsWith('0') ? digitsOnly.slice(1) : digitsOnly,
+            digitsOnly.startsWith('62') ? digitsOnly.slice(2) : digitsOnly,
+            digitsOnly.startsWith('0') ? '62' + digitsOnly.slice(1) : digitsOnly,
+            digitsOnly.startsWith('62') ? '0' + digitsOnly.slice(2) : digitsOnly,
+          ].filter((p) => p.length >= 6)
+        )
+      );
+
+      const orFilter = phoneCandidates.map((p) => `no_hp.ilike.%${p}%`).join(',');
+
+      const phoneQuery = supabase
+        .from('trailrun_registrations')
+        .select('*')
+        .or(orFilter)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      const { data: phoneMatches, error: phoneError } = await withTimeout(phoneQuery, 3500);
+
+      if (phoneError) {
+        console.error('Supabase query error searching participant by phone:', phoneError);
+      }
+
+      if (phoneMatches && phoneMatches.length > 0) {
+        matches = phoneMatches;
+      }
+    }
+
+    if (!matches || matches.length === 0) {
       return NextResponse.json(
         {
           success: false,
-          message: `Tidak ada peserta yang terdaftar dengan nomor BIB "${cleanBib}".`,
+          message: `Tidak ada peserta yang terdaftar dengan nomor BIB atau WhatsApp "${raw}".`,
         },
         { status: 404 }
       );
     }
 
     // Ambil data pembayaran terkait jika ada
+    const primary = matches[0];
     let paymentInfo = null;
     try {
       const payQuery = supabase
         .from('trailrun_payments')
         .select('order_id, amount, fee, total_payment, payment_method, status, completed_at')
-        .eq('registration_id', reg.id)
+        .eq('registration_id', primary.id)
         .limit(1)
         .maybeSingle();
 
@@ -82,12 +127,23 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        ...reg,
+        ...primary,
         payment: paymentInfo,
       },
+      multipleResults:
+        matches.length > 1
+          ? matches.map((m) => ({
+              id: m.id,
+              nama: m.nama,
+              no_bib: m.no_bib,
+              kategori: m.kategori,
+              no_hp: m.no_hp,
+              status: m.status,
+            }))
+          : undefined,
     });
   } catch (error: any) {
-    console.error('Error fetching participant detail by BIB:', error);
+    console.error('Error fetching participant detail:', error);
     return NextResponse.json(
       { success: false, message: error.message || 'Terjadi kesalahan sistem saat mencari peserta.' },
       { status: 500 }

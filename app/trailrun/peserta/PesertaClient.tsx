@@ -59,21 +59,39 @@ interface ParticipantData {
   };
 }
 
+interface ParticipantSummary {
+  id: string;
+  nama: string;
+  no_bib: string;
+  kategori?: string;
+  no_hp?: string;
+  status: string;
+}
+
 export default function PesertaClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const bibParam = searchParams.get('no_bib') || searchParams.get('bib') || '';
+  const queryParam =
+    searchParams.get('q') ||
+    searchParams.get('search') ||
+    searchParams.get('no_bib') ||
+    searchParams.get('bib') ||
+    searchParams.get('no_hp') ||
+    searchParams.get('phone') ||
+    '';
 
-  const [inputBib, setInputBib] = useState(bibParam);
+  const [inputQuery, setInputQuery] = useState(queryParam);
   const [loading, setLoading] = useState(false);
   const [participant, setParticipant] = useState<ParticipantData | null>(null);
+  const [multipleResults, setMultipleResults] = useState<ParticipantSummary[]>([]);
   const [errorMsg, setErrorMsg] = useState('');
   const [copied, setCopied] = useState(false);
 
-  // Fetch participant by BIB
-  const fetchParticipant = useCallback(async (bib: string) => {
-    if (!bib.trim()) {
+  // Fetch participant by BIB or WhatsApp
+  const fetchParticipant = useCallback(async (q: string) => {
+    if (!q.trim()) {
       setParticipant(null);
+      setMultipleResults([]);
       setErrorMsg('');
       return;
     }
@@ -82,18 +100,21 @@ export default function PesertaClient() {
     setErrorMsg('');
 
     try {
-      const res = await fetch(`/api/trailrun/peserta?no_bib=${encodeURIComponent(bib.trim())}`);
+      const res = await fetch(`/api/trailrun/peserta?q=${encodeURIComponent(q.trim())}`);
       const json = await res.json();
 
       if (json.success && json.data) {
         setParticipant(json.data);
+        setMultipleResults(json.multipleResults || []);
         setErrorMsg('');
       } else {
         setParticipant(null);
-        setErrorMsg(json.message || `Peserta dengan nomor BIB "${bib}" tidak ditemukan.`);
+        setMultipleResults([]);
+        setErrorMsg(json.message || `Peserta dengan nomor BIB atau WhatsApp "${q}" tidak ditemukan.`);
       }
     } catch {
       setParticipant(null);
+      setMultipleResults([]);
       setErrorMsg('Gagal memuat data peserta. Silakan periksa koneksi internet Anda.');
     } finally {
       setLoading(false);
@@ -101,20 +122,20 @@ export default function PesertaClient() {
   }, []);
 
   useEffect(() => {
-    if (bibParam) {
-      setInputBib(bibParam);
-      fetchParticipant(bibParam);
+    if (queryParam) {
+      setInputQuery(queryParam);
+      fetchParticipant(queryParam);
     } else {
       setParticipant(null);
+      setMultipleResults([]);
       setErrorMsg('');
     }
-  }, [bibParam, fetchParticipant]);
+  }, [queryParam, fetchParticipant]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputBib.trim()) return;
-    const clean = inputBib.trim().toUpperCase();
-    router.push(`/trailrun/peserta?no_bib=${encodeURIComponent(clean)}`);
+    if (!inputQuery.trim()) return;
+    router.push(`/trailrun/peserta?q=${encodeURIComponent(inputQuery.trim())}`);
   };
 
   const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
@@ -201,22 +222,22 @@ export default function PesertaClient() {
             <span>Kembali ke Halaman Trailrun</span>
           </Link>
 
-          {/* Search Bar for BIB Verification */}
+          {/* Search Bar for BIB or WhatsApp Verification */}
           <form onSubmit={handleSearch} className="w-full sm:w-auto flex items-center gap-2">
-            <div className="relative flex-1 sm:w-64">
+            <div className="relative flex-1 sm:w-72">
               <input
                 type="text"
-                value={inputBib}
-                onChange={(e) => setInputBib(e.target.value.toUpperCase())}
-                placeholder="Cari No. BIB (cth: M-00001)"
-                className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-black/10 rounded-xl focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227] outline-hidden font-mono uppercase"
+                value={inputQuery}
+                onChange={(e) => setInputQuery(e.target.value)}
+                placeholder="No. BIB atau WhatsApp (08xxx)"
+                className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-black/10 rounded-xl focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227] outline-hidden text-slate-800 placeholder:text-slate-400"
               />
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             </div>
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 bg-[#C9A227] hover:bg-[#b08d20] disabled:opacity-50 text-[#0d1c32] rounded-xl text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer shrink-0 flex items-center gap-1"
+              className="px-4 py-2 bg-[#C9A227] hover:bg-[#b08d20] disabled:opacity-50 text-[#0d1c32] rounded-xl text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer shrink-0 flex items-center gap-1 shadow-xs"
             >
               {loading ? (
                 <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -233,7 +254,9 @@ export default function PesertaClient() {
             <RefreshCw className="w-8 h-8 text-[#C9A227] animate-spin mx-auto" />
             <div>
               <h3 className="font-serif font-bold text-slate-900 text-lg">Memeriksa Data Peserta...</h3>
-              <p className="text-xs text-slate-500 mt-1">Mengambil informasi resmi nomor BIB {bibParam}</p>
+              <p className="text-xs text-slate-500 mt-1">
+                Mengambil data untuk pencarian: <span className="font-mono font-bold text-slate-800">{inputQuery || queryParam}</span>
+              </p>
             </div>
           </div>
         )}
@@ -247,16 +270,19 @@ export default function PesertaClient() {
             <div className="space-y-2 max-w-md mx-auto">
               <h3 className="font-serif font-bold text-slate-900 text-xl">Peserta Tidak Ditemukan</h3>
               <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">{errorMsg}</p>
+              <p className="text-[11px] text-slate-400">
+                Pastikan nomor BIB (contoh: <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-700">M-00001</code>) atau nomor WhatsApp yang dimasukkan sesuai dengan nomor saat mendaftar.
+              </p>
             </div>
 
             <div className="max-w-md mx-auto pt-2">
               <form onSubmit={handleSearch} className="flex gap-2">
                 <input
                   type="text"
-                  value={inputBib}
-                  onChange={(e) => setInputBib(e.target.value.toUpperCase())}
-                  placeholder="Masukkan Nomor BIB lain..."
-                  className="flex-1 px-4 py-2.5 bg-[#f8f8f8] border border-black/10 rounded-xl text-xs font-mono uppercase focus:border-[#C9A227] focus:bg-white focus:ring-1 focus:ring-[#C9A227] outline-hidden"
+                  value={inputQuery}
+                  onChange={(e) => setInputQuery(e.target.value)}
+                  placeholder="Masukkan No. BIB atau WhatsApp lain..."
+                  className="flex-1 px-4 py-2.5 bg-[#f8f8f8] border border-black/10 rounded-xl text-xs focus:border-[#C9A227] focus:bg-white focus:ring-1 focus:ring-[#C9A227] outline-hidden placeholder:text-slate-400"
                 />
                 <button
                   type="submit"
@@ -294,10 +320,10 @@ export default function PesertaClient() {
               <QrCode className="w-10 h-10" />
             </div>
             <div className="space-y-2 max-w-md mx-auto">
-              <h3 className="font-serif font-bold text-slate-900 text-2xl">Verifikasi E-BIB & Peserta</h3>
+              <h3 className="font-serif font-bold text-slate-900 text-2xl">Cek E-BIB & Data Peserta</h3>
               <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                Halaman ini digunakan untuk memverifikasi keaslian nomor BIB, data medis, dan tiket resmi peserta
-                <strong> Trailrun Lintas Candi Majapahit 2026</strong> via QR Code.
+                Halaman ini digunakan untuk melihat dan mengunduh kartu E-BIB resmi, verifikasi data medis, serta jadwal lomba
+                <strong> Trailrun Lintas Candi Majapahit 2026</strong>.
               </p>
             </div>
 
@@ -305,14 +331,14 @@ export default function PesertaClient() {
               <form onSubmit={handleSearch} className="flex gap-2">
                 <input
                   type="text"
-                  value={inputBib}
-                  onChange={(e) => setInputBib(e.target.value.toUpperCase())}
-                  placeholder="Masukkan Nomor BIB (contoh: M-00001 / F-00001)"
-                  className="flex-1 px-4 py-3 bg-[#f8f8f8] border border-black/10 rounded-xl text-sm font-mono uppercase focus:border-[#C9A227] focus:bg-white focus:ring-1 focus:ring-[#C9A227] outline-hidden"
+                  value={inputQuery}
+                  onChange={(e) => setInputQuery(e.target.value)}
+                  placeholder="Masukkan Nomor BIB atau No. WhatsApp (08xxx)"
+                  className="flex-1 px-4 py-3 bg-[#f8f8f8] border border-black/10 rounded-xl text-xs sm:text-sm focus:border-[#C9A227] focus:bg-white focus:ring-1 focus:ring-[#C9A227] outline-hidden placeholder:text-slate-400"
                 />
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-[#C9A227] hover:bg-[#b08d20] text-[#0d1c32] rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-sm cursor-pointer"
+                  className="px-6 py-3 bg-[#C9A227] hover:bg-[#b08d20] text-[#0d1c32] rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-sm cursor-pointer shrink-0"
                 >
                   Cari Peserta
                 </button>
@@ -326,6 +352,43 @@ export default function PesertaClient() {
         ========================================================================= */}
         {!loading && participant && (
           <div className="space-y-6">
+            {/* MULTIPLE RESULTS (Jika mencari via No. WhatsApp dan terdaftar lebih dari 1 peserta) */}
+            {multipleResults.length > 1 && (
+              <div className="bg-white border border-[#C9A227]/40 rounded-2xl p-4 shadow-xs space-y-2.5 print:hidden">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                  <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-[#C9A227] animate-pulse" />
+                    <span>Ditemukan {multipleResults.length} Peserta dengan No. WhatsApp Ini:</span>
+                  </div>
+                  <span className="text-[10px] text-slate-500">Pilih peserta untuk menampilkan kartu BIB:</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {multipleResults.map((item) => {
+                    const isActive = participant.no_bib === item.no_bib;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => {
+                          fetchParticipant(item.no_bib);
+                        }}
+                        className={`px-3 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer border ${
+                          isActive
+                            ? 'bg-[#C9A227] text-[#0d1c32] border-[#C9A227] shadow-xs'
+                            : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-black/10'
+                        }`}
+                      >
+                        <span className="font-mono font-bold">{item.no_bib}</span>
+                        <span>•</span>
+                        <span className="font-medium">{item.nama}</span>
+                        <span className="text-[10px] opacity-75 uppercase">({item.kategori || '12K'})</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Action Bar (Download, Print, Share) - Hidden on Print */}
             <div className="flex flex-wrap items-center justify-between gap-3 bg-white border border-black/10 rounded-2xl p-4 shadow-xs print:hidden">
               <div className="flex items-center gap-2">
