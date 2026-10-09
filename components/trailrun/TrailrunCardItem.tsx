@@ -29,7 +29,7 @@ export default function TrailrunCardItem({
 
   // Visual marketing offset for Early Bird quota display (7K minus 14, 12K minus 16)
   const catKey = (item.id || '').toLowerCase();
-  const earlyVisualOffset = catKey === '7k' ? 14 : catKey === '12k' ? 16 : 0;
+  const earlyVisualOffset = catKey === '7k' ? 19 : catKey === '12k' ? 16 : 0;
   const baseEarlyQuota = 50;
   const realEarlyRemaining = typeof pricingInfo?.quotaRemaining === 'number'
     ? pricingInfo.quotaRemaining
