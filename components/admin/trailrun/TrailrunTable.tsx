@@ -14,6 +14,8 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  Trophy,
+  Edit3,
 } from 'lucide-react';
 import { TrailrunRow, formatCurrency, getRowFinancials } from './types';
 
@@ -34,6 +36,7 @@ interface TrailrunTableProps {
   onUpdateStatus: (id: string, status: 'paid' | 'pending' | 'confirmed') => void;
   updatingId: string | null;
   onOpenColumnFilter: () => void;
+  onEditHasilLari: (row: TrailrunRow) => void;
 }
 
 export default function TrailrunTable({
@@ -53,6 +56,7 @@ export default function TrailrunTable({
   onUpdateStatus,
   updatingId,
   onOpenColumnFilter,
+  onEditHasilLari,
 }: TrailrunTableProps) {
   const safeCurrentPage = Math.min(Math.max(currentPage, 1), Math.max(totalPages, 1));
 
@@ -67,6 +71,8 @@ export default function TrailrunTable({
               {visibleColumns.includes('no_bib') && <th className="py-3.5 px-4">No. BIB</th>}
               {visibleColumns.includes('nama') && <th className="py-3.5 px-4">Nama Peserta</th>}
               {visibleColumns.includes('kategori') && <th className="py-3.5 px-4">Kategori Lomba</th>}
+              {visibleColumns.includes('ukuran_jersey') && <th className="py-3.5 px-4">Jersey</th>}
+              {visibleColumns.includes('hasil_lari') && <th className="py-3.5 px-4 text-[#e9c176]">Hasil Lari</th>}
               {visibleColumns.includes('status') && <th className="py-3.5 px-4">Status Bayar</th>}
               {visibleColumns.includes('total_payment') && <th className="py-3.5 px-4">Nominal Bayar</th>}
               {visibleColumns.includes('base_amount') && <th className="py-3.5 px-4 text-[#e9c176]">Fee Pendaftaran</th>}
@@ -158,6 +164,29 @@ export default function TrailrunTable({
                         <span className="px-2 py-0.5 rounded font-mono font-bold text-xs bg-white/5 border border-white/10 text-[#C9A227]">
                           {row.ukuran_jersey || '-'}
                         </span>
+                      </td>
+                    )}
+
+                    {/* Hasil Lari */}
+                    {visibleColumns.includes('hasil_lari') && (
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEditHasilLari(row);
+                          }}
+                          className={`px-2.5 py-1 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${
+                            row.hasil_lari && row.hasil_lari !== '-'
+                              ? 'bg-amber-500/15 border-amber-500/30 text-[#e9c176] hover:bg-amber-500/25'
+                              : 'bg-white/5 border-white/10 text-slate-400 hover:text-white hover:bg-white/10'
+                          }`}
+                          title="Klik untuk ubah hasil lari"
+                        >
+                          <Trophy className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                          <span>{row.hasil_lari || '-'}</span>
+                          <Edit3 className="w-3 h-3 text-slate-400 opacity-60 ml-0.5" />
+                        </button>
                       </td>
                     )}
 
@@ -349,6 +378,15 @@ export default function TrailrunTable({
                           title="Lihat Detail Peserta"
                         >
                           <Eye className="w-3.5 h-3.5" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => onEditHasilLari(row)}
+                          className="p-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 hover:text-amber-300 transition-all cursor-pointer border border-amber-500/20"
+                          title="Ubah Hasil Lari Peserta"
+                        >
+                          <Trophy className="w-3.5 h-3.5" />
                         </button>
 
                         {row.status !== 'paid' ? (

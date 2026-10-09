@@ -24,6 +24,7 @@ import {
   Phone,
   RefreshCw,
   ExternalLink,
+  Trophy,
 } from 'lucide-react';
 import { formatCurrency } from '@/components/trailrun/registration/types';
 import { BibPreviewCard } from '@/components/trailrun/bib';
@@ -46,6 +47,7 @@ interface ParticipantData {
   kontak_darurat?: string;
   kategori: string;
   ukuran_jersey?: string;
+  hasil_lari?: string;
   status: string;
   created_at?: string;
   payment?: {
@@ -163,10 +165,16 @@ export default function PesertaClient() {
 
   const handleShareWhatsApp = () => {
     if (!participant) return;
-    const text = `*E-BIB & VERIFIKASI PESERTA TRAILRUN LINTAS CANDI 2026*\n\n` +
+    const hasilText =
+      participant.hasil_lari && participant.hasil_lari !== '-'
+        ? `• *Hasil Lari*: ${participant.hasil_lari}\n`
+        : '';
+    const text =
+      `*E-BIB & VERIFIKASI PESERTA TRAILRUN LINTAS CANDI 2026*\n\n` +
       `• *Nama*: ${participant.nama}\n` +
       `• *No. BIB*: ${participant.no_bib}\n` +
       `• *Kategori*: ${participant.kategori}\n` +
+      hasilText +
       `• *Status*: ${participant.status.toUpperCase()} ✅\n\n` +
       `Lihat e-pass & barcode resmi di:\n${qrTargetUrl}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
@@ -450,8 +458,14 @@ export default function PesertaClient() {
                     </h1>
                   </div>
 
-                  {/* Status Badge */}
-                  <div className="flex items-center gap-2 self-start sm:self-center">
+                  {/* Status Badge & Hasil Lari */}
+                  <div className="flex items-center gap-2 self-start sm:self-center flex-wrap">
+                    {participant.hasil_lari && participant.hasil_lari !== '-' && (
+                      <div className="px-3 py-1.5 rounded-full bg-amber-50 border border-amber-300 text-amber-900 text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-xs">
+                        <Trophy className="w-4 h-4 text-[#C9A227]" />
+                        <span>Hasil: {participant.hasil_lari}</span>
+                      </div>
+                    )}
                     {isPaid ? (
                       <div className="px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-300 text-emerald-700 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-xs">
                         <CheckCircle2 className="w-4 h-4 text-emerald-600" />
@@ -468,7 +482,33 @@ export default function PesertaClient() {
               </div>
 
               {/* Card Main Body */}
-              <div className="p-6 sm:p-8 space-y-8">
+              <div className="p-6 sm:p-8 space-y-6">
+                {/* Featured Hasil Lari Banner (if recorded) */}
+                {participant.hasil_lari && participant.hasil_lari !== '-' && (
+                  <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-50 via-amber-50/50 to-white border-2 border-amber-300/80 flex items-center justify-between gap-4 shadow-sm">
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#C9A227] to-[#e9c176] text-[#0d1c32] flex items-center justify-center shadow-md shrink-0">
+                        <Trophy className="w-6 h-6 text-[#0d1c32]" />
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase tracking-wider text-amber-800 font-extrabold block">
+                          Catatan Hasil Lari / Finisher
+                        </span>
+                        <div className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                          {participant.hasil_lari}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="hidden sm:block text-right">
+                      <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">
+                        Kategori
+                      </span>
+                      <span className="text-sm font-extrabold text-[#0d1c32]">
+                        {participant.kategori}
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 {/* Details Section: Grid of Data Diri, Medis, & Transaksi */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

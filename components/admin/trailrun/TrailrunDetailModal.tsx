@@ -13,6 +13,7 @@ import {
   MapPin,
   CreditCard,
   Trash2,
+  Trophy,
 } from 'lucide-react';
 import { TrailrunRow, formatCurrency, getRowFinancials } from './types';
 
@@ -23,6 +24,7 @@ interface TrailrunDetailModalProps {
   updatingId: string | null;
   onDeleteRow?: (id: string, nama: string) => void;
   isDeleting?: boolean;
+  onEditHasilLari?: (row: TrailrunRow) => void;
 }
 
 export function TrailrunDetailModal({
@@ -32,6 +34,7 @@ export function TrailrunDetailModal({
   updatingId,
   onDeleteRow,
   isDeleting,
+  onEditHasilLari,
 }: TrailrunDetailModalProps) {
   if (!selectedRow) return null;
 
@@ -127,6 +130,35 @@ export function TrailrunDetailModal({
               </button>
             )}
           </div>
+        </div>
+
+        {/* Hasil Lari Card */}
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-white/5 to-transparent border border-amber-500/30 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300 shrink-0">
+              <Trophy className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-[10px] uppercase tracking-wider text-amber-200/80 font-bold block">
+                Hasil Lari / Finish Time
+              </span>
+              <div className="text-base font-extrabold text-amber-300 mt-0.5">
+                {selectedRow.hasil_lari && selectedRow.hasil_lari !== '-' ? selectedRow.hasil_lari : 'Belum Dicatat (-)'}
+              </div>
+            </div>
+          </div>
+
+          {onEditHasilLari && (
+            <button
+              type="button"
+              onClick={() => onEditHasilLari(selectedRow)}
+              className="px-4 py-2 bg-gradient-to-r from-[#C9A227] to-[#e9c176] hover:brightness-110 text-[#0a1424] font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer self-start sm:self-auto shrink-0"
+              title="Edit Hasil Lari Peserta"
+            >
+              <Trophy className="w-3.5 h-3.5 text-[#0a1424]" />
+              <span>Ubah Hasil Lari</span>
+            </button>
+          )}
         </div>
 
         {/* Info Grid */}

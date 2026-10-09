@@ -17,6 +17,7 @@ import {
   TrailrunFilterBar,
   TrailrunTable,
   TrailrunDetailModal,
+  EditHasilLariModal,
 } from '@/components/admin/trailrun';
 
 export default function AdminTrailrunPage() {
@@ -38,6 +39,10 @@ export default function AdminTrailrunPage() {
   // Selected row for detail modal
   const [selectedRow, setSelectedRow] = useState<TrailrunRow | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  // Hasil Lari edit modal
+  const [editingHasilLariRow, setEditingHasilLariRow] = useState<TrailrunRow | null>(null);
+  const [isSavingHasilLari, setIsSavingHasilLari] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -130,6 +135,7 @@ export default function AdminTrailrunPage() {
             kontak_darurat: r.kontak_darurat,
             kategori: r.kategori,
             ukuran_jersey: r.ukuran_jersey || '-',
+            hasil_lari: r.hasil_lari || '-',
             status: r.status || (pay?.status === 'completed' ? 'paid' : 'pending'),
             created_at: r.created_at,
             payment: pay,
@@ -200,6 +206,38 @@ export default function AdminTrailrunPage() {
       console.error('Failed to update status:', err);
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  // Update Hasil Lari Peserta
+  const handleSaveHasilLari = async (id: string, newHasil: string) => {
+    setIsSavingHasilLari(true);
+    try {
+      const res = await fetch('/api/admin/trailrun/update-result', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, hasil_lari: newHasil }),
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        throw new Error(result.error || result.message || 'Gagal menyimpan hasil lari');
+      }
+
+      // 1. Update data state
+      setData((prev) =>
+        prev.map((row) => (row.id === id ? { ...row, hasil_lari: newHasil } : row))
+      );
+
+      // 2. Update selected modal row if open
+      if (selectedRow?.id === id) {
+        setSelectedRow((prev) => (prev ? { ...prev, hasil_lari: newHasil } : null));
+      }
+
+      setEditingHasilLariRow(null);
+    } catch (err: any) {
+      alert(`Terjadi kesalahan: ${err.message || 'Gagal menyimpan hasil lari'}`);
+    } finally {
+      setIsSavingHasilLari(false);
     }
   };
 
@@ -397,6 +435,7 @@ export default function AdminTrailrunPage() {
       'Nama Peserta',
       'Kategori',
       'Ukuran Jersey',
+      'Hasil Lari',
       'Status Pembayaran',
       'Harga Tiket (Rp)',
       'Biaya Admin (Rp)',
@@ -429,6 +468,7 @@ export default function AdminTrailrunPage() {
         row.nama || '-',
         row.kategori || '-',
         row.ukuran_jersey || '-',
+        row.hasil_lari || '-',
         row.status === 'paid' ? 'Lunas (Paid)' : row.status === 'confirmed' ? 'Dikonfirmasi' : 'Menunggu Bayar',
         fin.baseAmount,
         fin.adminFee,
@@ -463,6 +503,7 @@ export default function AdminTrailrunPage() {
       { wch: 26 },  // Nama Peserta
       { wch: 14 },  // Kategori
       { wch: 14 },  // Ukuran Jersey
+      { wch: 18 },  // Hasil Lari
       { wch: 20 },  // Status Pembayaran
       { wch: 16 },  // Harga Tiket
       { wch: 16 },  // Biaya Admin
@@ -519,6 +560,9 @@ export default function AdminTrailrunPage() {
               break;
             case 'ukuran_jersey':
               val = row.ukuran_jersey || '-';
+              break;
+            case 'hasil_lari':
+              val = row.hasil_lari || '-';
               break;
             case 'status':
               val = row.status === 'paid' ? 'LUNAS (PAID)' : row.status === 'confirmed' ? 'Dikonfirmasi' : 'Menunggu Bayar';
@@ -712,6 +756,7 @@ export default function AdminTrailrunPage() {
         onSelectRow={(row) => setSelectedRow(row)}
         onUpdateStatus={handleUpdateStatus}
         updatingId={updatingId}
+        onEditHasilLari={(row) => setEditingHasilLariRow(row)}
         onOpenColumnFilter={() => setShowColumnFilter(true)}
       />
 
@@ -723,6 +768,16 @@ export default function AdminTrailrunPage() {
         updatingId={updatingId}
         onDeleteRow={handleDeleteRow}
         isDeleting={isDeleting}
+        onEditHasilLari={(row) => setEditingHasilLariRow(row)}
+      />
+
+      {/* 6. Edit Hasil Lari Modal */}
+      <EditHasilLariModal
+        isOpen={Boolean(editingHasilLariRow)}
+        participant={editingHasilLariRow}
+        onClose={() => setEditingHasilLariRow(null)}
+        onSave={handleSaveHasilLari}
+        isSaving={isSavingHasilLari}
       />
     </div>
   );

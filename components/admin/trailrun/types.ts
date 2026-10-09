@@ -31,6 +31,7 @@ export interface TrailrunRow {
   kontak_darurat?: string;
   kategori: string;
   ukuran_jersey?: string;
+  hasil_lari?: string;
   status: 'pending' | 'confirmed' | 'paid';
   created_at: string;
   payment?: TrailrunPayment;
@@ -115,6 +116,7 @@ export const ALL_COLUMNS: ColumnConfig[] = [
   { key: 'nama', label: 'Nama Peserta', category: 'Utama', defaultVisible: true },
   { key: 'kategori', label: 'Kategori', category: 'Utama', defaultVisible: true },
   { key: 'ukuran_jersey', label: 'Ukuran Jersey', category: 'Utama', defaultVisible: true },
+  { key: 'hasil_lari', label: 'Hasil Lari', category: 'Utama', defaultVisible: true },
   { key: 'status', label: 'Status Bayar', category: 'Pembayaran', defaultVisible: true },
   { key: 'total_payment', label: 'Nominal Bayar', category: 'Pembayaran', defaultVisible: true },
   { key: 'base_amount', label: 'Fee Pendaftaran (Tiket)', category: 'Pembayaran', defaultVisible: false },
