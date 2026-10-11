@@ -394,6 +394,11 @@ export default function DaftarTrailrunClient() {
         ? `Custom (${formData.custom_jersey?.trim() || ''})`
         : formData.ukuran_jersey;
 
+    const catKey = (formData.kategori || '').toLowerCase().trim();
+    const activePricing = pricingInfoMap[catKey] || pricingInfoMap[formData.kategori];
+    const expectedTier = activePricing?.tierId;
+    const expectedAmount = activePricing?.amount;
+
     try {
       const res = await fetch('/api/payment/create', {
         method: 'POST',
@@ -403,6 +408,8 @@ export default function DaftarTrailrunClient() {
           kategori: formData.kategori,
           ukuran_jersey: finalUkuranJersey,
           payment_method: paymentMethod,
+          expected_tier: expectedTier,
+          expected_amount: expectedAmount,
         }),
       });
 

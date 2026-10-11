@@ -11,7 +11,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { registration_id, kategori, payment_method, ukuran_jersey } = body;
+    const { registration_id, kategori, payment_method, ukuran_jersey, expected_tier, expected_amount } = body;
 
     if (!registration_id || !kategori || !payment_method) {
       return NextResponse.json(
@@ -47,7 +47,12 @@ export async function POST(request: NextRequest) {
 
     // 2. Evaluate active pricing tier (Early Bird limit 50, Presale, Regular)
     const tierEvaluation = getActivePricingTier(kategori, paidCount);
-    const baseAmount = tierEvaluation.amount;
+    let baseAmount = tierEvaluation.amount;
+
+    // Sinkronisasi dengan sesi aktif yang dilihat pendaftar (contoh: Presale 320.000)
+    if (expected_amount && typeof expected_amount === 'number' && expected_amount > 0) {
+      baseAmount = Math.max(baseAmount, expected_amount);
+    }
 
     if (baseAmount <= 0) {
       return NextResponse.json(

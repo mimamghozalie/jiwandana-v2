@@ -1,3 +1,5 @@
+import { getActivePricingTier, getJerseyExtraFee } from '@/lib/pricing';
+
 export interface TrailrunPayment {
   txn_id?: string;
   order_id?: string;
@@ -88,8 +90,9 @@ export const getRowFinancials = (row: TrailrunRow) => {
   } else if (totalPayment > 0 && baseAmount === 0) {
     baseAmount = Math.max(0, totalPayment - adminFee);
   } else if (baseAmount === 0 && totalPayment === 0) {
-    const cat = (row.kategori || '').toLowerCase();
-    baseAmount = cat.includes('12') ? 290000 : cat.includes('7') ? 240000 : 250000;
+    const tierResult = getActivePricingTier(row.kategori || '');
+    const jerseyExtra = getJerseyExtraFee(row.ukuran_jersey);
+    baseAmount = (tierResult?.amount || 0) + jerseyExtra;
     totalPayment = baseAmount + adminFee;
   }
 

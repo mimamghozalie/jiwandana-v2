@@ -1,5 +1,6 @@
 import React from 'react';
 import { TrailrunCard } from '@/lib/types';
+import { getActivePricingTier } from '@/lib/pricing';
 import { PaymentData, PAYMENT_METHODS, TrailrunFormData, getJerseyExtraFee } from './types';
 
 interface StepPembayaranProps {
@@ -36,6 +37,14 @@ export default function StepPembayaran({
   const jerseyExtra = formData
     ? getJerseyExtraFee(formData.ukuran_jersey, formData.custom_jersey)
     : 0;
+
+  const activePricing = selectedCategory
+    ? (pricingInfoMap[selectedCategory.id.toLowerCase()] ||
+       pricingInfoMap[selectedCategory.id] ||
+       getActivePricingTier(selectedCategory.id))
+    : null;
+  const basePriceAmount = activePricing?.amount || 0;
+
   return (
     <div className="p-6 sm:p-8 space-y-5 animate-[fadeIn_0.4s_ease-out]">
       <div className="flex items-center justify-between pb-4 border-b border-black/5">
@@ -92,11 +101,9 @@ export default function StepPembayaran({
                     Estimasi Total
                   </span>
                   <span className="text-lg font-bold text-[#C9A227]">
-                    {(pricingInfoMap[selectedCategory.id.toLowerCase()] || pricingInfoMap[selectedCategory.id])?.amount
-                      ? formatCurrency(
-                          (pricingInfoMap[selectedCategory.id.toLowerCase()] || pricingInfoMap[selectedCategory.id]).amount + 5000 + jerseyExtra
-                        )
-                      : selectedCategory.prices.early}
+                    {basePriceAmount > 0
+                      ? formatCurrency(basePriceAmount + 5000 + jerseyExtra)
+                      : selectedCategory.prices.presale || selectedCategory.prices.early}
                   </span>
                   <div className="text-[9px] text-slate-500 space-y-0.5 mt-0.5">
                     {jerseyExtra > 0 && (
