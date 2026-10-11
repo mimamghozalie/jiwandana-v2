@@ -115,6 +115,17 @@ export default function TrailrunCardItem({
                 {item.badge}
               </div>
 
+              {/* Logo 20K M pada pojok kiri bawah kategori 12K */}
+              {(catKey === '12k' || item.id?.toLowerCase().includes('12')) && (
+                <div className="absolute bottom-2.5 left-2.5 sm:bottom-3 sm:left-3 z-20 pointer-events-none">
+                  <img
+                    src="/20km.png"
+                    alt="20K M"
+                    className="h-7 sm:h-8 w-auto object-contain drop-shadow-md rounded-xs"
+                  />
+                </div>
+              )}
+
               {/* Rotate Button Chip on Image */}
               {/* <button
                 type="button"

@@ -77,8 +77,13 @@ export default function StepKategoriLomba({
                 </div>
 
                 {/* Thumbnail Image */}
-                <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-xl overflow-hidden border border-black/10 shrink-0 bg-slate-100 self-start sm:self-auto shadow-sm">
+                <div className="relative w-14 h-14 sm:w-20 sm:h-20 rounded-xl overflow-hidden border border-black/10 shrink-0 bg-slate-100 self-start sm:self-auto shadow-sm">
                   <img src={cat.bannerImage} alt={cat.categoryName} className="w-full h-full object-cover" />
+                  {cat.id?.toLowerCase().includes('12') && (
+                    <div className="absolute bottom-1 left-1 z-10 pointer-events-none">
+                      <img src="/20km.png" alt="20K M" className="h-3 sm:h-4 w-auto object-contain drop-shadow-sm" />
+                    </div>
+                  )}
                 </div>
 
                 {/* Main Content */}
