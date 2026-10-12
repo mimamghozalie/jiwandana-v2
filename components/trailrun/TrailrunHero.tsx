@@ -5,7 +5,7 @@ interface TrailrunHeroProps {
   isOpen?: boolean;
 }
 
-export default function TrailrunHero({ isOpen = false }: TrailrunHeroProps) {
+export default function TrailrunHero({ isOpen = true }: TrailrunHeroProps) {
   return (
     <section className="relative w-full h-[100dvh] min-h-[640px] flex items-center justify-center pt-20">
       {/* Hero Content */}
