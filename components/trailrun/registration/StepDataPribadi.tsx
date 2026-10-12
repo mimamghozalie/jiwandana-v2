@@ -132,7 +132,102 @@ export default function StepDataPribadi({
         </div>
       </div>
 
-      {/* 2. No. BIB & Ukuran Jersey (Berdampingan 2 Kolom) */}
+      {/* 2. Identitas Kependudukan: NIK & KK (Wajib 16 Digit Angka) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* NIK */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <label htmlFor="nik" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+              NIK (Nomor Induk Kependudukan) <span className="text-rose-500">*</span>
+            </label>
+            {formData.nik && formData.nik.length > 0 && (
+              <span
+                className={`text-[10px] font-semibold flex items-center gap-0.5 ${
+                  formData.nik.length === 16 ? 'text-emerald-600' : 'text-rose-500'
+                }`}
+              >
+                {formData.nik.length === 16 ? (
+                  <>
+                    <span className="material-symbols-outlined text-[13px]">check_circle</span>
+                    16 digit
+                  </>
+                ) : (
+                  `(${formData.nik.length}/16 digit)`
+                )}
+              </span>
+            )}
+          </div>
+          <input
+            type="text"
+            id="nik"
+            name="nik"
+            required
+            inputMode="numeric"
+            maxLength={16}
+            value={formData.nik || ''}
+            onChange={onChange}
+            placeholder="Masukkan 16 digit NIK sesuai KTP"
+            className={`w-full bg-[#f8f8f8] border text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3.5 transition-all text-sm outline-none font-mono tracking-wide ${
+              formData.nik && formData.nik.length > 0 && formData.nik.length !== 16
+                ? 'border-rose-400 focus:border-rose-500 focus:ring-1 focus:ring-rose-500'
+                : formData.nik && formData.nik.length === 16
+                ? 'border-emerald-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500'
+                : 'border-black/10 focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227]'
+            }`}
+          />
+          <p className="text-[10px] text-slate-500">
+            Nomor NIK sesuai KTP / KK (16 digit angka untuk polis asuransi event).
+          </p>
+        </div>
+
+        {/* KK */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <label htmlFor="kk" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+              Nomor KK (Kartu Keluarga) <span className="text-rose-500">*</span>
+            </label>
+            {formData.kk && formData.kk.length > 0 && (
+              <span
+                className={`text-[10px] font-semibold flex items-center gap-0.5 ${
+                  formData.kk.length === 16 ? 'text-emerald-600' : 'text-rose-500'
+                }`}
+              >
+                {formData.kk.length === 16 ? (
+                  <>
+                    <span className="material-symbols-outlined text-[13px]">check_circle</span>
+                    16 digit
+                  </>
+                ) : (
+                  `(${formData.kk.length}/16 digit)`
+                )}
+              </span>
+            )}
+          </div>
+          <input
+            type="text"
+            id="kk"
+            name="kk"
+            required
+            inputMode="numeric"
+            maxLength={16}
+            value={formData.kk || ''}
+            onChange={onChange}
+            placeholder="Masukkan 16 digit nomor Kartu Keluarga"
+            className={`w-full bg-[#f8f8f8] border text-slate-800 placeholder-slate-400 rounded-xl px-4 py-3.5 transition-all text-sm outline-none font-mono tracking-wide ${
+              formData.kk && formData.kk.length > 0 && formData.kk.length !== 16
+                ? 'border-rose-400 focus:border-rose-500 focus:ring-1 focus:ring-rose-500'
+                : formData.kk && formData.kk.length === 16
+                ? 'border-emerald-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500'
+                : 'border-black/10 focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227]'
+            }`}
+          />
+          <p className="text-[10px] text-slate-500">
+            Nomor KK 16 digit tertera di bagian atas lembar Kartu Keluarga.
+          </p>
+        </div>
+      </div>
+
+      {/* 3. No. BIB & Ukuran Jersey (Berdampingan 2 Kolom) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Kolom Kiri: No. BIB */}
         <div className="space-y-1.5">
@@ -346,7 +441,7 @@ export default function StepDataPribadi({
       </div>
 
 
-      {/* 3. Kontak: Email & No. HP */}
+      {/* 4. Kontak: Email & No. HP */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <label htmlFor="email" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
@@ -381,7 +476,7 @@ export default function StepDataPribadi({
         </div>
       </div>
 
-      {/* 4. Tanggal Lahir & Komunitas */}
+      {/* 5. Tanggal Lahir & Komunitas */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <label htmlFor="tanggal_lahir" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">

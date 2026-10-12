@@ -2,6 +2,8 @@ import { TrailrunCard } from '@/lib/types';
 
 export interface TrailrunFormData {
   nama: string;
+  nik: string;
+  kk: string;
   email: string;
   no_bib: string;
   ukuran_jersey: string;

@@ -70,6 +70,8 @@ export default function TrailrunTable({
 
               {visibleColumns.includes('no_bib') && <th className="py-3.5 px-4">No. BIB</th>}
               {visibleColumns.includes('nama') && <th className="py-3.5 px-4">Nama Peserta</th>}
+              {visibleColumns.includes('nik') && <th className="py-3.5 px-4">NIK</th>}
+              {visibleColumns.includes('kk') && <th className="py-3.5 px-4">No. KK</th>}
               {visibleColumns.includes('kategori') && <th className="py-3.5 px-4">Kategori Lomba</th>}
               {visibleColumns.includes('ukuran_jersey') && <th className="py-3.5 px-4">Jersey</th>}
               {visibleColumns.includes('hasil_lari') && <th className="py-3.5 px-4 text-[#e9c176]">Hasil Lari</th>}
@@ -146,6 +148,20 @@ export default function TrailrunTable({
                     {visibleColumns.includes('nama') && (
                       <td className="py-3.5 px-4 font-bold text-white whitespace-nowrap">
                         {row.nama}
+                      </td>
+                    )}
+
+                    {/* NIK */}
+                    {visibleColumns.includes('nik') && (
+                      <td className="py-3.5 px-4 text-slate-300 font-mono text-[11px] whitespace-nowrap">
+                        {row.nik || '-'}
+                      </td>
+                    )}
+
+                    {/* No. KK */}
+                    {visibleColumns.includes('kk') && (
+                      <td className="py-3.5 px-4 text-slate-300 font-mono text-[11px] whitespace-nowrap">
+                        {row.kk || '-'}
                       </td>
                     )}
 

@@ -55,7 +55,11 @@ export default function AdminTrailrunPage() {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          setVisibleColumns(parsed);
+          // Pastikan kolom NIK dan KK otomatis masuk jika belum ada di cache browser
+          const hasNik = parsed.includes('nik');
+          const hasKk = parsed.includes('kk');
+          const finalCols = hasNik && hasKk ? parsed : [...parsed, 'nik', 'kk'];
+          setVisibleColumns(finalCols);
         }
       }
     } catch {
@@ -89,7 +93,7 @@ export default function AdminTrailrunPage() {
   const resetToDefaultColumns = () => saveColumnPreference(DEFAULT_VISIBLE_KEYS);
   const selectAllColumns = () => saveColumnPreference(ALL_COLUMNS.map((c) => c.key));
   const selectCompactColumns = () =>
-    saveColumnPreference(['no_bib', 'nama', 'kategori', 'status', 'total_payment', 'no_hp']);
+    saveColumnPreference(['no_bib', 'nama', 'nik', 'kk', 'kategori', 'status', 'total_payment', 'no_hp']);
 
   // Fetch data from Supabase
   const fetchData = async () => {
@@ -120,6 +124,8 @@ export default function AdminTrailrunPage() {
           return {
             id: r.id,
             nama: r.nama,
+            nik: r.nik || '-',
+            kk: r.kk || '-',
             email: r.email,
             no_bib: r.no_bib || '-',
             no_hp: r.no_hp,
@@ -331,6 +337,8 @@ export default function AdminTrailrunPage() {
           row.email.toLowerCase().includes(q) ||
           row.no_bib.toLowerCase().includes(q) ||
           row.no_hp.toLowerCase().includes(q) ||
+          (row.nik && row.nik.toLowerCase().includes(q)) ||
+          (row.kk && row.kk.toLowerCase().includes(q)) ||
           (row.nama_komunitas && row.nama_komunitas.toLowerCase().includes(q)) ||
           (row.kota && row.kota.toLowerCase().includes(q));
         if (!match) return false;
@@ -446,6 +454,8 @@ export default function AdminTrailrunPage() {
       'Email',
       'WhatsApp / HP',
       'Jenis Kelamin',
+      'NIK',
+      'No. KK',
       'Tanggal Lahir',
       'Kewarganegaraan',
       'Komunitas / Klub',
@@ -479,6 +489,8 @@ export default function AdminTrailrunPage() {
         row.email || '-',
         row.no_hp || '-',
         row.jenis_kelamin || '-',
+        row.nik || '-',
+        row.kk || '-',
         row.tanggal_lahir || '-',
         row.kewarganegaraan || 'Indonesia',
         row.nama_komunitas || '-',
@@ -514,6 +526,8 @@ export default function AdminTrailrunPage() {
       { wch: 28 },  // Email
       { wch: 18 },  // WhatsApp / HP
       { wch: 14 },  // Jenis Kelamin
+      { wch: 20 },  // NIK
+      { wch: 20 },  // No. KK
       { wch: 14 },  // Tanggal Lahir
       { wch: 16 },  // Kewarganegaraan
       { wch: 22 },  // Komunitas / Klub
@@ -596,6 +610,12 @@ export default function AdminTrailrunPage() {
               break;
             case 'jenis_kelamin':
               val = row.jenis_kelamin || '-';
+              break;
+            case 'nik':
+              val = row.nik || '-';
+              break;
+            case 'kk':
+              val = row.kk || '-';
               break;
             case 'tanggal_lahir':
               val = row.tanggal_lahir || '-';

@@ -18,6 +18,8 @@ export interface TrailrunPayment {
 export interface TrailrunRow {
   id: string;
   nama: string;
+  nik?: string;
+  kk?: string;
   email: string;
   no_bib: string;
   no_hp: string;
@@ -117,6 +119,8 @@ export const getRowFinancials = (row: TrailrunRow) => {
 export const ALL_COLUMNS: ColumnConfig[] = [
   { key: 'no_bib', label: 'No. BIB', category: 'Utama', defaultVisible: true },
   { key: 'nama', label: 'Nama Peserta', category: 'Utama', defaultVisible: true },
+  { key: 'nik', label: 'NIK', category: 'Utama', defaultVisible: true },
+  { key: 'kk', label: 'No. KK', category: 'Utama', defaultVisible: true },
   { key: 'kategori', label: 'Kategori', category: 'Utama', defaultVisible: true },
   { key: 'ukuran_jersey', label: 'Ukuran Jersey', category: 'Utama', defaultVisible: true },
   { key: 'hasil_lari', label: 'Hasil Lari', category: 'Utama', defaultVisible: true },
@@ -149,6 +153,8 @@ export const SAMPLE_TRAILRUN_DATA: TrailrunRow[] = [
   {
     id: 'sample-1',
     nama: 'Budi Santoso',
+    nik: '3515081405920001',
+    kk: '3515081203050002',
     email: 'budi.santoso@example.com',
     no_bib: '7K-0142',
     no_hp: '081234567890',
@@ -183,6 +189,8 @@ export const SAMPLE_TRAILRUN_DATA: TrailrunRow[] = [
   {
     id: 'sample-2',
     nama: 'Aditya Pratama',
+    nik: '3578012011960003',
+    kk: '3578011504010004',
     email: 'aditya.p@example.com',
     no_bib: '3K-0089',
     no_hp: '082198765432',
@@ -217,6 +225,8 @@ export const SAMPLE_TRAILRUN_DATA: TrailrunRow[] = [
   {
     id: 'sample-3',
     nama: 'Dewi Lestari',
+    nik: '3573020908980005',
+    kk: '3573021006020006',
     email: 'dewi.lestari@example.com',
     no_bib: '7K-0205',
     no_hp: '085712345678',
@@ -250,6 +260,8 @@ export const SAMPLE_TRAILRUN_DATA: TrailrunRow[] = [
   {
     id: 'sample-4',
     nama: 'Rizky Nugraha',
+    nik: '3515022501000007',
+    kk: '3515021809030008',
     email: 'rizky.nugraha@example.com',
     no_bib: '3K-0012',
     no_hp: '081344556677',

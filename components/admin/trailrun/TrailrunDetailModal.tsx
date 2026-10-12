@@ -191,6 +191,14 @@ export function TrailrunDetailModal({
                 <span className="text-white">{selectedRow.jenis_kelamin || '-'}</span>
               </div>
               <div className="flex justify-between">
+                <span className="text-slate-500">NIK:</span>
+                <span className="text-white font-mono">{selectedRow.nik || '-'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">No. KK:</span>
+                <span className="text-white font-mono">{selectedRow.kk || '-'}</span>
+              </div>
+              <div className="flex justify-between">
                 <span className="text-slate-500">Tgl Lahir:</span>
                 <span className="text-white">{selectedRow.tanggal_lahir || '-'}</span>
               </div>

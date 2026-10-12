@@ -65,6 +65,8 @@ export default function DaftarTrailrunClient() {
 
   const [formData, setFormData] = useState<TrailrunFormData>({
     nama: '',
+    nik: '',
+    kk: '',
     email: '',
     no_bib: '',
     ukuran_jersey: '',
@@ -167,6 +169,13 @@ export default function DaftarTrailrunClient() {
       return;
     }
 
+    if (name === 'nik' || name === 'kk') {
+      const digitsOnly = value.replace(/\D/g, '').slice(0, 16);
+      setFormData((prev) => ({ ...prev, [name]: digitsOnly }));
+      if (errorMsg) setErrorMsg('');
+      return;
+    }
+
     setFormData((prev) => ({ ...prev, [name]: value }));
 
     if (name === 'jenis_kelamin') {
@@ -236,6 +245,16 @@ export default function DaftarTrailrunClient() {
       case 2:
         if (!formData.nama.trim()) return fail('Nama lengkap wajib diisi.');
         if (!formData.jenis_kelamin) return fail('Jenis kelamin wajib dipilih terlebih dahulu.');
+        if (!formData.nik?.trim()) return fail('NIK (Nomor Induk Kependudukan) wajib diisi.');
+        const cleanNik = formData.nik.trim();
+        if (cleanNik.length !== 16 || !/^\d{16}$/.test(cleanNik)) {
+          return fail('NIK harus berjumlah tepat 16 digit angka.');
+        }
+        if (!formData.kk?.trim()) return fail('Nomor Kartu Keluarga (KK) wajib diisi.');
+        const cleanKk = formData.kk.trim();
+        if (cleanKk.length !== 16 || !/^\d{16}$/.test(cleanKk)) {
+          return fail('Nomor KK harus berjumlah tepat 16 digit angka.');
+        }
         if (!formData.no_bib.trim()) return fail('Nomor BIB wajib diisi.');
         const bibClean = formData.no_bib.trim().toUpperCase();
         if (bibClean.length !== 7 || !/^[FM]-\d{5}$/.test(bibClean)) {
@@ -346,6 +365,8 @@ export default function DaftarTrailrunClient() {
     try {
       const res = await submitTrailrunRegistration({
         nama: formData.nama,
+        nik: formData.nik.trim(),
+        kk: formData.kk.trim(),
         email: formData.email,
         no_bib: formData.no_bib.trim(),
         ukuran_jersey: finalUkuranJersey,
@@ -470,6 +491,8 @@ export default function DaftarTrailrunClient() {
     setBibMessage('');
     setFormData({
       nama: '',
+      nik: '',
+      kk: '',
       email: '',
       no_bib: '',
       ukuran_jersey: '',

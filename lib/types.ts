@@ -141,6 +141,8 @@ export interface TrailrunCard {
 export interface TrailrunRegistration {
   id?: string;
   nama: string;
+  nik?: string;
+  kk?: string;
   email: string;
   no_bib: string;
   no_hp: string;
