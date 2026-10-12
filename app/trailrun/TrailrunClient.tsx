@@ -48,7 +48,7 @@ export default function TrailrunClient() {
       {/* Full-page Fixed Background Banner Image with Gradient */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <Image
-          src="/assets/banner_trailrun.png"
+          src="https://gnbyrvileybbqfuzgbty.supabase.co/storage/v1/object/public/asset/patas_2.png"
           alt="Banner Trailrun Lintas Candi"
           fill
           priority
