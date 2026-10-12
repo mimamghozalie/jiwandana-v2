@@ -46,14 +46,14 @@ export default function TrailrunClient() {
   return (
     <div className="relative min-h-screen selection:bg-[#C9A227] selection:text-[#0d1c32]">
       {/* Full-page Fixed Background Banner Image with Gradient */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
+      <div className="fixed top-20 inset-x-0 bottom-0 z-0 pointer-events-none">
         <Image
           src="https://gnbyrvileybbqfuzgbty.supabase.co/storage/v1/object/public/asset/patas_2.png"
           alt="Banner Trailrun Lintas Candi"
           fill
           priority
           sizes="100vw"
-          className="object-cover object-center"
+          className="object-cover object-top"
         />
         {/* Full-page Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/50 via-50% to-[#f8f8f8]" />
