@@ -4,8 +4,8 @@
   "title": "Rute 12K Senior Pawitra Summit Challenge",
   "distance": "12 KM",
   "elevation": "+1.782 m",
-  "maxAlt": "1.661 m dpl",
-  "cot": "7.5 Jam",
+  "maxAlt": "1.653 m dpl",
+  "cot": "8 Jam",
   "wsCount": "3 Pos WS",
   "gpxFile": "/routes/JALUR 12K - SENIOR PAWITRA.gpx",
   "surface": {
@@ -41,7 +41,7 @@
     {
       "name": "Puncak Pawitra (Summit)",
       "km": "8.5 KM",
-      "elev": "1.661 m",
+      "elev": "1.653 m",
       "type": "Puncak Tertinggi"
     },
     {

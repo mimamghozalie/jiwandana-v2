@@ -46,7 +46,7 @@
       "badge": "Menengah & Kompetitif",
       "distance": "7 KM",
       "elevationGain": "EG : ± 500 M",
-      "cutOffTime": "3.5 Jam / 3 jam 30 menit",
+      "cutOffTime": "5 Jam",
       "waterStations": "2 Pos WS",
       "bannerImage": "/assets/trailrun/7k.png",
       "prices": {
@@ -86,7 +86,7 @@
       "badge": "Tantangan Ekstrem",
       "distance": "12 KM",
       "elevationGain": "EG : ± 1300 M",
-      "cutOffTime": "7.5 Jam / 7 Jam 30 menit",
+      "cutOffTime": "8 Jam",
       "waterStations": "3 Pos WS",
       "bannerImage": "/assets/trailrun/12k.png",
       "prices": {
