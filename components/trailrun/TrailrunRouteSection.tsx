@@ -22,6 +22,13 @@ interface TrailrunRouteSectionProps {
   onSelectRouteKey: (key: any) => void;
 }
 
+interface GpxElevationData {
+  points: number[];
+  minEle: number;
+  maxEle: number;
+  totalGain: number;
+}
+
 export default function TrailrunRouteSection({
   routes,
   activeRouteKey,
@@ -31,8 +38,81 @@ export default function TrailrunRouteSection({
   const safeActiveKey = routeKeys.includes(activeRouteKey) ? activeRouteKey : (routeKeys[0] || '3k');
   const activeRoute = routes?.[safeActiveKey] || Object.values(routes || {})[0];
 
-  if (!activeRoute) return null;
+  const [gpxEleData, setGpxEleData] = React.useState<GpxElevationData | null>(null);
+
   const currentKey = safeActiveKey.toLowerCase();
+  const gpxUrl = activeRoute?.gpxFile || `/routes/${currentKey}.gpx`;
+
+  // Parse real elevation points directly from GPX file
+  React.useEffect(() => {
+    if (!gpxUrl) return;
+
+    let isCancelled = false;
+
+    fetch(encodeURI(gpxUrl))
+      .then((res) => {
+        if (!res.ok) throw new Error(`GPX fetch failed (${res.status})`);
+        return res.text();
+      })
+      .then((xmlText) => {
+        if (isCancelled) return;
+
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+        const trkpts = xmlDoc.getElementsByTagName('trkpt');
+
+        const rawPoints: number[] = [];
+        let minEle = Infinity;
+        let maxEle = -Infinity;
+        let totalGain = 0;
+        let prevEle: number | null = null;
+
+        for (let i = 0; i < trkpts.length; i++) {
+          const eleNode = trkpts[i].getElementsByTagName('ele')[0];
+          if (eleNode && eleNode.textContent) {
+            const ele = parseFloat(eleNode.textContent);
+            if (!isNaN(ele)) {
+              rawPoints.push(ele);
+              if (ele < minEle) minEle = ele;
+              if (ele > maxEle) maxEle = ele;
+              if (prevEle !== null && ele > prevEle) {
+                totalGain += ele - prevEle;
+              }
+              prevEle = ele;
+            }
+          }
+        }
+
+        if (rawPoints.length > 0) {
+          // Downsample to 120 points for high-definition smooth SVG curve
+          const targetPoints = Math.min(120, rawPoints.length);
+          const sampled: number[] = [];
+          const step = (rawPoints.length - 1) / (targetPoints - 1);
+          for (let i = 0; i < targetPoints; i++) {
+            const idx = Math.min(rawPoints.length - 1, Math.round(i * step));
+            sampled.push(Math.round(rawPoints[idx]));
+          }
+
+          setGpxEleData({
+            points: sampled,
+            minEle: Math.round(minEle),
+            maxEle: Math.round(maxEle),
+            totalGain: Math.round(totalGain),
+          });
+        }
+      })
+      .catch((err) => {
+        if (!isCancelled) {
+          console.warn('GPX elevation parse error, fallback to JSON:', err);
+        }
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [gpxUrl]);
+
+  if (!activeRoute) return null;
 
   return (
     <section id="rute" className="py-16 md:py-24 bg-white border-t border-black/10">
@@ -98,38 +178,40 @@ export default function TrailrunRouteSection({
           </div>
 
           {/* Real Interactive Leaflet GPX Map */}
-          {/* <TrailrunGpxMap
+          <TrailrunGpxMap
             key={currentKey}
             gpxUrl={activeRoute.gpxFile || `/routes/${currentKey}.gpx`}
             routeTitle={activeRoute.title}
             routeDistance={activeRoute.distance}
             routeElevation={activeRoute.elevation}
             waypoints={activeRoute.waypoints}
-          /> */}
+          />
 
           {/* Waypoints Sequence List */}
-          {/* <div className="p-6 bg-slate-50/70 border-t border-black/10">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#C9A227] block mb-3">
-              Titik Lintasan & Pos Pantau:
-            </span>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {activeRoute.waypoints.map((wp, i) => (
-                <div
-                  key={i}
-                  className="p-3.5 rounded-xl bg-white border border-black/10 flex items-center justify-between text-xs shadow-xs hover:border-[#C9A227]/40 transition-colors"
-                >
-                  <div className="space-y-0.5">
-                    <strong className="text-slate-900 block font-semibold">{wp.name}</strong>
-                    <span className="text-slate-500 text-[11px]">{wp.type}</span>
+          {/* {activeRoute.waypoints && activeRoute.waypoints.length > 0 && (
+            <div className="p-6 bg-slate-50/70 border-t border-black/10">
+              <span className="text-xs font-bold uppercase tracking-wider text-[#C9A227] block mb-3">
+                Titik Lintasan & Pos Pantau:
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {activeRoute.waypoints.map((wp, i) => (
+                  <div
+                    key={i}
+                    className="p-3.5 rounded-xl bg-white border border-black/10 flex items-center justify-between text-xs shadow-xs hover:border-[#C9A227]/40 transition-colors"
+                  >
+                    <div className="space-y-0.5">
+                      <strong className="text-slate-900 block font-semibold">{wp.name}</strong>
+                      <span className="text-slate-500 text-[11px]">{wp.type}</span>
+                    </div>
+                    <div className="text-right shrink-0 ml-2">
+                      <span className="text-[#C9A227] font-bold block">{wp.km}</span>
+                      <span className="text-slate-400 text-[10px]">{wp.elev}</span>
+                    </div>
                   </div>
-                  <div className="text-right shrink-0 ml-2">
-                    <span className="text-[#C9A227] font-bold block">{wp.km}</span>
-                    <span className="text-slate-400 text-[10px]">{wp.elev}</span>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div> */}
+          )} */}
         </div>
 
         {/* BOX 2: Data Rute & Elevation Profile (Below MAPS) */}
@@ -139,77 +221,89 @@ export default function TrailrunRouteSection({
               <span className="text-xs font-bold uppercase tracking-widest text-[#C9A227]">
                 Profil Ketinggian
               </span>
-              {/* <h3 className="text-xl font-bold font-serif text-slate-900">
+              <h3 className="text-xl font-bold font-serif text-slate-900">
                 Grafik Elevasi (Altitude Profile)
-              </h3> */}
+              </h3>
             </div>
-            {/* <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3">
               <span className="text-xs text-slate-500">Puncak Tertinggi:</span>
               <span className="px-3 py-1 bg-white border border-black/10 rounded-lg text-xs font-bold text-[#C9A227]">
-                {activeRoute.maxAlt}
+                {gpxEleData ? `${gpxEleData.maxEle.toLocaleString('id-ID')} m dpl` : activeRoute.maxAlt}
               </span>
-            </div> */}
+            </div>
           </div>
 
           {/* SVG Elevation Graph */}
-          {/* <div className="space-y-2">
-            <div className="h-44 sm:h-52 w-full bg-white border border-black/10 rounded-xl p-4 flex items-end relative overflow-hidden">
-              <svg
-                viewBox="0 0 1000 200"
-                className="w-full h-full"
-                preserveAspectRatio="none"
-              >
-                <defs>
-                  <linearGradient id="elevFill" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="#C9A227" stopOpacity="0.4" />
-                    <stop offset="100%" stopColor="#C9A227" stopOpacity="0.02" />
-                  </linearGradient>
-                </defs>
+          {(() => {
+            const points = gpxEleData?.points || activeRoute.elevationPoints;
+            if (!points || points.length < 2) return null;
+            const maxVal = gpxEleData?.maxEle || Math.max(...points);
+            const minVal = gpxEleData?.minEle || Math.min(...points);
+            const range = Math.max(1, maxVal - minVal);
+            const displayMax = gpxEleData ? `${gpxEleData.maxEle.toLocaleString('id-ID')} m dpl` : activeRoute.maxAlt;
+            return (
+              <div className="space-y-2">
+                <div className="h-44 sm:h-52 w-full bg-white border border-black/10 rounded-xl p-4 flex items-end relative overflow-hidden">
+                  <svg
+                    viewBox="0 0 1000 200"
+                    className="w-full h-full"
+                    preserveAspectRatio="none"
+                  >
+                    <defs>
+                      <linearGradient id={`elevFill-${currentKey}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor="#C9A227" stopOpacity="0.4" />
+                        <stop offset="100%" stopColor="#C9A227" stopOpacity="0.02" />
+                      </linearGradient>
+                    </defs>
 
-                <polygon
-                  points={`0,200 ${activeRoute.elevationPoints
-                    .map((val, idx) => {
-                      const x = (idx / (activeRoute.elevationPoints.length - 1)) * 1000;
-                      const y = 200 - (val / 1300) * 180;
-                      return `${x},${y}`;
-                    })
-                    .join(' ')} 1000,200`}
-                  fill="url(#elevFill)"
-                />
+                    <polygon
+                      points={`0,200 ${points
+                        .map((val, idx) => {
+                          const x = (idx / (points.length - 1)) * 1000;
+                          const y = 185 - ((val - minVal) / range) * 150;
+                          return `${x},${y}`;
+                        })
+                        .join(' ')} 1000,200`}
+                      fill={`url(#elevFill-${currentKey})`}
+                    />
 
-                <polyline
-                  points={activeRoute.elevationPoints
-                    .map((val, idx) => {
-                      const x = (idx / (activeRoute.elevationPoints.length - 1)) * 1000;
-                      const y = 200 - (val / 1300) * 180;
-                      return `${x},${y}`;
-                    })
-                    .join(' ')}
-                  fill="none"
-                  stroke="#C9A227"
-                  strokeWidth="3.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+                    <polyline
+                      points={points
+                        .map((val, idx) => {
+                          const x = (idx / (points.length - 1)) * 1000;
+                          const y = 185 - ((val - minVal) / range) * 150;
+                          return `${x},${y}`;
+                        })
+                        .join(' ')}
+                      fill="none"
+                      stroke="#C9A227"
+                      strokeWidth="3.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
 
-              <div className="absolute top-2 left-4 text-[10px] text-slate-400 font-sans font-medium">
-                ▲ Max: {activeRoute.maxAlt}
+                  <div className="absolute top-2 left-4 text-[10px] text-slate-400 font-sans font-medium">
+                    ▲ Max: {displayMax}
+                  </div>
+                  <div className="absolute bottom-2 left-4 text-[10px] text-slate-400 font-sans font-medium">
+                    ▼ Min: {minVal.toLocaleString('id-ID')} m dpl
+                  </div>
+                  <div className="absolute bottom-2 right-4 text-[10px] text-slate-400 font-sans font-medium">
+                    Garis Finish: {activeRoute.distance}
+                  </div>
+                </div>
               </div>
-              <div className="absolute bottom-2 left-4 text-[10px] text-slate-400 font-sans font-medium">
-                ▼ Min: 110 m dpl
-              </div>
-              <div className="absolute bottom-2 right-4 text-[10px] text-slate-400 font-sans font-medium">
-                Garis Finish: {activeRoute.distance}
-              </div>
-            </div>
-          </div> */}
+            );
+          })()}
 
           {/* Summary Grid of Track Characteristics */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-2">
             <div className="p-4 rounded-xl bg-white border border-black/10">
               <span className="text-[11px] text-slate-500 font-medium block">Total Elevasi</span>
-              <strong className="text-base text-slate-900 font-bold">{activeRoute.elevation}</strong>
+              <strong className="text-base text-slate-900 font-bold">
+                {gpxEleData ? `+${gpxEleData.totalGain.toLocaleString('id-ID')} m` : activeRoute.elevation}
+              </strong>
             </div>
             <div className="p-4 rounded-xl bg-white border border-black/10">
               <span className="text-[11px] text-slate-500 font-medium block">Batas Waktu (COT)</span>
@@ -219,7 +313,6 @@ export default function TrailrunRouteSection({
               <span className="text-[11px] text-slate-500 font-medium block">Hydration Point</span>
               <strong className="text-base text-slate-900 font-bold">{activeRoute.wsCount}</strong>
             </div>
-
           </div>
 
           {/* Download GPX Button */}
@@ -237,12 +330,12 @@ export default function TrailrunRouteSection({
             </div>
 
             <a
-              // href={activeRoute.gpxFile || `/routes/pawitra-trailrun-${currentKey}.gpx`}
-              download={`pawitra-trailrun-${currentKey}.gpx`}
+              href={activeRoute.gpxFile || `/routes/${currentKey}.gpx`}
+              download={activeRoute.gpxFile ? activeRoute.gpxFile.split('/').pop() : `pawitra-trailrun-${currentKey}.gpx`}
               className="w-full sm:w-auto px-5 py-2.5 bg-slate-900 hover:bg-black text-[#C9A227] rounded-xl font-semibold text-xs uppercase tracking-wider transition-colors shadow-sm shrink-0 flex items-center justify-center gap-1.5 cursor-pointer no-underline"
             >
               <span className="material-symbols-outlined text-sm">download</span>
-              <span>Coming Soon ({safeActiveKey.toUpperCase()})</span>
+              <span>Unduh GPX ({safeActiveKey.toUpperCase()})</span>
             </a>
           </div>
         </div>

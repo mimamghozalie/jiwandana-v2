@@ -10,6 +10,7 @@ import TrailrunHero from '@/components/trailrun/TrailrunHero';
 import TrailrunCardItem from '@/components/trailrun/TrailrunCardItem';
 import TrailrunFacilityModal from '@/components/trailrun/TrailrunFacilityModal';
 import TrailrunRouteSection from '@/components/trailrun/TrailrunRouteSection';
+import TrailrunSponsors from '@/components/trailrun/TrailrunSponsors';
 
 export default function TrailrunClient() {
   const [selectedCategory, setSelectedCategory] = useState<TrailrunCard | null>(null);
@@ -97,18 +98,21 @@ export default function TrailrunClient() {
           </div>
         </section>
 
-        {/* 3. MODAL POPUP: FASILITAS TERMASUK */}
+        {/* 3. SPONSOR & PARTNER SECTION */}
+        <TrailrunSponsors />
+
+        {/* 4. MODAL POPUP: FASILITAS TERMASUK */}
         <TrailrunFacilityModal
           category={selectedCategory}
           onClose={() => setSelectedCategory(null)}
         />
 
-        {/* 4. ROUTE & ELEVATION SECTION (Interactive Map & Altitude Curve) */}
-        {/* <TrailrunRouteSection
+        {/* 5. ROUTE & ELEVATION SECTION (Interactive Map & Altitude Curve) */}
+        <TrailrunRouteSection
           routes={routes}
           activeRouteKey={activeRouteKey}
           onSelectRouteKey={setActiveRouteKey}
-        /> */}
+        />
       </div>
     </div>
   );

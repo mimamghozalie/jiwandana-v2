@@ -190,7 +190,7 @@ export default function TrailrunGpxMap({
 
     const loadGpx = async () => {
       try {
-        const res = await fetch(gpxUrl);
+        const res = await fetch(encodeURI(gpxUrl));
         if (!res.ok) {
           throw new Error(`File GPX tidak ditemukan (HTTP ${res.status})`);
         }
