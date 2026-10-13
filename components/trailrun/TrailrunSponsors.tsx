@@ -15,11 +15,6 @@ const sponsors: SponsorItem[] = [
     alt: 'UTMB Index',
   },
   {
-    name: 'UTMB 20K M',
-    src: '/assets/trailrun/20km.png',
-    alt: 'UTMB 20K M',
-  },
-  {
     name: 'ALTI Kab. Mojokerto',
     src: '/assets/trailrun/alti.jpeg',
     alt: 'Asosiasi Lari Trail Indonesia Pengcab Kab. Mojokerto',
