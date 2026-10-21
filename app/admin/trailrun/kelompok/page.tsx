@@ -43,15 +43,17 @@ export default function PesertaKelompokPage() {
     const communityBatchMap: Record<string, TrailrunRow[]> = {};
 
     data.forEach((r) => {
-      // Kelompok HANYA jika memiliki data PIC (Nama PIC / No HP PIC)
-      const hasPic = Boolean(
+      // Kelompok jika registration_type === 'bulk', ada data PIC, atau berelasi dengan order TR-BULK
+      const isKelompok = Boolean(
+        r.registration_type === 'bulk' ||
         (r.pic_name && r.pic_name.trim() !== '') ||
         (r.pic_phone && r.pic_phone.trim() !== '') ||
         (r.payment?.pic_name && r.payment.pic_name.trim() !== '') ||
-        (r.payment?.pic_phone && r.payment.pic_phone.trim() !== '')
+        (r.payment?.pic_phone && r.payment.pic_phone.trim() !== '') ||
+        (r.payment?.order_id && r.payment.order_id.startsWith('TR-BULK'))
       );
 
-      if (!hasPic) {
+      if (!isKelompok) {
         individuTotal += 1;
         return;
       }

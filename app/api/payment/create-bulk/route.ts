@@ -162,6 +162,7 @@ export async function POST(request: NextRequest) {
       kontak_darurat: p.kontak_darurat,
       kategori: p.kategori.toUpperCase(),
       status: 'pending',
+      registration_type: 'bulk',
     }));
 
     let { data: insertedRegistrations, error: regError } = await supabase
@@ -169,10 +170,13 @@ export async function POST(request: NextRequest) {
       .insert(insertPayload)
       .select('id, nama, email, kategori, no_bib');
 
-    // Graceful fallback hanya jika kolom opsional tertentu (misal ukuran_jersey, nik, kk) belum termigrasi
+    // Graceful fallback jika kolom opsional tertentu belum termigrasi
     if (regError) {
       console.warn('Initial insert trailrun_registrations error:', regError.message);
       let fallbackPayload = [...insertPayload];
+      if (regError.message?.toLowerCase().includes('registration_type')) {
+        fallbackPayload = fallbackPayload.map(({ registration_type, ...rest }: any) => rest);
+      }
       if (regError.message?.toLowerCase().includes('ukuran_jersey')) {
         fallbackPayload = fallbackPayload.map(({ ukuran_jersey, ...rest }: any) => rest);
       }

@@ -65,20 +65,22 @@ export default function PesertaIndividuPage() {
     let kelompokPeserta = 0;
 
     data.forEach((r) => {
-      // Kelompok HANYA jika memiliki data PIC (Nama PIC / No HP PIC)
-      const hasPic = Boolean(
+      // Kelompok jika registration_type === 'bulk', ada data PIC, atau berelasi dengan order TR-BULK
+      const isKelompok = Boolean(
+        r.registration_type === 'bulk' ||
         (r.pic_name && r.pic_name.trim() !== '') ||
         (r.pic_phone && r.pic_phone.trim() !== '') ||
         (r.payment?.pic_name && r.payment.pic_name.trim() !== '') ||
-        (r.payment?.pic_phone && r.payment.pic_phone.trim() !== '')
+        (r.payment?.pic_phone && r.payment.pic_phone.trim() !== '') ||
+        (r.payment?.order_id && r.payment.order_id.startsWith('TR-BULK'))
       );
 
-      if (hasPic) {
+      if (isKelompok) {
         kelompokPeserta += 1;
         const oId = r.payment?.order_id || r.payment?.txn_id || r.id;
         kelompokOrderMap.add(oId);
       } else {
-        // Selain yang memiliki data PIC, otomatis masuk ke peserta individu
+        // Peserta murni individu
         individu.push(r);
       }
     });
@@ -143,7 +145,7 @@ export default function PesertaIndividuPage() {
   const filterCounts = useMemo(() => {
     const all = individuData.length;
     const paid = individuData.filter((r) => r.status === 'paid').length;
-    const pending = individuData.filter((r) => r.status === 'pending' || r.status === 'confirmed').length;
+    const pending = all - paid; // Seluruh peserta yang belum lunas (pending/menunggu pembayaran)
     return {
       all,
       paid,
@@ -158,7 +160,12 @@ export default function PesertaIndividuPage() {
   const filteredData = useMemo(() => {
     return individuData.filter((row) => {
       // Status filter
-      if (statusFilter !== 'all') {
+      if (statusFilter === 'paid') {
+        if (row.status !== 'paid') return false;
+      } else if (statusFilter === 'pending') {
+        // Menunggu pembayaran: seluruh peserta yang belum lunas
+        if (row.status === 'paid') return false;
+      } else if (statusFilter !== 'all') {
         if (row.status !== statusFilter) return false;
       }
 

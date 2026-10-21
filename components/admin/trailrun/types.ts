@@ -40,6 +40,7 @@ export interface TrailrunRow {
   ukuran_jersey?: string;
   hasil_lari?: string;
   status: 'pending' | 'confirmed' | 'paid';
+  registration_type?: 'individu' | 'bulk' | string;
   created_at: string;
   payment?: TrailrunPayment;
   pic_name?: string | null;

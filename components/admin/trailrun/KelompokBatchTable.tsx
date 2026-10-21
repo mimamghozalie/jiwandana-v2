@@ -231,13 +231,9 @@ export default function KelompokBatchTable({
             <thead>
               <tr className="bg-gradient-to-r from-[#0d1c32] to-[#070e1a] text-slate-300 font-bold border-b border-white/10 uppercase tracking-wider text-[11px]">
                 <th className="py-3.5 px-4 text-center w-12">No</th>
-                <th className="py-3.5 px-4">Order ID Transaksi</th>
-                <th className="py-3.5 px-4">Penanggung Jawab (PIC)</th>
-                <th className="py-3.5 px-4">Komunitas / Klub</th>
-                <th className="py-3.5 px-4 text-center">Anggota</th>
-                <th className="py-3.5 px-4">Status Promo Diskon</th>
-                <th className="py-3.5 px-4">Status Pembayaran</th>
-                <th className="py-3.5 px-4 text-right">Total Bayar</th>
+                <th className="py-3.5 px-4">Nama PIC</th>
+                <th className="py-3.5 px-4">Payment Status</th>
+                <th className="py-3.5 px-4">Diskon</th>
                 <th className="py-3.5 px-4 text-center">Aksi</th>
               </tr>
             </thead>
@@ -245,13 +241,13 @@ export default function KelompokBatchTable({
             <tbody className="divide-y divide-white/5">
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="py-16 text-center text-slate-400">
+                  <td colSpan={5} className="py-16 text-center text-slate-400">
                     <span>Memuat data pendaftaran kelompok...</span>
                   </td>
                 </tr>
               ) : filteredBatches.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-16 text-center text-slate-400 space-y-2">
+                  <td colSpan={5} className="py-16 text-center text-slate-400 space-y-2">
                     <Users className="w-8 h-8 mx-auto text-slate-600 mb-1" />
                     <p className="font-semibold text-slate-300">Tidak ada pendaftaran kelompok yang cocok.</p>
                     <p className="text-xs text-slate-500">
@@ -275,89 +271,56 @@ export default function KelompokBatchTable({
                           {index + 1}
                         </td>
 
-                        {/* Order ID */}
+                        {/* Nama PIC & Rincian Transaksi */}
                         <td className="py-3.5 px-4">
-                          <span className="font-mono font-bold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20">
-                            {batch.orderId}
-                          </span>
-                          <span className="text-[10px] text-slate-500 block mt-1 font-mono">
-                            {batch.createdAt ? new Date(batch.createdAt).toLocaleString('id-ID') : '-'}
-                          </span>
-                        </td>
-
-                        {/* Penanggung Jawab / PIC */}
-                        <td className="py-3.5 px-4">
-                          <div className="font-bold text-white flex items-center gap-1.5">
+                          <div className="font-bold text-white flex items-center gap-2">
                             <User className="w-3.5 h-3.5 text-[#e9c176] shrink-0" />
-                            <span>{batch.picName || 'PIC Belum Tercatat'}</span>
+                            <span className="text-sm">{batch.picName || 'PIC Belum Tercatat'}</span>
+                            <span className="px-2 py-0.5 rounded-full font-mono text-[10px] font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30">
+                              {batch.totalParticipants} Peserta
+                            </span>
                           </div>
                           <div className="text-[11px] text-slate-400 flex items-center gap-3 mt-1">
+                            <span className="font-mono text-[10px] text-slate-400">
+                              Order: <strong className="text-sky-300 font-semibold">{batch.orderId}</strong>
+                            </span>
                             {batch.picPhone && (
                               <span className="flex items-center gap-1">
                                 <Phone className="w-3 h-3 text-emerald-400" />
                                 {batch.picPhone}
                               </span>
                             )}
-                            {batch.picEmail && (
-                              <span className="flex items-center gap-1 truncate max-w-[150px]">
-                                <Mail className="w-3 h-3 text-slate-500" />
-                                {batch.picEmail}
-                              </span>
-                            )}
                           </div>
                         </td>
 
-                        {/* Nama Komunitas */}
-                        <td className="py-3.5 px-4">
-                          <div className="font-semibold text-slate-200">
-                            {batch.namaKomunitas || '-'}
-                          </div>
-                        </td>
-
-                        {/* Anggota */}
-                        <td className="py-3.5 px-4 text-center">
-                          <span className="px-2.5 py-1 rounded-full font-mono font-bold text-xs bg-sky-500/20 text-sky-300 border border-sky-500/40">
-                            {batch.totalParticipants} Orang
-                          </span>
-                        </td>
-
-                        {/* Status Diskon */}
-                        <td className="py-3.5 px-4">
-                          {batch.hasDiscount ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                              <Tag className="w-3 h-3" />
-                              Diskon Rp {batch.discountAmount.toLocaleString('id-ID')}
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] text-slate-400 bg-white/5 border border-white/10">
-                              Tanpa Diskon (&lt; 10 org)
-                            </span>
-                          )}
-                        </td>
-
-                        {/* Status Pembayaran */}
+                        {/* Payment Status */}
                         <td className="py-3.5 px-4">
                           {batch.isFullyPaid ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                              <CheckCircle2 className="w-3 h-3" />
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
                               LUNAS (PAID)
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                              <Clock className="w-3 h-3" />
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                              <Clock className="w-3.5 h-3.5" />
                               MENUNGGU BAYAR
                             </span>
                           )}
+                          <div className="text-[10px] text-slate-400 mt-1 font-mono">
+                            Total: <strong className="text-white">{formatCurrency(batch.totalPayment)}</strong> ({batch.paymentMethod || 'QRIS'})
+                          </div>
                         </td>
 
-                        {/* Total Bayar */}
-                        <td className="py-3.5 px-4 text-right">
-                          <span className="font-mono font-extrabold text-sm text-emerald-400">
-                            {formatCurrency(batch.totalPayment)}
-                          </span>
-                          <span className="text-[10px] text-slate-500 block">
-                            Metode: {batch.paymentMethod || 'QRIS'}
-                          </span>
+                        {/* Diskon (Hanya muncul jika ada discount) */}
+                        <td className="py-3.5 px-4">
+                          {batch.hasDiscount && batch.discountAmount > 0 ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse">
+                              <Tag className="w-3 h-3" />
+                              Diskon {formatCurrency(batch.discountAmount)}
+                            </span>
+                          ) : (
+                            <span className="text-slate-500 text-xs">-</span>
+                          )}
                         </td>
 
                         {/* Aksi Button */}

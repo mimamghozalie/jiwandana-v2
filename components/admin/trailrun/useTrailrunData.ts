@@ -15,18 +15,37 @@ export function useTrailrunData() {
   const fetchData = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      const [regRes, payRes] = await Promise.all([
-        supabase.from('trailrun_registrations').select('*').order('created_at', { ascending: false }),
-        supabase.from('trailrun_payments').select('*').order('created_at', { ascending: false }),
-      ]);
+      let registrations: any[] = [];
+      let payments: any[] = [];
 
-      const registrations = regRes.data || [];
-      const payments = payRes.data || [];
+      // 1. Coba fetch dari API route admin terlebih dahulu (menggunakan Supabase Service Client / bypass RLS)
+      try {
+        const apiRes = await fetch('/api/admin/trailrun/data', { cache: 'no-store' });
+        if (apiRes.ok) {
+          const apiJson = await apiRes.json();
+          if (apiJson.success) {
+            registrations = apiJson.registrations || [];
+            payments = apiJson.payments || [];
+          }
+        }
+      } catch (apiErr) {
+        console.warn('Gagal fetch dari /api/admin/trailrun/data, fallback ke client SDK:', apiErr);
+      }
+
+      // 2. Fallback ke Supabase Client SDK jika API belum menghasilkan data
+      if (registrations.length === 0 && payments.length === 0) {
+        const [regRes, payRes] = await Promise.all([
+          supabase.from('trailrun_registrations').select('*').order('created_at', { ascending: false }),
+          supabase.from('trailrun_payments').select('*').order('created_at', { ascending: false }),
+        ]);
+        registrations = regRes.data || [];
+        payments = payRes.data || [];
+      }
 
       if (registrations.length === 0) {
         setData(SAMPLE_TRAILRUN_DATA);
       } else {
-        // Map payments by registration_id
+        // Map payments by registration_id, pic_phone, pic_name
         const paymentsMap = new Map<string, any>();
         const picPhonePaymentsMap = new Map<string, any>();
         const picNamePaymentsMap = new Map<string, any>();
@@ -49,6 +68,16 @@ export function useTrailrunData() {
             (r.pic_phone ? picPhonePaymentsMap.get(r.pic_phone.trim()) : null) ||
             (r.pic_name ? picNamePaymentsMap.get(r.pic_name.trim().toLowerCase()) : null);
 
+          // Normalisasi status pembayaran: 'paid' jika lunas di registrasi ATAU di transaksi pembayaran
+          const isLunas =
+            r.status === 'paid' ||
+            r.status === 'completed' ||
+            r.status === 'settled' ||
+            pay?.status === 'completed' ||
+            pay?.status === 'settled';
+
+          const normalizedStatus = isLunas ? 'paid' : (r.status === 'confirmed' ? 'confirmed' : 'pending');
+
           return {
             id: r.id,
             nama: r.nama,
@@ -70,7 +99,10 @@ export function useTrailrunData() {
             kategori: r.kategori,
             ukuran_jersey: r.ukuran_jersey || '-',
             hasil_lari: r.hasil_lari || '-',
-            status: r.status || (pay?.status === 'completed' ? 'paid' : 'pending'),
+            status: normalizedStatus,
+            registration_type:
+              r.registration_type ||
+              (pay?.order_id?.startsWith('TR-BULK') || pay?.pic_name || r.pic_name ? 'bulk' : 'individu'),
             created_at: r.created_at,
             payment: pay,
             pic_name: r.pic_name || pay?.pic_name || null,
