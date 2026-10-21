@@ -64,22 +64,28 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Find first available number strictly formatted with 5 digits (total 7 characters: M-XXXXX / F-XXXXX)
-    let candidateNum = startNumber;
-    let candidateBib = `${prefix}${String(candidateNum).padStart(5, '0')}`;
+    const countParam = parseInt(searchParams.get('count') || '1', 10);
+    const count = Math.min(Math.max(isNaN(countParam) ? 1 : countParam, 1), 100);
 
-    let attempts = 0;
-    while (existingBibs.has(candidateBib.toUpperCase()) && attempts < 99999) {
-      candidateNum = (candidateNum % 99999) + 1;
-      candidateBib = `${prefix}${String(candidateNum).padStart(5, '0')}`;
-      attempts++;
+    // Find available number(s) strictly formatted with 5 digits (total 7 characters: M-XXXXX / F-XXXXX)
+    const generatedBibs: string[] = [];
+    let candidateNum = startNumber;
+
+    while (generatedBibs.length < count && candidateNum <= 99999) {
+      const candidateBib = `${prefix}${String(candidateNum).padStart(5, '0')}`;
+      if (!existingBibs.has(candidateBib.toUpperCase())) {
+        generatedBibs.push(candidateBib);
+        existingBibs.add(candidateBib.toUpperCase()); // avoid picking the same within the batch
+      }
+      candidateNum++;
     }
 
     return NextResponse.json({
       success: true,
-      bib: candidateBib,
+      bib: generatedBibs[0] || `${prefix}00001`,
+      bibs: generatedBibs,
+      count: generatedBibs.length,
       prefix,
-      number: candidateNum,
       category: categoryParam || '',
       gender: genderParam || (prefix.startsWith('F') ? 'Perempuan' : 'Laki-laki'),
     });
@@ -88,6 +94,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       bib: 'M-00001',
+      bibs: ['M-00001'],
+      count: 1,
       prefix: 'M-',
       number: 1,
     });

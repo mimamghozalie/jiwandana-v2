@@ -63,6 +63,9 @@ interface BulkPaymentResponse {
   order_id: string;
   txn_id: string;
   participant_count: number;
+  raw_subtotal?: number;
+  discount_amount?: number;
+  promo_note?: string | null;
   subtotal: number;
   admin_fee: number;
   gateway_fee: number;
@@ -99,7 +102,7 @@ export default function TrailrunBulkRegister() {
   const [parsing, setParsing] = useState(false);
   const [validatingBibs, setValidatingBibs] = useState(false);
   const [parseError, setParseError] = useState('');
-  const [categorySummary, setCategorySummary] = useState({ '3k': 0, '7k': 0, '12k': 0 });
+  const [categorySummary, setCategorySummary] = useState({ '7k': 0, '12k': 0 });
 
   // Payment state
   const [paymentMethod, setPaymentMethod] = useState('qris');
@@ -212,11 +215,10 @@ export default function TrailrunBulkRegister() {
   const handleRemoveParticipant = (index: number) => {
     setParticipants((prev) => {
       const updated = prev.filter((_, idx) => idx !== index);
-      const counts = { '3k': 0, '7k': 0, '12k': 0 };
+      const counts = { '7k': 0, '12k': 0 };
       updated.forEach((p) => {
         const cat = p.kategori.toLowerCase();
-        if (cat.includes('3')) counts['3k']++;
-        else if (cat.includes('7')) counts['7k']++;
+        if (cat.includes('7')) counts['7k']++;
         else if (cat.includes('12')) counts['12k']++;
       });
       setCategorySummary(counts);
@@ -238,6 +240,17 @@ export default function TrailrunBulkRegister() {
 
     if (validCount < 5) {
       setSubmitError(`Pendaftaran kolektif membutuhkan minimal 5 orang peserta valid (saat ini baru ${validCount} peserta).`);
+      return;
+    }
+
+    if (validCount > 10) {
+      setSubmitError(`Pendaftaran kolektif dibatasi maksimal 10 orang peserta per transaksi (saat ini ${validCount} peserta). Silakan kurangi peserta atau buat transaksi kedua.`);
+      return;
+    }
+
+    const has3k = participants.some((p) => p.kategori.toLowerCase().includes('3'));
+    if (has3k) {
+      setSubmitError('Pendaftaran kolektif hanya menerima kategori 7K dan 12K. Kategori 3K tidak tersedia untuk pendaftaran kelompok.');
       return;
     }
 
@@ -309,32 +322,14 @@ export default function TrailrunBulkRegister() {
   const validCount = validParticipants.length;
   const invalidCount = participants.length - validCount;
 
-  // Calculate live route pricing & totals matching trailrun-pricing.json and active tiers
+  // Calculate live route pricing & totals based on fixed Pre-Sale group rates + Scheme B gateway fee
   const routeCalculations = useMemo(() => {
-    // Current database base counts from pricingInfo if available
-    const baseCounts = {
-      '3k':
-        pricingInfo['3k']?.quotaRemaining !== null && pricingInfo['3k']?.quotaLimit !== null
-          ? Math.max(0, pricingInfo['3k'].quotaLimit - (pricingInfo['3k'].quotaRemaining || 0))
-          : 0,
-      '7k':
-        pricingInfo['7k']?.quotaRemaining !== null && pricingInfo['7k']?.quotaLimit !== null
-          ? Math.max(0, pricingInfo['7k'].quotaLimit - (pricingInfo['7k'].quotaRemaining || 0))
-          : 0,
-      '12k':
-        pricingInfo['12k']?.quotaRemaining !== null && pricingInfo['12k']?.quotaLimit !== null
-          ? Math.max(0, pricingInfo['12k'].quotaLimit - (pricingInfo['12k'].quotaRemaining || 0))
-          : 0,
-    };
+    const PRICE_7K = 270000;
+    const PRICE_12K = 320000;
+    const ADMIN_FEE_PER_PERSON = 3000;
 
-    const running = { ...baseCounts };
-    let subtotal3k = 0;
-    let subtotal7k = 0;
-    let subtotal12k = 0;
-    let count3k = 0;
     let count7k = 0;
     let count12k = 0;
-
     const participantPriceMap: Record<number, { amount: number; tierName: string; categoryName: string }> = {};
 
     participants.forEach((p, idx) => {
@@ -342,56 +337,58 @@ export default function TrailrunBulkRegister() {
         participantPriceMap[idx] = { amount: 0, tierName: '-', categoryName: p.kategori };
         return;
       }
-      const catKey = p.kategori.toLowerCase().includes('12')
-        ? '12k'
-        : p.kategori.toLowerCase().includes('7')
-        ? '7k'
-        : '3k';
-
-      const evaluated = getActivePricingTier(catKey, running[catKey]);
-      running[catKey] += 1;
+      const catKey = p.kategori.toLowerCase().includes('12') ? '12k' : '7k';
+      const amount = catKey === '12k' ? PRICE_12K : PRICE_7K;
 
       participantPriceMap[idx] = {
-        amount: evaluated.amount,
-        tierName: evaluated.tierName,
-        categoryName: evaluated.categoryName,
+        amount,
+        tierName: 'Pre-Sale (Harga Khusus Kelompok)',
+        categoryName: catKey === '12k' ? '12K Senior Pawitra' : '7K Junior Pawitra',
       };
 
-      if (catKey === '3k') {
-        count3k++;
-        subtotal3k += evaluated.amount;
-      } else if (catKey === '7k') {
+      if (catKey === '7k') {
         count7k++;
-        subtotal7k += evaluated.amount;
       } else if (catKey === '12k') {
         count12k++;
-        subtotal12k += evaluated.amount;
       }
     });
 
-    const subtotalTickets = subtotal3k + subtotal7k + subtotal12k;
-    const adminFee = validCount * 2000;
-    const grandTotal = subtotalTickets + adminFee;
+    const subtotal7k = count7k * PRICE_7K;
+    const subtotal12k = count12k * PRICE_12K;
+    const rawSubtotalTickets = subtotal7k + subtotal12k;
+
+    // Promo 10 Peserta: Potongan Tetap Rp 320.000 jika validCount === 10
+    const isPromoActive = validCount === 10;
+    const discountAmount = isPromoActive ? 320000 : 0;
+    const subtotalTickets = Math.max(0, rawSubtotalTickets - discountAmount);
+
+    // Biaya Layanan Admin Rp 3.000 / orang
+    const adminFee = validCount * ADMIN_FEE_PER_PERSON;
+
+    // SKEMA B: Gateway Pakasir (0.7% + Rp 300) dibebankan ke user
+    const amountToSend = subtotalTickets + adminFee;
+    const estimatedGatewayFee = validCount > 0 ? Math.round(amountToSend * 0.007 + 300) : 0;
+    const grandTotal = amountToSend + estimatedGatewayFee;
 
     return {
-      count3k,
       count7k,
       count12k,
-      subtotal3k,
       subtotal7k,
       subtotal12k,
-      unitPrice3k: pricingInfo['3k']?.amount || 2500,
-      unitPrice7k: pricingInfo['7k']?.amount || 2400,
-      unitPrice12k: pricingInfo['12k']?.amount || 2900,
-      tierName3k: pricingInfo['3k']?.tierName || 'Early Bird',
-      tierName7k: pricingInfo['7k']?.tierName || 'Early Bird',
-      tierName12k: pricingInfo['12k']?.tierName || 'Early Bird',
+      unitPrice7k: PRICE_7K,
+      unitPrice12k: PRICE_12K,
+      tierName7k: 'Pre-Sale (Tarif Tetap)',
+      tierName12k: 'Pre-Sale (Tarif Tetap)',
+      rawSubtotalTickets,
+      isPromoActive,
+      discountAmount,
       subtotalTickets,
       adminFee,
+      estimatedGatewayFee,
       grandTotal,
       participantPriceMap,
     };
-  }, [participants, validCount, pricingInfo]);
+  }, [participants, validCount]);
 
   return (
     <div className="space-y-8 animate-[fadeIn_0.4s_ease-out]">
@@ -441,7 +438,7 @@ export default function TrailrunBulkRegister() {
           <div className="bg-[#f8f8f8] rounded-2xl border border-black/10 p-5 sm:p-6 space-y-4 text-slate-800 shadow-xs">
             <div className="flex items-center justify-between pb-3 border-b border-black/10">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Rincian Pembayaran Komunitas
+                Rincian Tagihan Pembayaran Kolektif
               </span>
               <span className="text-xs font-bold text-[#C9A227]">
                 {paymentData.participant_count} Peserta
@@ -465,40 +462,57 @@ export default function TrailrunBulkRegister() {
                 <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block mb-0.5">
                   Subtotal Tiket
                 </span>
-                <span className="text-slate-900 font-semibold">{formatCurrency(paymentData.subtotal)}</span>
+                <span className="text-slate-900 font-semibold">
+                  {formatCurrency(paymentData.raw_subtotal || paymentData.subtotal)}
+                </span>
               </div>
               <div>
                 <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block mb-0.5">
-                  Biaya Admin ({paymentData.participant_count} x Rp 2.000)
+                  Biaya Admin ({paymentData.participant_count} x Rp 3.000)
                 </span>
-                <span className="text-slate-900 font-semibold">{formatCurrency(paymentData.fee)}</span>
+                <span className="text-slate-900 font-semibold">
+                  {formatCurrency(paymentData.admin_fee || paymentData.participant_count * 3000)}
+                </span>
               </div>
+            </div>
+
+            {/* Promo Discount & Gateway Fee Row */}
+            <div className="pt-2 border-t border-black/5 space-y-1.5 text-xs">
+              {paymentData.discount_amount && paymentData.discount_amount > 0 ? (
+                <div className="flex justify-between items-center text-emerald-700 font-bold bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
+                  <span className="flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                    Promo 10 Peserta (Diskon Tetap):
+                  </span>
+                  <span className="font-mono">-{formatCurrency(paymentData.discount_amount)}</span>
+                </div>
+              ) : null}
+
+              {paymentData.gateway_fee && paymentData.gateway_fee > 0 ? (
+                <div className="flex justify-between items-center text-slate-600 px-1">
+                  <span>Biaya Transaksi QRIS (Pakasir):</span>
+                  <span className="font-mono font-semibold">{formatCurrency(paymentData.gateway_fee)}</span>
+                </div>
+              ) : null}
             </div>
 
             {paymentData.participants && paymentData.participants.length > 0 && (
               <div className="pt-2 border-t border-black/5 flex flex-wrap gap-2 text-xs">
                 {(() => {
-                  const p3k = paymentData.participants.filter((p) => p.kategori.toLowerCase().includes('3'));
                   const p7k = paymentData.participants.filter((p) => p.kategori.toLowerCase().includes('7'));
                   const p12k = paymentData.participants.filter((p) => p.kategori.toLowerCase().includes('12'));
-                  const tot3k = p3k.reduce((acc, c) => acc + c.priceAmount, 0);
                   const tot7k = p7k.reduce((acc, c) => acc + c.priceAmount, 0);
                   const tot12k = p12k.reduce((acc, c) => acc + c.priceAmount, 0);
                   return (
                     <>
-                      {p3k.length > 0 && (
-                        <span className="px-2.5 py-1 rounded-lg bg-white border border-black/10 text-slate-700">
-                          3K: <strong>{p3k.length} orang</strong> ({formatCurrency(tot3k)})
-                        </span>
-                      )}
                       {p7k.length > 0 && (
                         <span className="px-2.5 py-1 rounded-lg bg-white border border-black/10 text-slate-700">
-                          7K: <strong>{p7k.length} orang</strong> ({formatCurrency(tot7k)})
+                          7K Junior Pawitra: <strong>{p7k.length} orang</strong> ({formatCurrency(tot7k)})
                         </span>
                       )}
                       {p12k.length > 0 && (
                         <span className="px-2.5 py-1 rounded-lg bg-white border border-black/10 text-slate-700">
-                          12K: <strong>{p12k.length} orang</strong> ({formatCurrency(tot12k)})
+                          12K Senior Pawitra: <strong>{p12k.length} orang</strong> ({formatCurrency(tot12k)})
                         </span>
                       )}
                     </>
@@ -508,8 +522,11 @@ export default function TrailrunBulkRegister() {
             )}
 
             <div className="pt-3 border-t border-black/10 flex justify-between items-center">
-              <span className="text-xs text-slate-600 uppercase font-bold tracking-wider">Total Tagihan Rombongan</span>
-              <span className="text-2xl font-bold text-[#C9A227]">{formatCurrency(paymentData.total_payment)}</span>
+              <div>
+                <span className="text-xs text-slate-600 uppercase font-bold tracking-wider block">Total Tagihan Rombongan</span>
+                <span className="text-[10px] text-slate-400">Termasuk Tiket, Biaya Admin, dan Biaya QRIS</span>
+              </div>
+              <span className="text-2xl font-bold text-[#C9A227] font-mono">{formatCurrency(paymentData.total_payment)}</span>
             </div>
           </div>
 
@@ -586,14 +603,17 @@ export default function TrailrunBulkRegister() {
                     Pendaftaran Komunitas / Rombongan
                   </span>
                   <span className="px-2.5 py-0.5 rounded-full bg-[#C9A227]/10 text-[#C9A227] border border-[#C9A227]/30 text-[10px] font-bold whitespace-nowrap">
-                    Minimal 5 Peserta
+                    5 - 10 Peserta
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold whitespace-nowrap">
+                    Tarif Pre-Sale Terkunci
                   </span>
                 </div>
                 <h3 className="text-lg sm:text-xl font-serif font-bold text-slate-900">
-                  Registrasi Kolektif via File Excel
+                  Registrasi Kolektif via File Excel (7K &amp; 12K)
                 </h3>
                 <p className="text-xs text-slate-500 max-w-xl leading-relaxed">
-                  Daftarkan rombongan pelari sekaligus dengan mudah (minimal 5 peserta). Cukup unduh format template resmi (.xlsx), isi data seluruh peserta, lalu upload kembali untuk 1 kali pembayaran kolektif.
+                  Daftarkan rombongan pelari (5 hingga 10 orang) dengan tarif khusus Pre-Sale tetap (7K: Rp 270.000, 12K: Rp 320.000). Rombongan genap 10 orang mendapatkan potongan otomatis <strong>Rp 320.000</strong>.
                 </p>
               </div>
 
@@ -620,7 +640,7 @@ export default function TrailrunBulkRegister() {
                 <span className="w-6 h-6 rounded-full bg-[#C9A227] text-[#0d1c32] font-black text-xs flex items-center justify-center shrink-0">
                   2
                 </span>
-                <span>Isi Data (Min. 5 Peserta) &amp; Upload</span>
+                <span>Isi Data (BIB Otomatis Sistem) &amp; Upload</span>
               </div>
               <div className="flex items-center gap-2.5 p-2 rounded-lg bg-slate-50">
                 <span className="w-6 h-6 rounded-full bg-[#C9A227] text-[#0d1c32] font-black text-xs flex items-center justify-center shrink-0">
@@ -786,12 +806,16 @@ export default function TrailrunBulkRegister() {
 
                   <span
                     className={`px-2.5 py-1 rounded-full border font-bold ${
-                      validCount >= 5
+                      validCount >= 5 && validCount <= 10
                         ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                         : 'bg-amber-50 text-amber-700 border-amber-200'
                     }`}
                   >
-                    {validCount >= 5 ? `✓ ${validCount} Siap Daftar` : `⚠ ${validCount}/5 Peserta (Min. 5 Peserta)`}
+                    {validCount >= 5 && validCount <= 10
+                      ? `✓ ${validCount} Peserta Valid (Siap Checkout)`
+                      : validCount > 10
+                      ? `⚠ ${validCount} Peserta (Maks. 10)`
+                      : `⚠ ${validCount}/5 Peserta (Min. 5)`}
                   </span>
                   {invalidCount > 0 && (
                     <span className="px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 font-bold">
@@ -801,6 +825,7 @@ export default function TrailrunBulkRegister() {
                 </div>
               </div>
 
+              {/* Warning jika kurang dari 5 */}
               {validCount < 5 && (
                 <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600" />
@@ -810,57 +835,82 @@ export default function TrailrunBulkRegister() {
                 </div>
               )}
 
-              {/* Category Breakdown & Calculated Route Pricing Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {/* 3K Card */}
-                <div className="p-3.5 rounded-xl bg-slate-50 border border-black/10 flex flex-col justify-between gap-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-900 text-xs">3K Hallo Pawitra</span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#C9A227]/10 text-[#C9A227] border border-[#C9A227]/20">
-                      {routeCalculations.tierName3k}
-                    </span>
-                  </div>
-                  <div className="flex items-baseline justify-between pt-1 border-t border-black/5">
-                    <span className="text-xs text-slate-500">
-                      {routeCalculations.count3k} Peserta × {formatCurrency(routeCalculations.unitPrice3k)}
-                    </span>
-                    <strong className="text-sm font-mono text-slate-900">
-                      {formatCurrency(routeCalculations.subtotal3k)}
-                    </strong>
-                  </div>
+              {/* Warning jika lebih dari 10 */}
+              {validCount > 10 && (
+                <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
+                  <span>
+                    Pendaftaran kolektif dibatasi <strong>maksimal 10 orang peserta per transaksi</strong> (saat ini {validCount} peserta). Silakan hapus {validCount - 10} peserta atau bagi menjadi transaksi terpisah.
+                  </span>
                 </div>
+              )}
 
+              {/* Banner Interaktif Promo 10 Peserta */}
+              {validCount === 10 ? (
+                <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-500/10 via-amber-500/10 to-emerald-500/10 border border-emerald-500/30 text-xs flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shrink-0">
+                    🎉
+                  </div>
+                  <div className="flex-1">
+                    <strong className="text-emerald-800 font-bold block text-sm">
+                      Selamat! Promo Spesial 10 Peserta Aktif
+                    </strong>
+                    <span className="text-slate-600">
+                      Rombongan Anda berjumlah tepat 10 orang. Otomatis mendapatkan potongan diskon tetap senilai <strong>Rp 320.000</strong>!
+                    </span>
+                  </div>
+                  <span className="px-3 py-1 rounded-full bg-emerald-600 text-white font-mono font-bold text-xs shrink-0">
+                    -Rp 320.000
+                  </span>
+                </div>
+              ) : validCount === 9 ? (
+                <div className="p-3.5 rounded-xl bg-amber-50 border border-[#C9A227]/40 text-xs flex items-center gap-2.5">
+                  <span className="text-lg shrink-0">💡</span>
+                  <span className="text-slate-700">
+                    <strong>Tinggal 1 peserta lagi!</strong> Lengkapi rombongan menjadi 10 orang untuk otomatis mendapatkan <strong>potongan diskon Rp 320.000</strong>.
+                  </span>
+                </div>
+              ) : null}
+
+              {/* Category Breakdown & Calculated Route Pricing Cards (Hanya 7K & 12K) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* 7K Card */}
-                <div className="p-3.5 rounded-xl bg-slate-50 border border-black/10 flex flex-col justify-between gap-1.5">
+                <div className="p-4 rounded-xl bg-slate-50 border border-black/10 flex flex-col justify-between gap-2 shadow-2xs">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-900 text-xs">7K Junior Pawitra</span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#C9A227]/10 text-[#C9A227] border border-[#C9A227]/20">
+                    <div>
+                      <span className="font-bold text-slate-900 text-sm block">7K Junior Pawitra</span>
+                      <span className="text-[10px] text-slate-500">Tarif Pre-Sale Terkunci Kelompok</span>
+                    </div>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#C9A227]/15 text-[#C9A227] border border-[#C9A227]/30">
                       {routeCalculations.tierName7k}
                     </span>
                   </div>
-                  <div className="flex items-baseline justify-between pt-1 border-t border-black/5">
+                  <div className="flex items-baseline justify-between pt-2 border-t border-black/5">
                     <span className="text-xs text-slate-500">
                       {routeCalculations.count7k} Peserta × {formatCurrency(routeCalculations.unitPrice7k)}
                     </span>
-                    <strong className="text-sm font-mono text-slate-900">
+                    <strong className="text-base font-mono text-slate-900">
                       {formatCurrency(routeCalculations.subtotal7k)}
                     </strong>
                   </div>
                 </div>
 
                 {/* 12K Card */}
-                <div className="p-3.5 rounded-xl bg-slate-50 border border-black/10 flex flex-col justify-between gap-1.5">
+                <div className="p-4 rounded-xl bg-slate-50 border border-black/10 flex flex-col justify-between gap-2 shadow-2xs">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-900 text-xs">12K Senior Pawitra</span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#C9A227]/10 text-[#C9A227] border border-[#C9A227]/20">
+                    <div>
+                      <span className="font-bold text-slate-900 text-sm block">12K Senior Pawitra</span>
+                      <span className="text-[10px] text-slate-500">Tarif Pre-Sale Terkunci Kelompok</span>
+                    </div>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#C9A227]/15 text-[#C9A227] border border-[#C9A227]/30">
                       {routeCalculations.tierName12k}
                     </span>
                   </div>
-                  <div className="flex items-baseline justify-between pt-1 border-t border-black/5">
+                  <div className="flex items-baseline justify-between pt-2 border-t border-black/5">
                     <span className="text-xs text-slate-500">
                       {routeCalculations.count12k} Peserta × {formatCurrency(routeCalculations.unitPrice12k)}
                     </span>
-                    <strong className="text-sm font-mono text-slate-900">
+                    <strong className="text-base font-mono text-slate-900">
                       {formatCurrency(routeCalculations.subtotal12k)}
                     </strong>
                   </div>
@@ -899,21 +949,12 @@ export default function TrailrunBulkRegister() {
                               <span className="font-mono font-bold text-slate-900 bg-slate-100 border border-black/10 px-2.5 py-0.5 rounded text-xs whitespace-nowrap tracking-wide">
                                 {p.no_bib}
                               </span>
-                              {p.bibAutoGenerated ? (
-                                <span
-                                  className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-700 font-semibold border border-amber-500/20 whitespace-nowrap"
-                                  title="Digenerate otomatis oleh sistem"
-                                >
-                                  Auto
-                                </span>
-                              ) : (
-                                <span
-                                  className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-700 font-semibold border border-blue-500/20 whitespace-nowrap"
-                                  title="Diisi manual dari Excel"
-                                >
-                                  Manual
-                                </span>
-                              )}
+                              <span
+                                className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-700 font-semibold border border-emerald-500/20 whitespace-nowrap"
+                                title="Nomor BIB unik diatur otomatis oleh sistem berdasarkan jenis kelamin (F-/M-)"
+                              >
+                                Auto
+                              </span>
                             </div>
                           ) : (
                             <span className="text-slate-400 italic text-[11px]">—</span>
@@ -1014,7 +1055,7 @@ export default function TrailrunBulkRegister() {
                   <div className="flex items-center gap-2">
                     <Calculator className="w-4 h-4 text-[#C9A227]" />
                     <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                      Rincian Biaya Tiap Rute &amp; Total Tagihan
+                      Rincian Biaya Rute &amp; Total Tagihan (Skema B)
                     </span>
                   </div>
                   <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-bold">
@@ -1023,58 +1064,67 @@ export default function TrailrunBulkRegister() {
                 </div>
 
                 <div className="space-y-2.5">
-                  {/* 3K Route Row */}
-                  <div className="flex justify-between items-center py-1.5 border-b border-black/5">
-                    <div>
-                      <span className="font-bold text-slate-900 text-xs">Rute 3K Hallo Pawitra</span>
-                      <span className="text-[11px] text-slate-500 block">
-                        {routeCalculations.count3k} Peserta × {formatCurrency(routeCalculations.unitPrice3k)} ({routeCalculations.tierName3k})
-                      </span>
-                    </div>
-                    <strong className="text-slate-900 font-mono text-sm">
-                      {formatCurrency(routeCalculations.subtotal3k)}
-                    </strong>
-                  </div>
-
                   {/* 7K Route Row */}
-                  <div className="flex justify-between items-center py-1.5 border-b border-black/5">
-                    <div>
-                      <span className="font-bold text-slate-900 text-xs">Rute 7K Junior Pawitra</span>
-                      <span className="text-[11px] text-slate-500 block">
-                        {routeCalculations.count7k} Peserta × {formatCurrency(routeCalculations.unitPrice7k)} ({routeCalculations.tierName7k})
-                      </span>
+                  {routeCalculations.count7k > 0 && (
+                    <div className="flex justify-between items-center py-1.5 border-b border-black/5">
+                      <div>
+                        <span className="font-bold text-slate-900 text-xs">Rute 7K Junior Pawitra</span>
+                        <span className="text-[11px] text-slate-500 block">
+                          {routeCalculations.count7k} Peserta × {formatCurrency(routeCalculations.unitPrice7k)} ({routeCalculations.tierName7k})
+                        </span>
+                      </div>
+                      <strong className="text-slate-900 font-mono text-sm">
+                        {formatCurrency(routeCalculations.subtotal7k)}
+                      </strong>
                     </div>
-                    <strong className="text-slate-900 font-mono text-sm">
-                      {formatCurrency(routeCalculations.subtotal7k)}
-                    </strong>
-                  </div>
+                  )}
 
                   {/* 12K Route Row */}
-                  <div className="flex justify-between items-center py-1.5 border-b border-black/5">
-                    <div>
-                      <span className="font-bold text-slate-900 text-xs">Rute 12K Senior Pawitra</span>
-                      <span className="text-[11px] text-slate-500 block">
-                        {routeCalculations.count12k} Peserta × {formatCurrency(routeCalculations.unitPrice12k)} ({routeCalculations.tierName12k})
-                      </span>
+                  {routeCalculations.count12k > 0 && (
+                    <div className="flex justify-between items-center py-1.5 border-b border-black/5">
+                      <div>
+                        <span className="font-bold text-slate-900 text-xs">Rute 12K Senior Pawitra</span>
+                        <span className="text-[11px] text-slate-500 block">
+                          {routeCalculations.count12k} Peserta × {formatCurrency(routeCalculations.unitPrice12k)} ({routeCalculations.tierName12k})
+                        </span>
+                      </div>
+                      <strong className="text-slate-900 font-mono text-sm">
+                        {formatCurrency(routeCalculations.subtotal12k)}
+                      </strong>
                     </div>
-                    <strong className="text-slate-900 font-mono text-sm">
-                      {formatCurrency(routeCalculations.subtotal12k)}
-                    </strong>
-                  </div>
+                  )}
 
-                  {/* Subtotal Tiket */}
+                  {/* Subtotal Tiket Awal */}
                   <div className="flex justify-between items-center pt-1 text-slate-600">
-                    <span className="font-semibold">Subtotal Biaya Tiket ({validCount} Peserta)</span>
+                    <span>Subtotal Tiket ({validCount} Peserta)</span>
                     <strong className="text-slate-900 font-mono text-xs">
-                      {formatCurrency(routeCalculations.subtotalTickets)}
+                      {formatCurrency(routeCalculations.rawSubtotalTickets)}
                     </strong>
                   </div>
 
-                  {/* Biaya Admin */}
+                  {/* Diskon Promo 10 Peserta jika ada */}
+                  {routeCalculations.isPromoActive && (
+                    <div className="flex justify-between items-center py-1 px-2.5 rounded-lg bg-emerald-50 text-emerald-700 font-semibold text-xs border border-emerald-200">
+                      <span>Promo Spesial 10 Peserta</span>
+                      <strong className="font-mono">
+                        -{formatCurrency(routeCalculations.discountAmount)}
+                      </strong>
+                    </div>
+                  )}
+
+                  {/* Biaya Layanan Admin Rp 3.000 / orang */}
                   <div className="flex justify-between items-center text-slate-600">
-                    <span>Biaya Admin Komunitas ({validCount} peserta × Rp 2.000)</span>
+                    <span>Biaya Layanan Admin ({validCount} peserta × Rp 3.000)</span>
                     <strong className="text-slate-900 font-mono text-xs">
                       {formatCurrency(routeCalculations.adminFee)}
+                    </strong>
+                  </div>
+
+                  {/* Estimasi Biaya Transaksi QRIS (Skema B) */}
+                  <div className="flex justify-between items-center text-slate-500 text-[11px] pt-1 border-t border-black/5">
+                    <span>Biaya Transaksi QRIS (0.7% + Rp 300)</span>
+                    <strong className="font-mono text-slate-700">
+                      +{formatCurrency(routeCalculations.estimatedGatewayFee)}
                     </strong>
                   </div>
                 </div>
@@ -1083,10 +1133,10 @@ export default function TrailrunBulkRegister() {
                 <div className="pt-3 border-t-2 border-black/10 flex justify-between items-center">
                   <div>
                     <span className="text-xs text-slate-600 uppercase font-bold tracking-wider block">
-                      Total Estimasi Pembayaran
+                      Total Tagihan Pembayaran
                     </span>
                     <span className="text-[10px] text-slate-400">
-                      Dihitung otomatis sesuai sesi aktif data/trailrun-pricing.json
+                      Tarif tiket Pre-Sale tetap + Admin Rp 3.000/orang + Gateway QRIS
                     </span>
                   </div>
                   <span className="text-2xl font-bold text-[#C9A227] font-mono">
@@ -1111,11 +1161,20 @@ export default function TrailrunBulkRegister() {
                 </div>
               )}
 
+              {validCount > 10 && (
+                <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
+                  <span>
+                    Jumlah peserta melebihi batas maksimal pendaftaran kolektif (<strong>{validCount}/10 peserta valid</strong>).
+                  </span>
+                </div>
+              )}
+
               {/* Submit Button */}
               <button
                 type="button"
                 onClick={handleProcessPayment}
-                disabled={submitting || validCount < 5 || invalidCount > 0}
+                disabled={submitting || validCount < 5 || validCount > 10 || invalidCount > 0}
                 className="w-full py-4 px-6 bg-[#C9A227] hover:bg-[#b08d20] disabled:opacity-50 text-[#0d1c32] font-bold text-sm uppercase tracking-wider rounded-xl transition-all transform active:scale-95 shadow-md flex items-center justify-center gap-2 cursor-pointer"
               >
                 {submitting ? (
@@ -1126,6 +1185,10 @@ export default function TrailrunBulkRegister() {
                 ) : validCount < 5 ? (
                   <>
                     <span>Minimal 5 Peserta ({validCount}/5 Valid)</span>
+                  </>
+                ) : validCount > 10 ? (
+                  <>
+                    <span>Maksimal 10 Peserta ({validCount}/10 Valid)</span>
                   </>
                 ) : (
                   <>

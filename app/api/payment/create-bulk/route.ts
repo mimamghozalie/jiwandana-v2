@@ -15,8 +15,11 @@ interface BulkRequestBody {
   payment_method: string;
   participants: Array<{
     nama: string;
+    nik?: string;
+    kk?: string;
     email: string;
     no_bib?: string;
+    ukuran_jersey?: string;
     no_hp: string;
     kategori: string;
     tanggal_lahir: string;
@@ -31,15 +34,15 @@ interface BulkRequestBody {
   }>;
 }
 
-
 export async function POST(request: NextRequest) {
   try {
     const body: BulkRequestBody = await request.json();
     const { group_name, pic_name, pic_email, pic_phone, payment_method, participants } = body;
 
-    if (!participants || !Array.isArray(participants) || participants.length < 5) {
+    // 1. Validasi jumlah peserta: Minimal 5 orang dan Maksimal 10 orang
+    if (!participants || !Array.isArray(participants) || participants.length < 5 || participants.length > 10) {
       return NextResponse.json(
-        { error: 'Pendaftaran kolektif membutuhkan minimal 5 orang peserta.' },
+        { error: 'Pendaftaran kolektif membutuhkan minimal 5 orang dan maksimal 10 orang peserta per transaksi.' },
         { status: 400 }
       );
     }
@@ -51,58 +54,69 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 1. Get current paid counts per category to evaluate pricing accurately (only paid counts!)
-    const [res3k, res7k, res12k] = await Promise.all([
-      supabase.from('trailrun_registrations').select('*', { count: 'exact', head: true }).ilike('kategori', '%3k%').eq('status', 'paid'),
-      supabase.from('trailrun_registrations').select('*', { count: 'exact', head: true }).ilike('kategori', '%7k%').eq('status', 'paid'),
-      supabase.from('trailrun_registrations').select('*', { count: 'exact', head: true }).ilike('kategori', '%12k%').eq('status', 'paid'),
-    ]);
+    // 2. Validasi Kategori: Hanya 7K dan 12K (Kategori 3K tidak tersedia untuk pendaftaran kelompok)
+    const hasInvalidCat = participants.some((p) => {
+      const cat = (p.kategori || '').toLowerCase();
+      return !cat.includes('7k') && !cat.includes('12k') && !cat.includes('7') && !cat.includes('12');
+    });
+    if (hasInvalidCat) {
+      return NextResponse.json(
+        { error: 'Pendaftaran kolektif hanya menerima kategori 7K dan 12K. Kategori 3K tidak tersedia untuk pendaftaran kelompok.' },
+        { status: 400 }
+      );
+    }
 
-    const runningCounts: Record<string, number> = {
-      '3k': res3k.count || 0,
-      '7k': res7k.count || 0,
-      '12k': res12k.count || 0,
+    // 3. Harga Tiket Terkunci di Tarif Pre-Sale (Permanen): 7K = Rp 270.000, 12K = Rp 320.000
+    const GROUP_PRICES: Record<string, number> = {
+      '7k': 270000,
+      '12k': 320000,
     };
 
-    // 2. Evaluate pricing for each participant & calculate total
-    let subtotalTickets = 0;
-    const evaluatedParticipants = participants.map((p, idx) => {
-      const catKey = normalizeCategoryKey(p.kategori);
-      const currentCount = runningCounts[catKey] || 0;
-      const tierEval = getActivePricingTier(catKey, currentCount);
-
-      // Increment count so the next participant in the same batch gets the updated quota status
-      runningCounts[catKey] = currentCount + 1;
-      subtotalTickets += tierEval.amount;
+    let rawSubtotalTickets = 0;
+    const evaluatedParticipants = participants.map((p) => {
+      const catKey = p.kategori.toLowerCase().includes('12') ? '12k' : '7k';
+      const priceAmount = GROUP_PRICES[catKey];
+      rawSubtotalTickets += priceAmount;
 
       return {
         ...p,
         categoryKey: catKey,
-        tierId: tierEval.tierId,
-        tierName: tierEval.tierName,
-        priceAmount: tierEval.amount,
+        tierId: 'presale',
+        tierName: 'Pre-Sale (Harga Khusus Kelompok)',
+        priceAmount,
         nama_komunitas: p.nama_komunitas || group_name || null,
         status: 'confirmed',
       };
     });
 
-    if (subtotalTickets <= 0) {
+    if (rawSubtotalTickets <= 0) {
       return NextResponse.json({ error: 'Kalkulasi harga tiket tidak valid.' }, { status: 400 });
     }
 
-    // 3. Biaya Admin Rp 2.000 per orang untuk pendaftaran kelompok Excel
-    const ADMIN_FEE_PER_PERSON = 2000;
-    const ADMIN_FEE = evaluatedParticipants.length * ADMIN_FEE_PER_PERSON;
-    const targetTotalPayment = subtotalTickets + ADMIN_FEE;
+    // 4. Promo Diskon 10 Orang: Potongan tetap Rp 320.000 (setara 1 tiket 12K)
+    let discountAmount = 0;
+    let promoNote: string | null = null;
+    if (evaluatedParticipants.length === 10) {
+      discountAmount = 320000;
+      promoNote = 'Promo 10 Peserta: Potongan Tetap Rp 320.000 (Setara 1 Tiket 12K)';
+    }
 
-    // Tx fee gateway: 0.7% + Rp 300
-    const estimatedTxFee = Math.round(targetTotalPayment * 0.007 + 300);
-    const amountToSend = Math.max(1000, Math.round((targetTotalPayment - 300) / 1.007));
+    const subtotalTickets = Math.max(0, rawSubtotalTickets - discountAmount);
 
-    // 4. Generate unique Bulk Order ID
+    // 5. SKEMA B: Biaya Admin Rp 3.000 / orang sebagai PROFIT BERSIH UTUH
+    // Biaya transaksi gateway Pakasir (0.7% + Rp 300) dibebankan ke user.
+    const ADMIN_FEE_PER_PERSON = 3000;
+    const ADMIN_FEE = evaluatedParticipants.length * ADMIN_FEE_PER_PERSON; // Profit admin bersih utuh
+    const targetSettlement = subtotalTickets + ADMIN_FEE; // Dana bersih yang dicairkan Pakasir ke penyelenggara
+
+    // Jumlah yang dikirim ke Pakasir sebagai nominal dasar
+    // Pakasir akan menambahkan fee transaksi (0.7% + Rp 300) ke total_payment yang di-scan user
+    const amountToSend = targetSettlement;
+
+    // 6. Generate unique Bulk Order ID
     const orderId = `TR-BULK-${Date.now().toString().slice(-6)}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 
-    // 5. Create Pakasir transaction for the entire group
+    // 7. Create Pakasir transaction for the entire group
     const transaction = await createPakasirTransaction(orderId, {
       method: (payment_method || 'qris') as any,
       amount: amountToSend,
@@ -125,15 +139,19 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const estimatedTxFee = Math.round(amountToSend * 0.007 + 300);
     const gatewayFee = transaction.fee || estimatedTxFee;
-    const adminProfit = Math.max(0, ADMIN_FEE - gatewayFee);
-    const finalTotalPayment = transaction.total_payment || targetTotalPayment;
+    const adminProfit = ADMIN_FEE; // Keuntungan bersih utuh Rp 3.000 / orang
+    const finalTotalPayment = transaction.total_payment || (amountToSend + gatewayFee);
 
-    // 6. Batch Insert participants into trailrun_registrations
+    // 8. Batch Insert participants into trailrun_registrations (termasuk ukuran_jersey, nik, kk)
     const insertPayload = evaluatedParticipants.map((p) => ({
       nama: p.nama,
+      nik: p.nik || null,
+      kk: p.kk || null,
       email: p.email,
       no_bib: (p.no_bib || '').trim().toUpperCase() || null,
+      ukuran_jersey: p.ukuran_jersey || 'M',
       no_hp: p.no_hp,
       alamat: p.alamat,
       kota: p.kota,
@@ -149,19 +167,34 @@ export async function POST(request: NextRequest) {
       status: 'pending',
     }));
 
-    const { data: insertedRegistrations, error: regError } = await supabase
+    let { data: insertedRegistrations, error: regError } = await supabase
       .from('trailrun_registrations')
       .insert(insertPayload)
       .select('id, nama, email, kategori, no_bib');
 
+    // Graceful fallback jika kolom nik/kk/ukuran_jersey belum termigrasi
+    if (
+      regError &&
+      (regError.message?.toLowerCase().includes('nik') ||
+        regError.message?.toLowerCase().includes('kk') ||
+        regError.message?.toLowerCase().includes('ukuran_jersey'))
+    ) {
+      console.warn('Fallback insert bulk registrations without nik/kk/ukuran_jersey:', regError.message);
+      const fallbackPayload = insertPayload.map(({ nik, kk, ukuran_jersey, ...rest }) => rest);
+      const fallbackRes = await supabase
+        .from('trailrun_registrations')
+        .insert(fallbackPayload)
+        .select('id, nama, email, kategori, no_bib');
+      insertedRegistrations = fallbackRes.data;
+      regError = fallbackRes.error;
+    }
 
     if (regError) {
       console.error('Failed to batch insert bulk registrations:', regError);
       throw new Error(`Gagal menyimpan data pendaftaran: ${regError.message}`);
     }
 
-    // 7. Save payment record to trailrun_payments
-    // Link each registration to this group payment order
+    // 9. Save payment record to trailrun_payments
     const firstRegId = insertedRegistrations?.[0]?.id || orderId;
     const paymentRecords = (insertedRegistrations || []).map((reg) => ({
       registration_id: reg.id,
@@ -182,7 +215,6 @@ export async function POST(request: NextRequest) {
       admin_profit: adminProfit,
     }));
 
-    // If batch mapping fails, insert at least 1 record with firstRegId
     if (paymentRecords.length > 0) {
       const { error: insErr } = await supabase.from('trailrun_payments').insert(paymentRecords);
       if (insErr) {
@@ -214,12 +246,15 @@ export async function POST(request: NextRequest) {
         order_id: orderId,
         txn_id: transaction.txn_id,
         participant_count: evaluatedParticipants.length,
+        raw_subtotal: rawSubtotalTickets,
+        discount_amount: discountAmount,
+        promo_note: promoNote,
         subtotal: subtotalTickets,
         admin_fee_per_person: ADMIN_FEE_PER_PERSON,
         admin_fee: ADMIN_FEE,
         gateway_fee: gatewayFee,
         admin_profit: adminProfit,
-        fee: ADMIN_FEE,
+        fee: ADMIN_FEE + gatewayFee,
         total_payment: finalTotalPayment,
         payment_method: transaction.payment_method,
         qr_string: transaction.qr_string,
@@ -227,11 +262,18 @@ export async function POST(request: NextRequest) {
         payment_link: transaction.payment_link,
         expired_at: expiredAt,
         is_sandbox: transaction.is_sandbox ?? true,
+        pic: {
+          name: pic_name,
+          email: pic_email,
+          phone: pic_phone,
+          group_name: group_name || null,
+        },
         participants: evaluatedParticipants.map((p) => ({
           nama: p.nama,
           kategori: p.kategori,
           tierName: p.tierName,
           priceAmount: p.priceAmount,
+          ukuran_jersey: p.ukuran_jersey || 'M',
         })),
       },
     });

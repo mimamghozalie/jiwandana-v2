@@ -2,8 +2,11 @@ import * as XLSX from 'xlsx';
 
 export interface BulkParticipant {
   nama: string;
+  nik?: string;
+  kk?: string;
   email: string;
   no_bib?: string;
+  ukuran_jersey?: string;
   no_hp: string;
   kategori: string;
   tanggal_lahir: string;
@@ -24,15 +27,18 @@ export interface BulkParticipant {
  * Downloads the official formatted Excel template for Trailrun Bulk Registration
  */
 export function downloadTrailrunExcelTemplate(communityName = '') {
-  // 1. Column headers only (clean template ready to fill, minimal 5 peserta)
+  // 1. Column headers only (clean template ready to fill, minimal 5 - maksimal 10 peserta)
+  // No. BIB diatur otomatis oleh sistem (F-XXXXX untuk perempuan, M-XXXXX untuk laki-laki), tidak perlu diisi di Excel.
   const headers = [
     'No',
     'Nama Lengkap *',
+    'NIK (16 Digit)',
+    'No. KK (16 Digit)',
     'Jenis Kelamin (Laki-laki / Perempuan) *',
-    'No. BIB (Opsional / Otomatis F- / M- + 5 Angka, cth: M-00001, F-00001)',
+    'Ukuran Jersey (S / M / L / XL / XXL / XXXL) *',
     'Email *',
     'No WhatsApp *',
-    'Kategori Race (3K / 7K / 12K) *',
+    'Kategori Race (7K / 12K) *',
     'Tgl Lahir (YYYY-MM-DD) *',
     'Golongan Darah (A / B / AB / O)',
     'Alamat Lengkap *',
@@ -52,8 +58,10 @@ export function downloadTrailrunExcelTemplate(communityName = '') {
   ws['!cols'] = [
     { wch: 6 },  // No
     { wch: 25 }, // Nama Lengkap
+    { wch: 20 }, // NIK
+    { wch: 20 }, // No. KK
     { wch: 32 }, // Jenis Kelamin
-    { wch: 56 }, // No. BIB
+    { wch: 38 }, // Ukuran Jersey
     { wch: 28 }, // Email
     { wch: 18 }, // No WhatsApp
     { wch: 30 }, // Kategori
@@ -66,7 +74,6 @@ export function downloadTrailrunExcelTemplate(communityName = '') {
     { wch: 28 }, // Komunitas
     { wch: 28 }, // Riwayat Medis
   ];
-
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Pendaftaran Kolektif');
@@ -170,6 +177,9 @@ export async function parseTrailrunExcelFile(
     }
 
     const nama = getColVal(row, ['nama lengkap', 'nama']);
+    const rawNik = getColVal(row, ['nik', 'ktp', 'nomor induk']);
+    const rawKk = getColVal(row, ['no kk', 'no. kk', 'kartu keluarga', 'kk']);
+    const rawJersey = getColVal(row, ['ukuran jersey', 'jersey', 'baju', 'ukuran kaos', 'ukuran']);
     const rawBib = getColVal(row, ['no. bib', 'no bib', 'nomor bib', 'bib', 'nomor dada']);
     const email = getColVal(row, ['email', 'surel', 'e-mail']);
     const no_hp = getColVal(row, ['whatsapp', 'wa', 'hp', 'telepon', 'telp', 'phone']);
@@ -191,9 +201,34 @@ export async function parseTrailrunExcelFile(
     if (!email || !email.includes('@')) errors.push('Email tidak valid');
     if (!no_hp || no_hp.length < 9) errors.push('No WhatsApp tidak valid');
 
+    // NIK validation (optional but if filled, check digits)
+    let cleanNik = rawNik ? rawNik.replace(/\D/g, '') : '';
+    if (rawNik && cleanNik.length !== 16) {
+      errors.push(`NIK "${rawNik}" harus 16 digit angka`);
+    }
+
+    // KK validation (optional but if filled, check digits)
+    let cleanKk = rawKk ? rawKk.replace(/\D/g, '') : '';
+    if (rawKk && cleanKk.length !== 16) {
+      errors.push(`No KK "${rawKk}" harus 16 digit angka`);
+    }
+
+    // Ukuran Jersey normalization
+    let normalizedJersey = 'M';
+    if (rawJersey) {
+      const jClean = rawJersey.toUpperCase().replace(/\s+/g, '');
+      if (['S', 'M', 'L', 'XL', 'XXL', 'XXXL', '2XL', '3XL', '4XL'].includes(jClean)) {
+        normalizedJersey = jClean === '2XL' ? 'XXL' : jClean === '3XL' ? 'XXXL' : jClean;
+      } else {
+        normalizedJersey = 'M';
+      }
+    }
+
     const normalizedCat = normalizeCategory(rawKategori);
     if (!normalizedCat) {
-      errors.push('Kategori harus 3K, 7K, atau 12K');
+      errors.push('Kategori harus 7K atau 12K');
+    } else if (normalizedCat === '3k') {
+      errors.push('Kategori 3K tidak tersedia untuk pendaftaran kelompok. Pendaftaran kelompok hanya untuk kategori 7K atau 12K.');
     } else {
       categoryCounts[normalizedCat]++;
     }
@@ -224,28 +259,26 @@ export async function parseTrailrunExcelFile(
       normalizedBlood = bUpper;
     }
 
-    // BIB validation (if provided manually in Excel)
+    // Nomor BIB diatur otomatis oleh sistem berdasarkan jenis kelamin (F-XXXXX / M-XXXXX).
+    // Tidak perlu diisi di Excel. Jika ada yang mengisi di file lama, tetap dibersihkan dan diproses otomatis.
     let cleanBib = rawBib ? rawBib.trim().toUpperCase() : '';
     if (/^[FM]\d{5}$/.test(cleanBib)) {
       cleanBib = `${cleanBib[0]}-${cleanBib.slice(1)}`;
     }
-    if (cleanBib) {
-      if (cleanBib.length !== 7 || !/^[FM]-\d{5}$/.test(cleanBib)) {
-        errors.push(`Nomor BIB "${cleanBib}" harus tepat 7 karakter (format F-XXXXX atau M-XXXXX). Kosongkan jika ingin dibuat otomatis.`);
-      } else if (normalizedGender) {
-        const expectedPref = normalizedGender === 'Perempuan' ? 'F-' : 'M-';
-        if (!cleanBib.startsWith(expectedPref)) {
-          errors.push(`Nomor BIB "${cleanBib}" tidak sesuai jenis kelamin (${normalizedGender} harus "${expectedPref}").`);
-        }
-      }
+    // Jika tidak sesuai format F-XXXXX / M-XXXXX, kosongkan agar digenerate otomatis
+    if (cleanBib && (!/^[FM]-\d{5}$/.test(cleanBib) || cleanBib.length !== 7)) {
+      cleanBib = '';
     }
 
     const isValid = errors.length === 0;
 
     participants.push({
       nama,
+      nik: cleanNik || undefined,
+      kk: cleanKk || undefined,
       email,
       no_bib: cleanBib,
+      ukuran_jersey: normalizedJersey,
       no_hp,
       kategori: normalizedCat || rawKategori || '7k',
       tanggal_lahir: normalizedDate,
