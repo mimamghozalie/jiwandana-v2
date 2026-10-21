@@ -93,7 +93,7 @@ export const mediaPartnerSponsors: SponsorItem[] = [
   },
   {
     name: 'Media Partner 2',
-    src: '/assets/trailrun/jiwandana_alti.png',
+    src: '/assets/trailrun/jiwandana_radio.jpeg',
     alt: 'Official Media Partner',
   },
 ];
