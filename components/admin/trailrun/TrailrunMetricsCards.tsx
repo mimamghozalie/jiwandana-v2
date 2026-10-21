@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Trophy, CheckCircle2, Clock, Sparkles } from 'lucide-react';
+import { Users, CheckCircle2, Clock, Sparkles, TrendingUp, ShieldCheck } from 'lucide-react';
 import { MetricsData, formatCurrency } from './types';
 
 interface TrailrunMetricsCardsProps {
@@ -9,132 +9,129 @@ interface TrailrunMetricsCardsProps {
 }
 
 export default function TrailrunMetricsCards({ metrics }: TrailrunMetricsCardsProps) {
+  const paidPercent = metrics.total > 0 ? Math.round((metrics.paidCount / metrics.total) * 100) : 0;
+  const pendingPercent = metrics.total > 0 ? Math.round((metrics.pendingCount / metrics.total) * 100) : 0;
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {/* Card 1: Total Pendaftar */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-[#0a1424] border border-white/10 space-y-2 shadow-sm flex flex-col justify-between">
-        <div>
-          <span className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold block">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-b from-[#0d1c32] to-[#070e1a] border border-white/10 p-5 shadow-lg flex flex-col justify-between group hover:border-[#C9A227]/40 transition-all">
+        <div className="absolute top-0 right-0 w-24 h-24 bg-[#C9A227]/5 rounded-full blur-2xl pointer-events-none group-hover:bg-[#C9A227]/10 transition-all" />
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] uppercase tracking-wider text-slate-400 font-bold flex items-center gap-1.5">
+            <Users className="w-3.5 h-3.5 text-[#C9A227]" />
             Total Pendaftar
           </span>
-          <div className="text-2xl sm:text-3xl font-bold text-white mt-1">{metrics.total}</div>
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/5 text-slate-300 border border-white/10">
+            Form Masuk
+          </span>
         </div>
-        <span className="text-[11px] text-slate-500 block pt-2 border-t border-white/10">Semua formulir masuk</span>
+
+        <div className="my-3">
+          <div className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight font-mono">
+            {metrics.total}
+          </div>
+          <span className="text-xs text-slate-400 mt-0.5 block">
+            Peserta terdaftar di sistem
+          </span>
+        </div>
+
+        <div className="pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400">
+          <span>Konfirmasi:</span>
+          <span className="text-white font-mono font-semibold">
+            {metrics.paidCount} Lunas • {metrics.pendingCount} Pending
+          </span>
+        </div>
       </div>
 
       {/* Card 2: Sudah Bayar (Lunas) */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-[#0a1424] border border-emerald-500/20 space-y-2 shadow-sm flex flex-col justify-between">
-        <div>
-          <span className="text-[11px] uppercase tracking-wider text-emerald-400 font-semibold flex items-center gap-1.5">
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            Sudah Bayar (Lunas)
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-b from-[#072418] to-[#05140d] border border-emerald-500/30 p-5 shadow-lg flex flex-col justify-between group hover:border-emerald-400/50 transition-all">
+        <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] uppercase tracking-wider text-emerald-400 font-bold flex items-center gap-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+            Sudah Lunas
           </span>
-          <div className="text-2xl sm:text-3xl font-bold text-emerald-400 mt-1">{metrics.paidCount}</div>
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+            {paidPercent}% Rate
+          </span>
         </div>
-        <span className="text-[11px] text-slate-400 block pt-2 border-t border-white/10">
-          {metrics.total > 0
-            ? `${Math.round((metrics.paidCount / metrics.total) * 100)}% dari total pendaftar`
-            : '0% dari total'}
-        </span>
+
+        <div className="my-3">
+          <div className="text-3xl sm:text-4xl font-extrabold text-emerald-400 tracking-tight font-mono">
+            {metrics.paidCount}
+          </div>
+          <span className="text-xs text-emerald-200/80 mt-0.5 block">
+            Peserta berhasil diverifikasi
+          </span>
+        </div>
+
+        <div className="pt-3 border-t border-emerald-500/20 flex items-center justify-between text-[11px] text-slate-300">
+          <span>Dana Tiket Lunas:</span>
+          <span className="text-emerald-300 font-mono font-bold">
+            {formatCurrency(metrics.totalTicketRevenue)}
+          </span>
+        </div>
       </div>
 
       {/* Card 3: Menunggu Pembayaran */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-[#0a1424] border border-amber-500/30 space-y-2.5 shadow-sm flex flex-col justify-between">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-b from-[#241a07] to-[#140e05] border border-amber-500/30 p-5 shadow-lg flex flex-col justify-between group hover:border-amber-400/50 transition-all">
+        <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
         <div className="flex items-center justify-between">
-          <span className="text-[11px] uppercase tracking-wider text-amber-400 font-semibold flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5" />
-            Menunggu Pembayaran
+          <span className="text-[11px] uppercase tracking-wider text-amber-400 font-bold flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5 text-amber-400" />
+            Menunggu Bayar
           </span>
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-            {metrics.pendingCount} Belum Bayar
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+            {pendingPercent}% Belum Bayar
           </span>
         </div>
 
-        <div className="space-y-2">
-          <div>
-            <span className="text-[11px] text-slate-400 block font-medium">Total Belum Dibayar:</span>
-            <div className="text-xl sm:text-2xl font-bold text-amber-400 font-mono truncate mt-0.5">
-              {formatCurrency(metrics.pendingRevenue)}
-            </div>
+        <div className="my-3">
+          <div className="text-3xl sm:text-4xl font-extrabold text-amber-400 tracking-tight font-mono">
+            {metrics.pendingCount}
           </div>
-
-          {/* Fee Pendaftaran Peserta (Tiket) yang belum bayar */}
-          <div className="p-2 sm:p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-0.5">
-            <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-amber-400 font-bold">
-              <span>Fee Tiket Belum Masuk:</span>
-              <span className="text-[9px] bg-amber-500/20 px-1.5 py-0.2 rounded font-mono">Tiket</span>
-            </div>
-            <div className="text-lg sm:text-xl font-black text-amber-300 font-mono">
-              {formatCurrency(metrics.pendingTicketRevenue)}
-            </div>
-          </div>
+          <span className="text-xs text-amber-200/80 mt-0.5 block truncate">
+            Est. Tiket: {formatCurrency(metrics.pendingTicketRevenue)}
+          </span>
         </div>
 
-        <div className="pt-2 border-t border-white/10 space-y-1">
-          <div className="flex items-center justify-between text-[11px]">
-            <span className="text-slate-400 flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span>Peserta Menunggu:</span>
-            </span>
-            <strong className="text-amber-400 font-bold font-mono">
-              {metrics.pendingCount} Peserta
-            </strong>
-          </div>
-          <div className="flex items-center justify-between text-[10px] text-slate-400">
-            <span>Biaya Admin & Kode Gateway:</span>
-            <span className="font-mono text-amber-400/90 font-medium">
-              +{formatCurrency(metrics.pendingRevenue - metrics.pendingTicketRevenue)}
-            </span>
-          </div>
+        <div className="pt-3 border-t border-amber-500/20 flex items-center justify-between text-[11px] text-slate-300">
+          <span>Total Tagihan Pending:</span>
+          <span className="text-amber-300 font-mono font-bold">
+            {formatCurrency(metrics.pendingRevenue)}
+          </span>
         </div>
       </div>
 
-      {/* Card 4: Total Penerimaan & Profit Fee Admin */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-[#0a1424] border border-[#e9c176]/30 space-y-2.5 shadow-sm flex flex-col justify-between">
+      {/* Card 4: Total Penerimaan & Profit Bersih Admin */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-b from-[#241d08] to-[#120e03] border border-[#C9A227]/40 p-5 shadow-lg flex flex-col justify-between group hover:border-[#C9A227] transition-all">
+        <div className="absolute top-0 right-0 w-24 h-24 bg-[#C9A227]/15 rounded-full blur-2xl pointer-events-none" />
         <div className="flex items-center justify-between">
-          <span className="text-[11px] uppercase tracking-wider text-[#e9c176] font-semibold flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5" />
+          <span className="text-[11px] uppercase tracking-wider text-[#e9c176] font-bold flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-[#e9c176]" />
             Total Penerimaan
           </span>
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-            {metrics.paidCount} Lunas
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#C9A227]/20 text-[#e9c176] border border-[#C9A227]/40">
+            Gross
           </span>
         </div>
 
-        <div className="space-y-2">
-          <div>
-            <span className="text-[11px] text-slate-400 block font-medium">Total Full Bayar:</span>
-            <div className="text-xl sm:text-2xl font-bold text-white font-mono truncate mt-0.5">
-              {formatCurrency(metrics.totalRevenue)}
-            </div>
+        <div className="my-2.5">
+          <div className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight font-mono truncate">
+            {formatCurrency(metrics.totalRevenue)}
           </div>
-
-          {/* Fee Pendaftaran Peserta (Murni Tiket Lomba) */}
-          <div className="p-2 sm:p-2.5 rounded-xl bg-[#e9c176]/10 border border-[#e9c176]/30 space-y-0.5">
-            <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-[#e9c176] font-bold">
-              <span>Fee Pendaftaran Peserta:</span>
-              <span className="text-[9px] bg-[#e9c176]/20 px-1.5 py-0.2 rounded font-mono">Tiket</span>
-            </div>
-            <div className="text-lg sm:text-xl font-black text-[#e9c176] font-mono">
-              {formatCurrency(metrics.totalTicketRevenue)}
-            </div>
+          <div className="mt-1 flex items-center gap-1.5 text-xs text-emerald-400 font-semibold font-mono">
+            <TrendingUp className="w-3.5 h-3.5" />
+            <span>Profit Admin: +{formatCurrency(metrics.totalAdminProfit)}</span>
           </div>
         </div>
 
-        <div className="pt-2 border-t border-white/10 space-y-1">
-          <div className="flex items-center justify-between text-[11px]">
-            <span className="text-emerald-400 flex items-center gap-1 font-semibold">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span>Profit Fee Admin:</span>
-            </span>
-            <strong className="text-emerald-400 font-bold font-mono">
-              +{formatCurrency(metrics.totalAdminProfit)}
-            </strong>
-          </div>
-          <div className="flex items-center justify-between text-[10px] text-slate-400">
-            <span>Admin: {formatCurrency(metrics.totalAdminFee)}</span>
-            <span>Tx Gateway: -{formatCurrency(metrics.totalGatewayFee)}</span>
-          </div>
+        <div className="pt-3 border-t border-[#C9A227]/20 flex items-center justify-between text-[11px] text-slate-300">
+          <span>Fee Gateway:</span>
+          <span className="font-mono text-slate-400">
+            -{formatCurrency(metrics.totalGatewayFee)}
+          </span>
         </div>
       </div>
     </div>

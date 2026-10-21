@@ -35,6 +35,7 @@ export default function AdminTrailrunPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'paid' | 'pending' | 'confirmed'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [genderFilter, setGenderFilter] = useState<'all' | 'laki-laki' | 'perempuan'>('all');
 
   // Selected row for detail modal
   const [selectedRow, setSelectedRow] = useState<TrailrunRow | null>(null);
@@ -316,6 +317,14 @@ export default function AdminTrailrunPage() {
     return Array.from(set);
   }, [data]);
 
+  // Filter counts
+  const filterCounts = useMemo(() => {
+    const all = data.length;
+    const paid = data.filter((r) => r.status === 'paid').length;
+    const pending = data.filter((r) => r.status === 'pending' || r.status === 'confirmed').length;
+    return { all, paid, pending };
+  }, [data]);
+
   // Filtered rows
   const filteredData = useMemo(() => {
     return data.filter((row) => {
@@ -327,6 +336,17 @@ export default function AdminTrailrunPage() {
       // Category filter
       if (categoryFilter !== 'all') {
         if (row.kategori !== categoryFilter) return false;
+      }
+
+      // Gender filter
+      if (genderFilter !== 'all') {
+        const g = (row.jenis_kelamin || '').toLowerCase();
+        if (genderFilter === 'laki-laki' && !g.includes('laki') && !g.includes('pria') && !row.no_bib?.startsWith('M-')) {
+          return false;
+        }
+        if (genderFilter === 'perempuan' && !g.includes('perempuan') && !g.includes('wanita') && !row.no_bib?.startsWith('F-')) {
+          return false;
+        }
       }
 
       // Search query
@@ -346,12 +366,12 @@ export default function AdminTrailrunPage() {
 
       return true;
     });
-  }, [data, statusFilter, categoryFilter, searchQuery]);
+  }, [data, statusFilter, categoryFilter, genderFilter, searchQuery]);
 
   // Reset page to 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, statusFilter, categoryFilter, pageSize]);
+  }, [searchQuery, statusFilter, categoryFilter, genderFilter, pageSize]);
 
   // Pagination calculations
   const totalPages = Math.ceil(filteredData.length / pageSize) || 1;
@@ -749,6 +769,9 @@ export default function AdminTrailrunPage() {
         setStatusFilter={setStatusFilter}
         categoryFilter={categoryFilter}
         setCategoryFilter={setCategoryFilter}
+        genderFilter={genderFilter}
+        setGenderFilter={setGenderFilter}
+        counts={filterCounts}
         availableCategories={availableCategories}
         visibleColumns={visibleColumns}
         toggleColumn={toggleColumn}

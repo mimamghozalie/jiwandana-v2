@@ -11,6 +11,9 @@ interface TrailrunFilterBarProps {
   setStatusFilter: (val: 'all' | 'paid' | 'pending' | 'confirmed') => void;
   categoryFilter: string;
   setCategoryFilter: (val: string) => void;
+  genderFilter: 'all' | 'laki-laki' | 'perempuan';
+  setGenderFilter: (val: 'all' | 'laki-laki' | 'perempuan') => void;
+  counts: { all: number; paid: number; pending: number };
   availableCategories: string[];
   visibleColumns: string[];
   toggleColumn: (key: string) => void;
@@ -28,6 +31,9 @@ export default function TrailrunFilterBar({
   setStatusFilter,
   categoryFilter,
   setCategoryFilter,
+  genderFilter,
+  setGenderFilter,
+  counts,
   availableCategories,
   visibleColumns,
   toggleColumn,
@@ -38,7 +44,69 @@ export default function TrailrunFilterBar({
   setShowColumnFilter,
 }: TrailrunFilterBarProps) {
   return (
-    <div className="p-4 rounded-2xl bg-[#0a1424] border border-white/10 space-y-3">
+    <div className="p-4 rounded-2xl bg-gradient-to-b from-[#0d1c32] to-[#0a1424] border border-white/10 space-y-3.5 shadow-lg">
+      {/* Quick Status Tabs Strip */}
+      <div className="flex items-center gap-1.5 p-1 rounded-xl bg-black/30 border border-white/5 overflow-x-auto">
+        <button
+          type="button"
+          onClick={() => setStatusFilter('all')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+            statusFilter === 'all'
+              ? 'bg-[#C9A227] text-[#0d1c32] font-bold shadow-sm'
+              : 'text-slate-400 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          <span>Semua Peserta</span>
+          <span
+            className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+              statusFilter === 'all' ? 'bg-[#0d1c32]/20 text-[#0d1c32]' : 'bg-white/10 text-slate-300'
+            }`}
+          >
+            {counts.all}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setStatusFilter('paid')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+            statusFilter === 'paid'
+              ? 'bg-emerald-500 text-white font-bold shadow-sm'
+              : 'text-slate-400 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          <span className="w-2 h-2 rounded-full bg-emerald-400" />
+          <span>Sudah Lunas</span>
+          <span
+            className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+              statusFilter === 'paid' ? 'bg-black/20 text-white' : 'bg-white/10 text-emerald-400'
+            }`}
+          >
+            {counts.paid}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setStatusFilter('pending')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+            statusFilter === 'pending'
+              ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
+              : 'text-slate-400 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          <span className="w-2 h-2 rounded-full bg-amber-400" />
+          <span>Menunggu Pembayaran</span>
+          <span
+            className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+              statusFilter === 'pending' ? 'bg-black/20 text-slate-950' : 'bg-white/10 text-amber-400'
+            }`}
+          >
+            {counts.pending}
+          </span>
+        </button>
+      </div>
+
       <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
         {/* Search Box */}
         <div className="relative flex-1">
@@ -48,7 +116,7 @@ export default function TrailrunFilterBar({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Cari berdasarkan nama, BIB, email, WhatsApp, kota..."
-            className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 focus:border-[#e9c176] focus:ring-1 focus:ring-[#e9c176] rounded-xl text-xs text-white placeholder:text-slate-500 outline-none transition-all"
+            className="w-full pl-10 pr-4 py-2.5 bg-black/40 border border-white/10 focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227] rounded-xl text-xs text-white placeholder:text-slate-500 outline-none transition-all shadow-inner"
           />
           {searchQuery && (
             <button
@@ -63,35 +131,34 @@ export default function TrailrunFilterBar({
 
         {/* Filters and Column Toggle */}
         <div className="flex flex-wrap items-center gap-2">
-          {/* Status Filter */}
-          <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs">
-            <Filter className="w-3.5 h-3.5 text-slate-400" />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="bg-transparent text-white text-xs outline-none cursor-pointer pr-2"
-            >
-              <option value="all" className="bg-[#0a1424]">Semua Status</option>
-              <option value="paid" className="bg-[#0a1424]">✓ Sudah Bayar (Lunas)</option>
-              <option value="pending" className="bg-[#0a1424]">⏳ Menunggu Bayar</option>
-              <option value="confirmed" className="bg-[#0a1424]">📌 Dikonfirmasi</option>
-            </select>
-          </div>
-
           {/* Category Filter */}
-          <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs">
-            <span className="text-slate-400 text-xs">Kategori:</span>
+          <div className="flex items-center gap-1.5 bg-black/30 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs">
+            <span className="text-slate-400 text-xs font-medium">Kategori:</span>
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="bg-transparent text-white text-xs outline-none cursor-pointer pr-2 max-w-[140px] truncate"
+              className="bg-transparent text-[#e9c176] font-bold text-xs outline-none cursor-pointer pr-2 max-w-[140px] truncate"
             >
-              <option value="all" className="bg-[#0a1424]">Semua Kategori</option>
+              <option value="all" className="bg-[#0a1424] text-white">Semua Kategori</option>
               {availableCategories.map((cat) => (
-                <option key={cat} value={cat} className="bg-[#0a1424]">
+                <option key={cat} value={cat} className="bg-[#0a1424] text-white">
                   {cat}
                 </option>
               ))}
+            </select>
+          </div>
+
+          {/* Gender Filter */}
+          <div className="flex items-center gap-1.5 bg-black/30 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs">
+            <span className="text-slate-400 text-xs font-medium">Gender:</span>
+            <select
+              value={genderFilter}
+              onChange={(e) => setGenderFilter(e.target.value as any)}
+              className="bg-transparent text-white text-xs outline-none cursor-pointer pr-2 font-medium"
+            >
+              <option value="all" className="bg-[#0a1424]">Semua (M & F)</option>
+              <option value="laki-laki" className="bg-[#0a1424]">Laki-laki (M-)</option>
+              <option value="perempuan" className="bg-[#0a1424]">Perempuan (F-)</option>
             </select>
           </div>
 
@@ -102,8 +169,8 @@ export default function TrailrunFilterBar({
               onClick={() => setShowColumnFilter(!showColumnFilter)}
               className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer border ${
                 showColumnFilter || visibleColumns.length !== DEFAULT_VISIBLE_KEYS.length
-                  ? 'bg-[#e9c176] text-[#0d1c32] border-[#e9c176] font-bold shadow-md'
-                  : 'bg-white/5 hover:bg-white/10 text-slate-300 border-white/10'
+                  ? 'bg-[#C9A227] text-[#0d1c32] border-[#C9A227] font-bold shadow-md'
+                  : 'bg-black/30 hover:bg-white/10 text-slate-300 border-white/10'
               }`}
             >
               <SlidersHorizontal className="w-3.5 h-3.5" />
