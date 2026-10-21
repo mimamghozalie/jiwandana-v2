@@ -15,6 +15,8 @@ import {
   Search,
   Download,
   Eye,
+  Ticket,
+  CircleDollarSign,
 } from 'lucide-react';
 import { TrailrunRow, formatCurrency } from './types';
 import { GroupRegistrationBatch, exportKelompokToExcel } from './trailrunExport';
@@ -65,44 +67,84 @@ export default function KelompokBatchTable({
     return true;
   });
 
-  // Kalkulasi total
+  // 1. Total Fee Ticket (Nilai tiket murni)
+  const totalPaidTicketFee = batches
+    .filter((b) => b.isFullyPaid)
+    .reduce((acc, b) => acc + (b.finalTicketTotal || 0), 0);
+  const totalPendingTicketFee = batches
+    .filter((b) => !b.isFullyPaid)
+    .reduce((acc, b) => acc + (b.finalTicketTotal || 0), 0);
+
+  // 2. Total Dana Masuk (Total bayar yang sudah lunas ditransfer)
+  const totalDanaMasuk = batches
+    .filter((b) => b.isFullyPaid)
+    .reduce((acc, b) => acc + (b.totalPayment || 0), 0);
+  const totalPendingDana = batches
+    .filter((b) => !b.isFullyPaid)
+    .reduce((acc, b) => acc + (b.totalPayment || 0), 0);
+
+  // 3. Total Discount (Potongan harga promo kelompok)
   const totalDiscounts = batches.reduce((acc, b) => acc + (b.discountAmount || 0), 0);
   const totalPaidDiscounts = batches
     .filter((b) => b.isFullyPaid)
     .reduce((acc, b) => acc + (b.discountAmount || 0), 0);
+
+  // Peserta & Transaksi
   const totalParticipants = batches.reduce((acc, b) => acc + b.totalParticipants, 0);
+  const paidParticipants = batches
+    .filter((b) => b.isFullyPaid)
+    .reduce((acc, b) => acc + b.totalParticipants, 0);
+  const pendingParticipants = totalParticipants - paidParticipants;
   const paidBatchesCount = batches.filter((b) => b.isFullyPaid).length;
 
   return (
     <div className="space-y-4 font-sans">
-      {/* 1. Summary Metrics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total Transaksi Kelompok */}
-        <div className="p-4 rounded-2xl bg-gradient-to-b from-[#0d1c32] to-[#0a1424] border border-white/10 shadow-lg">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-semibold">
+      {/* 1. Summary Metrics Cards (Total Fee Ticket, Total Dana Masuk, Total Discount) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Total Fee Ticket */}
+        <div className="p-4 rounded-2xl bg-gradient-to-b from-[#0e213b] to-[#0a1526] border border-sky-500/30 shadow-lg">
+          <div className="flex items-center justify-between text-sky-300 text-xs font-semibold">
             <span className="flex items-center gap-1.5">
-              <Building className="w-3.5 h-3.5 text-sky-400" />
-              Total Pendaftaran Kelompok
+              <Ticket className="w-3.5 h-3.5 text-sky-400" />
+              Total Fee Tiket
             </span>
-            <span className="px-2 py-0.5 rounded-full text-[10px] bg-sky-500/10 text-sky-300 border border-sky-500/20">
-              {batches.length} Transaksi
+            <span className="px-2 py-0.5 rounded-full text-[10px] bg-sky-500/20 text-sky-300 border border-sky-500/30">
+              {paidParticipants} Tiket Lunas
             </span>
           </div>
           <div className="mt-2 text-2xl font-extrabold text-white font-mono">
-            {batches.length}{' '}
-            <span className="text-xs font-normal text-slate-400">Batch ({totalParticipants} Peserta)</span>
+            {formatCurrency(totalPaidTicketFee)}
           </div>
           <span className="text-[11px] text-slate-400 mt-1 block">
-            Setiap pendaftaran PIC tercatat per transaksi
+            Pending: {formatCurrency(totalPendingTicketFee)} ({pendingParticipants} tiket)
           </span>
         </div>
 
-        {/* Total Diskon Komunitas */}
+        {/* Total Dana Masuk */}
+        <div className="p-4 rounded-2xl bg-gradient-to-b from-[#072418] to-[#05140d] border border-emerald-500/30 shadow-lg">
+          <div className="flex items-center justify-between text-emerald-400 text-xs font-semibold">
+            <span className="flex items-center gap-1.5">
+              <CircleDollarSign className="w-3.5 h-3.5 text-emerald-400" />
+              Total Dana Masuk
+            </span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+              {paidBatchesCount} Transaksi Lunas
+            </span>
+          </div>
+          <div className="mt-2 text-2xl font-extrabold text-emerald-300 font-mono">
+            {formatCurrency(totalDanaMasuk)}
+          </div>
+          <span className="text-[11px] text-slate-400 mt-1 block">
+            Pending: {formatCurrency(totalPendingDana)} ({batches.length - paidBatchesCount} transaksi)
+          </span>
+        </div>
+
+        {/* Total Discount */}
         <div className="p-4 rounded-2xl bg-gradient-to-b from-[#251b08] to-[#120d04] border border-amber-500/30 shadow-lg">
           <div className="flex items-center justify-between text-amber-300 text-xs font-semibold">
             <span className="flex items-center gap-1.5">
               <Tag className="w-3.5 h-3.5 text-amber-400" />
-              Total Nilai Diskon
+              Total Diskon
             </span>
             <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40">
               Promo 10 Org
@@ -112,45 +154,7 @@ export default function KelompokBatchTable({
             {formatCurrency(totalDiscounts)}
           </div>
           <span className="text-[11px] text-slate-400 mt-1 block">
-            {batches.filter((b) => b.hasDiscount).length} dari {batches.length} kelompok dapat diskon
-          </span>
-        </div>
-
-        {/* Diskon Lunas Terealisasi */}
-        <div className="p-4 rounded-2xl bg-gradient-to-b from-[#072418] to-[#05140d] border border-emerald-500/30 shadow-lg">
-          <div className="flex items-center justify-between text-emerald-400 text-xs font-semibold">
-            <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-              Diskon Lunas (Sukses)
-            </span>
-            <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-              {paidBatchesCount} Lunas
-            </span>
-          </div>
-          <div className="mt-2 text-2xl font-extrabold text-emerald-300 font-mono">
-            {formatCurrency(totalPaidDiscounts)}
-          </div>
-          <span className="text-[11px] text-slate-400 mt-1 block">
-            Potongan diskon dari kelompok yang sudah bayar
-          </span>
-        </div>
-
-        {/* Diskon Pending */}
-        <div className="p-4 rounded-2xl bg-gradient-to-b from-[#181124] to-[#0c0813] border border-purple-500/30 shadow-lg">
-          <div className="flex items-center justify-between text-purple-300 text-xs font-semibold">
-            <span className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-purple-400" />
-              Diskon Belum Lunas
-            </span>
-            <span className="px-2 py-0.5 rounded-full text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/40">
-              {batches.length - paidBatchesCount} Pending
-            </span>
-          </div>
-          <div className="mt-2 text-2xl font-extrabold text-purple-300 font-mono">
-            {formatCurrency(totalDiscounts - totalPaidDiscounts)}
-          </div>
-          <span className="text-[11px] text-slate-400 mt-1 block">
-            Potensi diskon dalam transaksi pending
+            Terealisasi: {formatCurrency(totalPaidDiscounts)} (Lunas)
           </span>
         </div>
       </div>
