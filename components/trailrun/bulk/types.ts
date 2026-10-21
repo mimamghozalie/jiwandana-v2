@@ -34,6 +34,7 @@ export interface BulkPaymentData {
     phone: string;
     group_name?: string;
   };
+  registration_ids?: string[];
   participants?: Array<{
     nama: string;
     kategori: string;

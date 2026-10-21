@@ -98,22 +98,46 @@ export async function POST(request: NextRequest) {
         .in('registration_id', regIdList);
     }
 
-    // 4. Hapus peserta dari trailrun_registrations berdasarkan list ID
+    // 4. Hapus seluruh peserta rombongan dari trailrun_registrations
     let deletedCount = 0;
-    if (regIdList.length > 0) {
-      const { data: deletedRows, error: delResultError } = await supabase
+    const deletedIdSet = new Set<string>();
+
+    // Cara 1 (Sangat Bersih & Langsung): Hapus semua anggota rombongan dengan order_id yang sama
+    if (order_id) {
+      const { data: rowsByOrder, error: errByOrder } = await supabase
         .from('trailrun_registrations')
         .delete()
-        .in('id', regIdList)
+        .eq('order_id', order_id)
         .select('id');
 
-      if (delResultError) {
-        console.error('[Cancel Bulk] Gagal delete trailrun_registrations:', delResultError.message);
-      } else {
-        deletedCount = deletedRows?.length || 0;
-        console.log(`[Cancel Bulk] Berhasil menghapus ${deletedCount} baris dari database.`);
+      if (!errByOrder && rowsByOrder) {
+        rowsByOrder.forEach((r) => deletedIdSet.add(r.id));
+        console.log(`[Cancel Bulk] Berhasil menghapus ${rowsByOrder.length} peserta via order_id="${order_id}".`);
+      } else if (errByOrder) {
+        console.warn('[Cancel Bulk] Info: Gagal delete via order_id (mungkin kolom belum ada):', errByOrder.message);
       }
     }
+
+    // Cara 2: Hapus peserta berdasarkan list registration_id
+    if (regIdList.length > 0) {
+      const remainingIds = regIdList.filter((id) => !deletedIdSet.has(id));
+      if (remainingIds.length > 0) {
+        const { data: deletedRows, error: delResultError } = await supabase
+          .from('trailrun_registrations')
+          .delete()
+          .in('id', remainingIds)
+          .select('id');
+
+        if (delResultError) {
+          console.error('[Cancel Bulk] Gagal delete trailrun_registrations via ID list:', delResultError.message);
+        } else if (deletedRows) {
+          deletedRows.forEach((r) => deletedIdSet.add(r.id));
+        }
+      }
+    }
+
+    deletedCount = deletedIdSet.size;
+    console.log(`[Cancel Bulk] Total ${deletedCount} baris peserta dibersihkan dari database.`);
 
     return NextResponse.json({
       success: true,
