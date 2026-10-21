@@ -17,6 +17,7 @@ import {
   Eye,
   Ticket,
   CircleDollarSign,
+  ShieldCheck,
 } from 'lucide-react';
 import { TrailrunRow, formatCurrency } from './types';
 import { GroupRegistrationBatch, exportKelompokToExcel } from './trailrunExport';
@@ -89,6 +90,14 @@ export default function KelompokBatchTable({
     .filter((b) => b.isFullyPaid)
     .reduce((acc, b) => acc + (b.discountAmount || 0), 0);
 
+  // 4. Total Biaya Admin (Fee Admin Rp 3.000 / orang)
+  const totalPaidAdminFee = batches
+    .filter((b) => b.isFullyPaid)
+    .reduce((acc, b) => acc + (b.adminFeeTotal || (b.totalParticipants * 3000)), 0);
+  const totalPendingAdminFee = batches
+    .filter((b) => !b.isFullyPaid)
+    .reduce((acc, b) => acc + (b.adminFeeTotal || (b.totalParticipants * 3000)), 0);
+
   // Peserta & Transaksi
   const totalParticipants = batches.reduce((acc, b) => acc + b.totalParticipants, 0);
   const paidParticipants = batches
@@ -99,8 +108,8 @@ export default function KelompokBatchTable({
 
   return (
     <div className="space-y-4 font-sans">
-      {/* 1. Summary Metrics Cards (Total Fee Ticket, Total Dana Masuk, Total Discount) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* 1. Summary Metrics Cards (Total Fee Ticket, Total Dana Masuk, Total Discount, Total Biaya Admin) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Fee Ticket */}
         <div className="p-4 rounded-2xl bg-gradient-to-b from-[#0e213b] to-[#0a1526] border border-sky-500/30 shadow-lg">
           <div className="flex items-center justify-between text-sky-300 text-xs font-semibold">
@@ -155,6 +164,25 @@ export default function KelompokBatchTable({
           </div>
           <span className="text-[11px] text-slate-400 mt-1 block">
             Terealisasi: {formatCurrency(totalPaidDiscounts)} (Lunas)
+          </span>
+        </div>
+
+        {/* Total Biaya Admin */}
+        <div className="p-4 rounded-2xl bg-gradient-to-b from-[#1b1231] to-[#0e091c] border border-purple-500/30 shadow-lg">
+          <div className="flex items-center justify-between text-purple-300 text-xs font-semibold">
+            <span className="flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
+              Total Biaya Admin
+            </span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/40">
+              Rp 3.000 / Org
+            </span>
+          </div>
+          <div className="mt-2 text-2xl font-extrabold text-purple-300 font-mono">
+            {formatCurrency(totalPaidAdminFee)}
+          </div>
+          <span className="text-[11px] text-slate-400 mt-1 block">
+            Pending: {formatCurrency(totalPendingAdminFee)}
           </span>
         </div>
       </div>
