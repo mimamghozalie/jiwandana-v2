@@ -13,7 +13,9 @@ interface TrailrunFilterBarProps {
   setCategoryFilter: (val: string) => void;
   genderFilter: 'all' | 'laki-laki' | 'perempuan';
   setGenderFilter: (val: 'all' | 'laki-laki' | 'perempuan') => void;
-  counts: { all: number; paid: number; pending: number };
+  groupFilter: 'all' | 'group' | 'individual';
+  setGroupFilter: (val: 'all' | 'group' | 'individual') => void;
+  counts: { all: number; paid: number; pending: number; group: number };
   availableCategories: string[];
   visibleColumns: string[];
   toggleColumn: (key: string) => void;
@@ -33,6 +35,8 @@ export default function TrailrunFilterBar({
   setCategoryFilter,
   genderFilter,
   setGenderFilter,
+  groupFilter,
+  setGroupFilter,
   counts,
   availableCategories,
   visibleColumns,
@@ -49,9 +53,12 @@ export default function TrailrunFilterBar({
       <div className="flex items-center gap-1.5 p-1 rounded-xl bg-black/30 border border-white/5 overflow-x-auto">
         <button
           type="button"
-          onClick={() => setStatusFilter('all')}
+          onClick={() => {
+            setStatusFilter('all');
+            setGroupFilter('all');
+          }}
           className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
-            statusFilter === 'all'
+            statusFilter === 'all' && groupFilter === 'all'
               ? 'bg-[#C9A227] text-[#0d1c32] font-bold shadow-sm'
               : 'text-slate-400 hover:text-white hover:bg-white/5'
           }`}
@@ -59,7 +66,7 @@ export default function TrailrunFilterBar({
           <span>Semua Peserta</span>
           <span
             className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
-              statusFilter === 'all' ? 'bg-[#0d1c32]/20 text-[#0d1c32]' : 'bg-white/10 text-slate-300'
+              statusFilter === 'all' && groupFilter === 'all' ? 'bg-[#0d1c32]/20 text-[#0d1c32]' : 'bg-white/10 text-slate-300'
             }`}
           >
             {counts.all}
@@ -105,6 +112,29 @@ export default function TrailrunFilterBar({
             {counts.pending}
           </span>
         </button>
+
+        {/* Tab Jalur Kelompok / Kolektif */}
+        <button
+          type="button"
+          onClick={() => {
+            setGroupFilter(groupFilter === 'group' ? 'all' : 'group');
+          }}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap border ${
+            groupFilter === 'group'
+              ? 'bg-sky-500 text-white font-bold border-sky-400 shadow-sm'
+              : 'text-sky-300 border-sky-500/20 bg-sky-500/10 hover:bg-sky-500/20'
+          }`}
+          title="Filter hanya peserta pendaftaran kelompok / rombongan"
+        >
+          <span>👥 Daftar Kelompok</span>
+          <span
+            className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+              groupFilter === 'group' ? 'bg-black/20 text-white' : 'bg-sky-500/20 text-sky-200'
+            }`}
+          >
+            {counts.group}
+          </span>
+        </button>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
@@ -131,6 +161,20 @@ export default function TrailrunFilterBar({
 
         {/* Filters and Column Toggle */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* Group / Individual Filter Dropdown */}
+          <div className="flex items-center gap-1.5 bg-black/30 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs">
+            <span className="text-slate-400 text-xs font-medium">Jalur:</span>
+            <select
+              value={groupFilter}
+              onChange={(e) => setGroupFilter(e.target.value as any)}
+              className="bg-transparent text-white font-medium text-xs outline-none cursor-pointer pr-2"
+            >
+              <option value="all" className="bg-[#0a1424]">Semua Jalur</option>
+              <option value="group" className="bg-[#0a1424]">👥 Kelompok ({counts.group})</option>
+              <option value="individual" className="bg-[#0a1424]">👤 Individu ({counts.all - counts.group})</option>
+            </select>
+          </div>
+
           {/* Category Filter */}
           <div className="flex items-center gap-1.5 bg-black/30 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs">
             <span className="text-slate-400 text-xs font-medium">Kategori:</span>
@@ -228,7 +272,7 @@ export default function TrailrunFilterBar({
 
                 {/* Column List with checkboxes grouped */}
                 <div className="max-h-72 overflow-y-auto space-y-3 pr-1 text-xs divide-y divide-white/5">
-                  {(['Utama', 'Pembayaran', 'Profil & Kontak', 'Medis & Darurat'] as const).map(
+                  {(['Utama', 'Pembayaran', 'Data Kelompok', 'Profil & Kontak', 'Medis & Darurat'] as const).map(
                     (categoryName) => {
                       const colsInCategory = ALL_COLUMNS.filter((c) => c.category === categoryName);
                       if (colsInCategory.length === 0) return null;

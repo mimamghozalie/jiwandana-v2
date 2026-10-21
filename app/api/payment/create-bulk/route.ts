@@ -213,12 +213,18 @@ export async function POST(request: NextRequest) {
       admin_fee: ADMIN_FEE,
       gateway_fee: gatewayFee,
       admin_profit: adminProfit,
+      pic_name: pic_name || null,
+      pic_phone: pic_phone || null,
+      pic_email: pic_email || null,
     }));
 
     if (paymentRecords.length > 0) {
       const { error: insErr } = await supabase.from('trailrun_payments').insert(paymentRecords);
       if (insErr) {
-        const baseRecords = paymentRecords.map(({ admin_fee, gateway_fee, admin_profit, ...rest }) => rest);
+        console.warn('Fallback insert payment records without pic fields:', insErr.message);
+        const baseRecords = paymentRecords.map(
+          ({ admin_fee, gateway_fee, admin_profit, pic_name, pic_phone, pic_email, ...rest }) => rest
+        );
         await supabase.from('trailrun_payments').insert(baseRecords);
       }
     } else {
@@ -236,8 +242,15 @@ export async function POST(request: NextRequest) {
         expired_at: expiredAt,
         is_sandbox: transaction.is_sandbox ?? true,
         status: 'pending',
+        pic_name: pic_name || null,
+        pic_phone: pic_phone || null,
+        pic_email: pic_email || null,
       };
-      await supabase.from('trailrun_payments').insert([singleRecord]);
+      const { error: singleErr } = await supabase.from('trailrun_payments').insert([singleRecord]);
+      if (singleErr) {
+        const { pic_name: _, pic_phone: __, pic_email: ___, ...fallbackSingle } = singleRecord;
+        await supabase.from('trailrun_payments').insert([fallbackSingle]);
+      }
     }
 
     return NextResponse.json({

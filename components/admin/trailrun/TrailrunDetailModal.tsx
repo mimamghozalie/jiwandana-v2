@@ -210,6 +210,34 @@ export function TrailrunDetailModal({
                 <span className="text-slate-500">Komunitas:</span>
                 <span className="text-white">{selectedRow.nama_komunitas || '-'}</span>
               </div>
+              {(selectedRow.pic_name || selectedRow.payment?.pic_name) && (
+                <>
+                  <div className="flex justify-between border-t border-white/5 pt-1 mt-1">
+                    <span className="text-sky-400 font-semibold">Nama PIC:</span>
+                    <span className="text-white font-medium">
+                      {selectedRow.pic_name || selectedRow.payment?.pic_name}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sky-400 font-semibold">WhatsApp PIC:</span>
+                    <a
+                      href={`https://wa.me/${(selectedRow.pic_phone || selectedRow.payment?.pic_phone || '').replace(/^0/, '62').replace(/[^0-9]/g, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sky-300 hover:underline flex items-center gap-1"
+                    >
+                      <Phone className="w-3 h-3 text-sky-400" />
+                      <span>{selectedRow.pic_phone || selectedRow.payment?.pic_phone}</span>
+                    </a>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sky-400 font-semibold">Email PIC:</span>
+                    <span className="text-slate-300">
+                      {selectedRow.pic_email || selectedRow.payment?.pic_email}
+                    </span>
+                  </div>
+                </>
+              )}
               <div className="flex justify-between">
                 <span className="text-slate-500">Ukuran Jersey:</span>
                 <span className="font-bold text-[#C9A227]">{selectedRow.ukuran_jersey || '-'}</span>

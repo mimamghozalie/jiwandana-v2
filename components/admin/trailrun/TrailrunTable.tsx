@@ -89,6 +89,9 @@ export default function TrailrunTable({
               {visibleColumns.includes('jenis_kelamin') && <th className="py-3.5 px-4">Gender</th>}
               {visibleColumns.includes('tanggal_lahir') && <th className="py-3.5 px-4">Tgl Lahir</th>}
               {visibleColumns.includes('nama_komunitas') && <th className="py-3.5 px-4">Komunitas</th>}
+              {visibleColumns.includes('pic_name') && <th className="py-3.5 px-4 text-sky-400">Nama PIC</th>}
+              {visibleColumns.includes('pic_phone') && <th className="py-3.5 px-4 text-sky-400">WhatsApp PIC</th>}
+              {visibleColumns.includes('pic_email') && <th className="py-3.5 px-4 text-sky-400">Email PIC</th>}
               {visibleColumns.includes('kota_provinsi') && <th className="py-3.5 px-4">Kota / Asal</th>}
               {visibleColumns.includes('alamat') && <th className="py-3.5 px-4">Alamat</th>}
               {visibleColumns.includes('golongan_darah') && <th className="py-3.5 px-4">Gol. Darah</th>}
@@ -147,7 +150,14 @@ export default function TrailrunTable({
                     {/* Nama */}
                     {visibleColumns.includes('nama') && (
                       <td className="py-3.5 px-4 font-bold text-white whitespace-nowrap">
-                        {row.nama}
+                        <div className="flex items-center gap-2">
+                          <span>{row.nama}</span>
+                          {(row.payment?.order_id?.startsWith('TR-BULK') || (row.nama_komunitas && row.nama_komunitas.trim() !== '')) && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-sky-500/15 text-sky-400 border border-sky-500/30">
+                              Kelompok
+                            </span>
+                          )}
+                        </div>
                       </td>
                     )}
 
@@ -340,6 +350,34 @@ export default function TrailrunTable({
                     {visibleColumns.includes('nama_komunitas') && (
                       <td className="py-3.5 px-4 text-slate-300 whitespace-nowrap">
                         {row.nama_komunitas || '-'}
+                      </td>
+                    )}
+                    {visibleColumns.includes('pic_name') && (
+                      <td className="py-3.5 px-4 text-sky-300 whitespace-nowrap font-medium">
+                        {row.pic_name || row.payment?.pic_name || '-'}
+                      </td>
+                    )}
+                    {visibleColumns.includes('pic_phone') && (
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        {(row.pic_phone || row.payment?.pic_phone) ? (
+                          <a
+                            href={`https://wa.me/${(row.pic_phone || row.payment?.pic_phone || '').replace(/^0/, '62').replace(/[^0-9]/g, '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center gap-1.5 text-sky-400 hover:text-sky-300 hover:underline text-[11px]"
+                          >
+                            <Phone className="w-3 h-3" />
+                            <span>{row.pic_phone || row.payment?.pic_phone}</span>
+                          </a>
+                        ) : (
+                          <span className="text-slate-500">-</span>
+                        )}
+                      </td>
+                    )}
+                    {visibleColumns.includes('pic_email') && (
+                      <td className="py-3.5 px-4 text-slate-300 whitespace-nowrap text-[11px]">
+                        {row.pic_email || row.payment?.pic_email || '-'}
                       </td>
                     )}
                     {visibleColumns.includes('kota_provinsi') && (

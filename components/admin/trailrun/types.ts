@@ -13,6 +13,9 @@ export interface TrailrunPayment {
   status?: string;
   completed_at?: string;
   is_sandbox?: boolean;
+  pic_name?: string | null;
+  pic_phone?: string | null;
+  pic_email?: string | null;
 }
 
 export interface TrailrunRow {
@@ -39,12 +42,15 @@ export interface TrailrunRow {
   status: 'pending' | 'confirmed' | 'paid';
   created_at: string;
   payment?: TrailrunPayment;
+  pic_name?: string | null;
+  pic_phone?: string | null;
+  pic_email?: string | null;
 }
 
 export interface ColumnConfig {
   key: string;
   label: string;
-  category: 'Utama' | 'Pembayaran' | 'Profil & Kontak' | 'Medis & Darurat';
+  category: 'Utama' | 'Pembayaran' | 'Profil & Kontak' | 'Data Kelompok' | 'Medis & Darurat';
   defaultVisible: boolean;
 }
 
@@ -136,9 +142,12 @@ export const ALL_COLUMNS: ColumnConfig[] = [
   { key: 'gateway_fee', label: 'Biaya Tx Gateway', category: 'Pembayaran', defaultVisible: false },
   { key: 'jenis_kelamin', label: 'Gender', category: 'Profil & Kontak', defaultVisible: false },
   { key: 'tanggal_lahir', label: 'Tgl Lahir', category: 'Profil & Kontak', defaultVisible: false },
-  { key: 'nama_komunitas', label: 'Komunitas / Klub', category: 'Profil & Kontak', defaultVisible: false },
   { key: 'kota_provinsi', label: 'Kota / Asal', category: 'Profil & Kontak', defaultVisible: false },
   { key: 'alamat', label: 'Alamat Lengkap', category: 'Profil & Kontak', defaultVisible: false },
+  { key: 'nama_komunitas', label: 'Komunitas / Klub', category: 'Data Kelompok', defaultVisible: false },
+  { key: 'pic_name', label: 'Nama Lengkap PIC', category: 'Data Kelompok', defaultVisible: false },
+  { key: 'pic_phone', label: 'No WhatsApp PIC', category: 'Data Kelompok', defaultVisible: false },
+  { key: 'pic_email', label: 'Email PIC', category: 'Data Kelompok', defaultVisible: false },
   { key: 'golongan_darah', label: 'Gol. Darah', category: 'Medis & Darurat', defaultVisible: false },
   { key: 'riwayat_medis', label: 'Riwayat Medis', category: 'Medis & Darurat', defaultVisible: false },
   { key: 'kontak_darurat', label: 'Kontak Darurat', category: 'Medis & Darurat', defaultVisible: false },
@@ -237,6 +246,9 @@ export const SAMPLE_TRAILRUN_DATA: TrailrunRow[] = [
     tanggal_lahir: '1998-08-09',
     jenis_kelamin: 'Perempuan',
     nama_komunitas: 'Malang Trail Squad',
+    pic_name: 'Hendra Gunawan',
+    pic_phone: '081234567890',
+    pic_email: 'hendra.gunawan@trail-squad.id',
     golongan_darah: 'B',
     riwayat_medis: 'Tidak ada',
     kontak_darurat: 'Dr. Agus (Ayah) - 085799887766',
@@ -245,7 +257,7 @@ export const SAMPLE_TRAILRUN_DATA: TrailrunRow[] = [
     created_at: new Date(Date.now() - 3600000 * 8).toISOString(),
     payment: {
       txn_id: 'TXN-7K-003',
-      order_id: 'ORD-TR-7K-0205',
+      order_id: 'TR-BULK-2026-003',
       amount: 240000,
       fee: 5000,
       admin_fee: 5000,
@@ -255,6 +267,9 @@ export const SAMPLE_TRAILRUN_DATA: TrailrunRow[] = [
       payment_method: 'qris',
       status: 'pending',
       is_sandbox: false,
+      pic_name: 'Hendra Gunawan',
+      pic_phone: '081234567890',
+      pic_email: 'hendra.gunawan@trail-squad.id',
     },
   },
   {

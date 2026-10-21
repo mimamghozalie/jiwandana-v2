@@ -36,6 +36,7 @@ export default function AdminTrailrunPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'paid' | 'pending' | 'confirmed'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [genderFilter, setGenderFilter] = useState<'all' | 'laki-laki' | 'perempuan'>('all');
+  const [groupFilter, setGroupFilter] = useState<'all' | 'group' | 'individual'>('all');
 
   // Selected row for detail modal
   const [selectedRow, setSelectedRow] = useState<TrailrunRow | null>(null);
@@ -146,6 +147,9 @@ export default function AdminTrailrunPage() {
             status: r.status || (pay?.status === 'completed' ? 'paid' : 'pending'),
             created_at: r.created_at,
             payment: pay,
+            pic_name: r.pic_name || pay?.pic_name || null,
+            pic_phone: r.pic_phone || pay?.pic_phone || null,
+            pic_email: r.pic_email || pay?.pic_email || null,
           };
         });
 
@@ -322,7 +326,12 @@ export default function AdminTrailrunPage() {
     const all = data.length;
     const paid = data.filter((r) => r.status === 'paid').length;
     const pending = data.filter((r) => r.status === 'pending' || r.status === 'confirmed').length;
-    return { all, paid, pending };
+    const group = data.filter(
+      (r) =>
+        r.payment?.order_id?.startsWith('TR-BULK') ||
+        (r.nama_komunitas && r.nama_komunitas.trim() !== '')
+    ).length;
+    return { all, paid, pending, group };
   }, [data]);
 
   // Filtered rows
@@ -331,6 +340,15 @@ export default function AdminTrailrunPage() {
       // Status filter
       if (statusFilter !== 'all') {
         if (row.status !== statusFilter) return false;
+      }
+
+      // Group / Jalur filter
+      if (groupFilter !== 'all') {
+        const isGroup =
+          Boolean(row.payment?.order_id?.startsWith('TR-BULK')) ||
+          Boolean(row.nama_komunitas && row.nama_komunitas.trim() !== '');
+        if (groupFilter === 'group' && !isGroup) return false;
+        if (groupFilter === 'individual' && isGroup) return false;
       }
 
       // Category filter
@@ -360,18 +378,21 @@ export default function AdminTrailrunPage() {
           (row.nik && row.nik.toLowerCase().includes(q)) ||
           (row.kk && row.kk.toLowerCase().includes(q)) ||
           (row.nama_komunitas && row.nama_komunitas.toLowerCase().includes(q)) ||
+          (row.pic_name && row.pic_name.toLowerCase().includes(q)) ||
+          (row.pic_phone && row.pic_phone.toLowerCase().includes(q)) ||
+          (row.pic_email && row.pic_email.toLowerCase().includes(q)) ||
           (row.kota && row.kota.toLowerCase().includes(q));
         if (!match) return false;
       }
 
       return true;
     });
-  }, [data, statusFilter, categoryFilter, genderFilter, searchQuery]);
+  }, [data, statusFilter, groupFilter, categoryFilter, genderFilter, searchQuery]);
 
   // Reset page to 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, statusFilter, categoryFilter, genderFilter, pageSize]);
+  }, [searchQuery, statusFilter, groupFilter, categoryFilter, genderFilter, pageSize]);
 
   // Pagination calculations
   const totalPages = Math.ceil(filteredData.length / pageSize) || 1;
@@ -479,6 +500,9 @@ export default function AdminTrailrunPage() {
       'Tanggal Lahir',
       'Kewarganegaraan',
       'Komunitas / Klub',
+      'Nama PIC Kelompok',
+      'No WA PIC Kelompok',
+      'Email PIC Kelompok',
       'Kota',
       'Provinsi',
       'Alamat Lengkap',
@@ -514,6 +538,9 @@ export default function AdminTrailrunPage() {
         row.tanggal_lahir || '-',
         row.kewarganegaraan || 'Indonesia',
         row.nama_komunitas || '-',
+        row.pic_name || row.payment?.pic_name || '-',
+        row.pic_phone || row.payment?.pic_phone || '-',
+        row.pic_email || row.payment?.pic_email || '-',
         row.kota || '-',
         row.provinsi || '-',
         row.alamat || '-',
@@ -551,6 +578,9 @@ export default function AdminTrailrunPage() {
       { wch: 14 },  // Tanggal Lahir
       { wch: 16 },  // Kewarganegaraan
       { wch: 22 },  // Komunitas / Klub
+      { wch: 22 },  // Nama PIC Kelompok
+      { wch: 18 },  // No WA PIC Kelompok
+      { wch: 26 },  // Email PIC Kelompok
       { wch: 16 },  // Kota
       { wch: 16 },  // Provinsi
       { wch: 32 },  // Alamat Lengkap
@@ -642,6 +672,15 @@ export default function AdminTrailrunPage() {
               break;
             case 'nama_komunitas':
               val = row.nama_komunitas || '-';
+              break;
+            case 'pic_name':
+              val = row.pic_name || row.payment?.pic_name || '-';
+              break;
+            case 'pic_phone':
+              val = row.pic_phone || row.payment?.pic_phone || '-';
+              break;
+            case 'pic_email':
+              val = row.pic_email || row.payment?.pic_email || '-';
               break;
             case 'kota_provinsi':
               val = `${row.kota || ''}, ${row.provinsi || ''}`;
@@ -771,6 +810,8 @@ export default function AdminTrailrunPage() {
         setCategoryFilter={setCategoryFilter}
         genderFilter={genderFilter}
         setGenderFilter={setGenderFilter}
+        groupFilter={groupFilter}
+        setGroupFilter={setGroupFilter}
         counts={filterCounts}
         availableCategories={availableCategories}
         visibleColumns={visibleColumns}
