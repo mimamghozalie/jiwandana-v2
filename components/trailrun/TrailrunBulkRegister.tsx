@@ -440,7 +440,7 @@ export default function TrailrunBulkRegister() {
     const adminFee = validCount * ADMIN_FEE_PER_PERSON;
     const amountToSend = subtotalTickets + adminFee;
     const estimatedGatewayFee = validCount > 0 ? Math.round(amountToSend * 0.007 + 300) : 0;
-    const totalServiceFee = adminFee + estimatedGatewayFee;
+    const totalServiceFee = adminFee;
     const grandTotal = subtotalTickets + totalServiceFee;
 
     return {
@@ -474,23 +474,21 @@ export default function TrailrunBulkRegister() {
         <div className="space-y-6">
           {/* Header Status Banner dengan Countdown Timer 1 Jam */}
           <div
-            className={`p-5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
-              paymentStatus === 'completed'
+            className={`p-5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${paymentStatus === 'completed'
                 ? 'bg-emerald-50 border-emerald-200'
                 : paymentStatus === 'expired'
-                ? 'bg-rose-50 border-rose-200'
-                : 'bg-amber-50 border-amber-200'
-            }`}
+                  ? 'bg-rose-50 border-rose-200'
+                  : 'bg-amber-50 border-amber-200'
+              }`}
           >
             <div className="flex items-center gap-4">
               <div
-                className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
-                  paymentStatus === 'completed'
+                className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${paymentStatus === 'completed'
                     ? 'bg-emerald-100 text-emerald-600'
                     : paymentStatus === 'expired'
-                    ? 'bg-rose-100 text-rose-600'
-                    : 'bg-amber-100 text-amber-600'
-                }`}
+                      ? 'bg-rose-100 text-rose-600'
+                      : 'bg-amber-100 text-amber-600'
+                  }`}
               >
                 {paymentStatus === 'completed' ? (
                   <CheckCircle2 className="w-6 h-6" />
@@ -502,26 +500,25 @@ export default function TrailrunBulkRegister() {
               </div>
               <div>
                 <h3
-                  className={`text-base sm:text-lg font-bold font-serif ${
-                    paymentStatus === 'completed'
+                  className={`text-base sm:text-lg font-bold font-serif ${paymentStatus === 'completed'
                       ? 'text-emerald-800'
                       : paymentStatus === 'expired'
-                      ? 'text-rose-800'
-                      : 'text-amber-800'
-                  }`}
+                        ? 'text-rose-800'
+                        : 'text-amber-800'
+                    }`}
                 >
                   {paymentStatus === 'completed'
                     ? 'Pembayaran Kolektif Berhasil Dikonfirmasi!'
                     : paymentStatus === 'expired'
-                    ? 'Waktu Pembayaran Telah Habis (Expired)'
-                    : 'Menunggu Pembayaran Kolektif'}
+                      ? 'Waktu Pembayaran Telah Habis (Expired)'
+                      : 'Menunggu Pembayaran Kolektif'}
                 </h3>
                 <p className="text-xs text-slate-600">
                   {paymentStatus === 'completed'
                     ? `Seluruh ${paymentData.participant_count} peserta telah resmi terdaftar pada Trailrun Lintas Candi.`
                     : paymentStatus === 'expired'
-                    ? 'Batas waktu 1 jam telah berakhir. Silakan batalkan atau daftar ulang rombongan.'
-                    : `Batas waktu pembayaran hingga: ${formatExpiry(paymentData.expired_at)}`}
+                      ? 'Batas waktu 1 jam telah berakhir. Silakan batalkan atau daftar ulang rombongan.'
+                      : `Batas waktu pembayaran hingga: ${formatExpiry(paymentData.expired_at)}`}
                 </p>
               </div>
             </div>
@@ -587,7 +584,7 @@ export default function TrailrunBulkRegister() {
                 <span className="text-slate-900 font-semibold">
                   {formatCurrency(
                     (paymentData.admin_fee || paymentData.participant_count * 3000) +
-                      (paymentData.gateway_fee || 0)
+                    (paymentData.gateway_fee || 0)
                   )}
                 </span>
               </div>
@@ -653,8 +650,8 @@ export default function TrailrunBulkRegister() {
                     paymentData.qr_string.startsWith('http') || paymentData.qr_string.startsWith('data:image')
                       ? paymentData.qr_string
                       : `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(
-                          paymentData.qr_string
-                        )}`
+                        paymentData.qr_string
+                      )}`
                   }
                   alt="QRIS Kolektif"
                   className="w-full h-full object-contain rounded"
@@ -929,17 +926,16 @@ export default function TrailrunBulkRegister() {
                   </button>
 
                   <span
-                    className={`px-2.5 py-1 rounded-full border font-bold ${
-                      validCount >= 5 && validCount <= 10
+                    className={`px-2.5 py-1 rounded-full border font-bold ${validCount >= 5 && validCount <= 10
                         ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                         : 'bg-amber-50 text-amber-700 border-amber-200'
-                    }`}
+                      }`}
                   >
                     {validCount >= 5 && validCount <= 10
                       ? `✓ ${validCount} Peserta Valid (Siap Checkout)`
                       : validCount > 10
-                      ? `⚠ ${validCount} Peserta (Maks. 10)`
-                      : `⚠ ${validCount}/5 Peserta (Min. 5)`}
+                        ? `⚠ ${validCount} Peserta (Maks. 10)`
+                        : `⚠ ${validCount}/5 Peserta (Min. 5)`}
                   </span>
                   {invalidCount > 0 && (
                     <span className="px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 font-bold">
@@ -1069,9 +1065,8 @@ export default function TrailrunBulkRegister() {
                     {participants.map((p, idx) => (
                       <tr
                         key={idx}
-                        className={`transition-colors ${
-                          p.isValid ? 'hover:bg-slate-50' : 'bg-rose-50/60 hover:bg-rose-50'
-                        }`}
+                        className={`transition-colors ${p.isValid ? 'hover:bg-slate-50' : 'bg-rose-50/60 hover:bg-rose-50'
+                          }`}
                       >
                         <td className="py-2.5 px-3 font-mono font-medium">{idx + 1}</td>
                         <td className="py-2.5 px-3 font-semibold text-slate-900">{p.nama || '—'}</td>
@@ -1158,16 +1153,14 @@ export default function TrailrunBulkRegister() {
                     key={pm.id}
                     type="button"
                     onClick={() => setPaymentMethod(pm.id)}
-                    className={`p-3.5 rounded-xl border-2 text-left transition-all flex items-center gap-3 cursor-pointer ${
-                      paymentMethod === pm.id
+                    className={`p-3.5 rounded-xl border-2 text-left transition-all flex items-center gap-3 cursor-pointer ${paymentMethod === pm.id
                         ? 'border-[#C9A227] bg-[#C9A227]/5 shadow-xs'
                         : 'border-black/10 bg-white hover:border-[#C9A227]/40'
-                    }`}
+                      }`}
                   >
                     <div
-                      className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                        paymentMethod === pm.id ? 'border-[#C9A227] bg-[#C9A227]' : 'border-slate-300'
-                      }`}
+                      className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${paymentMethod === pm.id ? 'border-[#C9A227] bg-[#C9A227]' : 'border-slate-300'
+                        }`}
                     >
                       {paymentMethod === pm.id && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                     </div>
