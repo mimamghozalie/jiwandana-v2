@@ -128,8 +128,8 @@ export default function BibPreviewCard({
     setGpxQrUrl(`${origin}/api/trailrun/download-gpx?cat=${selectedCategory}`);
   }, [bibNumber, selectedCategory]);
 
-  // Name calculation for SVG preview & canvas
-  const cleanName = runnerName.trim().toUpperCase();
+  // Name calculation for SVG preview & canvas (teks biasa / case-sensitive)
+  const cleanName = runnerName.trim();
   let actualNameSize = nameFontSize;
   if (cleanName.length > 25) {
     actualNameSize = Math.max(48, Math.floor(nameFontSize * (25 / cleanName.length)));
@@ -421,7 +421,6 @@ export default function BibPreviewCard({
                     fill: ${currentConfig.textColor};
                     text-anchor: middle;
                     dominant-baseline: central;
-                    text-transform: uppercase;
                   }
                 `}</style>
               </defs>
@@ -588,9 +587,9 @@ export default function BibPreviewCard({
               <input
                 type="text"
                 value={runnerName}
-                onChange={(e) => setRunnerName(e.target.value.toUpperCase())}
-                placeholder="NAMA LENGKAP PELARI"
-                className="w-full bg-slate-50 border border-black/10 focus:border-[#C9A227] rounded-xl px-3.5 py-2 text-xs font-bold uppercase tracking-wider outline-none"
+                onChange={(e) => setRunnerName(e.target.value)}
+                placeholder="Nama Lengkap Pelari"
+                className="w-full bg-slate-50 border border-black/10 focus:border-[#C9A227] rounded-xl px-3.5 py-2 text-xs font-bold tracking-wider outline-none"
               />
             </div>
           </div>
