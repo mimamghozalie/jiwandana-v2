@@ -163,6 +163,7 @@ export async function POST(request: NextRequest) {
       kategori: p.kategori.toUpperCase(),
       status: 'pending',
       registration_type: 'bulk',
+      order_id: orderId,
     }));
 
     let { data: insertedRegistrations, error: regError } = await supabase
@@ -174,6 +175,9 @@ export async function POST(request: NextRequest) {
     if (regError) {
       console.warn('Initial insert trailrun_registrations error:', regError.message);
       let fallbackPayload = [...insertPayload];
+      if (regError.message?.toLowerCase().includes('order_id')) {
+        fallbackPayload = fallbackPayload.map(({ order_id, ...rest }: any) => rest);
+      }
       if (regError.message?.toLowerCase().includes('registration_type')) {
         fallbackPayload = fallbackPayload.map(({ registration_type, ...rest }: any) => rest);
       }

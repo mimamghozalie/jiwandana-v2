@@ -59,14 +59,31 @@ export default function PesertaKelompokPage() {
       }
 
       // Group per Order ID Transaksi (Setiap pendaftaran PIC mendapatkan Order ID terpisah)
-      const orderId = r.payment?.order_id || r.payment?.txn_id;
-      if (orderId) {
-        if (!orderBatchMap[orderId]) {
-          orderBatchMap[orderId] = [];
+      let resolvedOrderId = r.order_id || r.payment?.order_id || r.payment?.txn_id;
+
+      // Jika peserta ini belum memiliki orderId langsung, tautkan ke transaksi kelompok yang dibuat pada rentang waktu yang sama (batch yang sama)
+      if (!resolvedOrderId) {
+        const existingOrderKeys = Object.keys(orderBatchMap);
+        const matched = existingOrderKeys.find((k) => {
+          const firstInBatch = orderBatchMap[k][0];
+          if (!firstInBatch) return false;
+          const timeDiff = Math.abs(
+            new Date(r.created_at).getTime() - new Date(firstInBatch.created_at).getTime()
+          );
+          return timeDiff < 180000; // Selisih di bawah 3 menit adalah 1 rombongan pendaftaran yang sama
+        });
+        if (matched) {
+          resolvedOrderId = matched;
         }
-        orderBatchMap[orderId].push(r);
+      }
+
+      if (resolvedOrderId) {
+        if (!orderBatchMap[resolvedOrderId]) {
+          orderBatchMap[resolvedOrderId] = [];
+        }
+        orderBatchMap[resolvedOrderId].push(r);
       } else {
-        const picIdentifier = r.pic_name || r.payment?.pic_name || r.nama_komunitas || 'PIC';
+        const picIdentifier = r.pic_name || r.payment?.pic_name || r.nama_komunitas || 'PIC Rombongan';
         const cKey = `BATCH-${picIdentifier.trim()}`;
         if (!communityBatchMap[cKey]) {
           communityBatchMap[cKey] = [];
@@ -75,10 +92,18 @@ export default function PesertaKelompokPage() {
       }
     });
 
-    const allBatchEntries = [
-      ...Object.entries(orderBatchMap),
-      ...Object.entries(communityBatchMap),
-    ];
+    // Jika communityBatchMap dan orderBatchMap ternyata memiliki peserta dengan komunitas/PIC yang sama, satukan ke orderBatchMap
+    Object.entries(communityBatchMap).forEach(([cKey, communityParticipants]) => {
+      const targetOrderId = Object.keys(orderBatchMap)[0];
+      if (targetOrderId && Object.keys(orderBatchMap).length === 1) {
+        // Jika hanya ada 1 orderId kelompok di sistem, satukan langsung
+        orderBatchMap[targetOrderId].push(...communityParticipants);
+      } else {
+        orderBatchMap[cKey] = communityParticipants;
+      }
+    });
+
+    const allBatchEntries = Object.entries(orderBatchMap);
 
     let kelompokPesertaTotal = 0;
     const resultBatches: GroupRegistrationBatch[] = [];

@@ -41,6 +41,7 @@ export interface TrailrunRow {
   hasil_lari?: string;
   status: 'pending' | 'confirmed' | 'paid';
   registration_type?: 'individu' | 'bulk' | string;
+  order_id?: string;
   created_at: string;
   payment?: TrailrunPayment;
   pic_name?: string | null;

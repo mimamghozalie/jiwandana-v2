@@ -45,14 +45,18 @@ export function useTrailrunData() {
       if (registrations.length === 0) {
         setData(SAMPLE_TRAILRUN_DATA);
       } else {
-        // Map payments by registration_id, pic_phone, pic_name
+        // Map payments by registration_id, order_id, pic_phone, pic_name
         const paymentsMap = new Map<string, any>();
+        const orderIdPaymentsMap = new Map<string, any>();
         const picPhonePaymentsMap = new Map<string, any>();
         const picNamePaymentsMap = new Map<string, any>();
 
         payments.forEach((p) => {
           if (p.registration_id && !paymentsMap.has(p.registration_id)) {
             paymentsMap.set(p.registration_id, p);
+          }
+          if (p.order_id && !orderIdPaymentsMap.has(p.order_id)) {
+            orderIdPaymentsMap.set(p.order_id, p);
           }
           if (p.pic_phone && !picPhonePaymentsMap.has(p.pic_phone.trim())) {
             picPhonePaymentsMap.set(p.pic_phone.trim(), p);
@@ -65,6 +69,7 @@ export function useTrailrunData() {
         const merged: TrailrunRow[] = registrations.map((r: any) => {
           const pay =
             paymentsMap.get(r.id) ||
+            (r.order_id ? orderIdPaymentsMap.get(r.order_id) : null) ||
             (r.pic_phone ? picPhonePaymentsMap.get(r.pic_phone.trim()) : null) ||
             (r.pic_name ? picNamePaymentsMap.get(r.pic_name.trim().toLowerCase()) : null);
 
@@ -103,6 +108,7 @@ export function useTrailrunData() {
             registration_type:
               r.registration_type ||
               (pay?.order_id?.startsWith('TR-BULK') || pay?.pic_name || r.pic_name ? 'bulk' : 'individu'),
+            order_id: r.order_id || pay?.order_id || null,
             created_at: r.created_at,
             payment: pay,
             pic_name: r.pic_name || pay?.pic_name || null,

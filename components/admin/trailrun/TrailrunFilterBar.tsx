@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { Search, Filter, SlidersHorizontal, ChevronDown, X } from 'lucide-react';
 import { ALL_COLUMNS, DEFAULT_VISIBLE_KEYS } from './types';
 
@@ -13,9 +14,9 @@ interface TrailrunFilterBarProps {
   setCategoryFilter: (val: string) => void;
   genderFilter: 'all' | 'laki-laki' | 'perempuan';
   setGenderFilter: (val: 'all' | 'laki-laki' | 'perempuan') => void;
-  groupFilter: 'all' | 'group' | 'individual' | 'discount';
-  setGroupFilter: (val: 'all' | 'group' | 'individual' | 'discount') => void;
-  counts: { all: number; paid: number; pending: number; group: number; discount: number; totalDiscountAmount: number };
+  groupFilter?: 'all' | 'group' | 'individual' | 'discount';
+  setGroupFilter?: (val: 'all' | 'group' | 'individual' | 'discount') => void;
+  counts: { all: number; paid: number; pending: number; group: number; discount?: number; totalDiscountAmount?: number };
   availableCategories: string[];
   visibleColumns: string[];
   toggleColumn: (key: string) => void;
@@ -35,7 +36,7 @@ export default function TrailrunFilterBar({
   setCategoryFilter,
   genderFilter,
   setGenderFilter,
-  groupFilter,
+  groupFilter = 'all',
   setGroupFilter,
   counts,
   availableCategories,
@@ -55,7 +56,7 @@ export default function TrailrunFilterBar({
           type="button"
           onClick={() => {
             setStatusFilter('all');
-            setGroupFilter('all');
+            if (setGroupFilter) setGroupFilter('all');
           }}
           className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
             statusFilter === 'all' && groupFilter === 'all'
@@ -113,51 +114,17 @@ export default function TrailrunFilterBar({
           </span>
         </button>
 
-        {/* Tab Jalur Kelompok / Kolektif */}
-        <button
-          type="button"
-          onClick={() => {
-            setGroupFilter(groupFilter === 'group' ? 'all' : 'group');
-          }}
-          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap border ${
-            groupFilter === 'group'
-              ? 'bg-sky-500 text-white font-bold border-sky-400 shadow-sm'
-              : 'text-sky-300 border-sky-500/20 bg-sky-500/10 hover:bg-sky-500/20'
-          }`}
-          title="Filter hanya peserta pendaftaran kelompok / rombongan"
+        {/* Tab Jalur Kelompok / Kolektif (Navigasi ke Tab Kelompok) */}
+        <Link
+          href="/admin/trailrun/kelompok"
+          className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap border text-sky-300 border-sky-500/20 bg-sky-500/10 hover:bg-sky-500/20 hover:text-white"
+          title="Buka data peserta pendaftaran kelompok / rombongan"
         >
-          <span>👥 Daftar Kelompok</span>
-          <span
-            className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
-              groupFilter === 'group' ? 'bg-black/20 text-white' : 'bg-sky-500/20 text-sky-200'
-            }`}
-          >
+          <span>👥 Jalur Kelompok</span>
+          <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-sky-500/20 text-sky-200">
             {counts.group}
           </span>
-        </button>
-
-        {/* Tab Diskon Komunitas */}
-        <button
-          type="button"
-          onClick={() => {
-            setGroupFilter(groupFilter === 'discount' ? 'all' : 'discount');
-          }}
-          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap border ${
-            groupFilter === 'discount'
-              ? 'bg-gradient-to-r from-amber-500 to-[#C9A227] text-slate-950 font-bold border-amber-300 shadow-md'
-              : 'text-amber-300 border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20'
-          }`}
-          title="Filter komunitas/kelompok yang mendapatkan promo potongan diskon"
-        >
-          <span>🏷️ Promo Diskon</span>
-          <span
-            className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold ${
-              groupFilter === 'discount' ? 'bg-black/30 text-slate-950' : 'bg-amber-400/20 text-amber-300'
-            }`}
-          >
-            {counts.discount}
-          </span>
-        </button>
+        </Link>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">

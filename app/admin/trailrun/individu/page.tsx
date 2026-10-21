@@ -150,11 +150,9 @@ export default function PesertaIndividuPage() {
       all,
       paid,
       pending,
-      group: 0,
-      discount: 0,
-      totalDiscountAmount: 0,
+      group: totalKelompokPeserta,
     };
-  }, [individuData]);
+  }, [individuData, totalKelompokPeserta]);
 
   // Filtered individu rows
   const filteredData = useMemo(() => {
