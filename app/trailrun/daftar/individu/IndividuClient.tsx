@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import trailrunData from '@/data/trailrun.json';
 import { TrailrunCard } from '@/lib/types';
 import { submitTrailrunRegistration, checkBibAvailability, generateAutoBib } from '@/lib/api';
-import TrailrunBulkRegister from '@/components/trailrun/TrailrunBulkRegister';
+import RegistrationModeTabs from '@/components/trailrun/registration/RegistrationModeTabs';
 
 import {
   TrailrunFormData,
@@ -24,17 +24,11 @@ import StepPembayaran from '@/components/trailrun/registration/StepPembayaran';
 import RegistrationSuccessModal from '@/components/trailrun/registration/RegistrationSuccessModal';
 import PaymentTimeLimitModal from '@/components/trailrun/registration/PaymentTimeLimitModal';
 
-
 const categories = trailrunData.categories as TrailrunCard[];
 
-export default function DaftarTrailrunClient() {
+export default function IndividuClient() {
   const searchParams = useSearchParams();
   const distParam = searchParams.get('dist') || '';
-  const modeParam = searchParams.get('mode') || '';
-
-  const [registerMode, setRegisterMode] = useState<'individual' | 'bulk'>(
-    modeParam === 'bulk' ? 'bulk' : 'individual'
-  );
 
   const [currentStep, setCurrentStep] = useState<FormStep>(1);
   const [loading, setLoading] = useState(false);
@@ -157,7 +151,6 @@ export default function DaftarTrailrunClient() {
     const { name, value } = e.target;
     if (name === 'no_bib') {
       let upperVal = value.toUpperCase();
-      // If user typed F12345 or M12345 without hyphen, auto-insert hyphen
       if (/^[FM]\d+$/.test(upperVal)) {
         upperVal = `${upperVal[0]}-${upperVal.slice(1)}`;
       }
@@ -179,7 +172,6 @@ export default function DaftarTrailrunClient() {
     setFormData((prev) => ({ ...prev, [name]: value }));
 
     if (name === 'jenis_kelamin') {
-      // Regenerate BIB when gender is selected or changed
       handleGenerateBib(formData.kategori, false, value);
     }
 
@@ -208,7 +200,6 @@ export default function DaftarTrailrunClient() {
     }
   };
 
-  // Auto-generate BIB when reaching Step 2 if empty or if gender prefix mismatches
   useEffect(() => {
     if (currentStep === 2) {
       const currentBib = formData.no_bib.trim().toUpperCase();
@@ -337,14 +328,12 @@ export default function DaftarTrailrunClient() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Step 3 → Submit registration → then go to Step 4 (payment)
   const handleSubmitRegistration = async () => {
     if (!validateStep(1) || !validateStep(2) || !validateStep(3)) return;
 
     setLoading(true);
     setErrorMsg('');
 
-    // Pre-check BIB availability before inserting to prevent race conditions
     const bibCheck = await checkBibAvailability(formData.no_bib.trim());
     if (!bibCheck.available) {
       setLoading(false);
@@ -404,8 +393,6 @@ export default function DaftarTrailrunClient() {
     }
   };
 
-
-  // Step 4 → Create payment via Pakasir
   const handleCreatePayment = async () => {
     setLoading(true);
     setErrorMsg('');
@@ -449,7 +436,6 @@ export default function DaftarTrailrunClient() {
     }
   };
 
-  // Poll payment status every 12 seconds or trigger manually
   const checkPaymentStatus = useCallback(async (isManual = false) => {
     if (!paymentData?.txn_id) return;
     if (isManual) setCheckingStatus(true);
@@ -465,7 +451,7 @@ export default function DaftarTrailrunClient() {
         setPaymentStatus('expired');
       }
     } catch {
-      // Silently ignore polling errors
+      // Silently ignore
     } finally {
       if (isManual) setCheckingStatus(false);
     }
@@ -517,6 +503,7 @@ export default function DaftarTrailrunClient() {
       {/* ===== HERO BANNER ===== */}
       <section className="relative w-full h-[340px] sm:h-[400px] overflow-hidden">
         <div className="absolute inset-0 bg-black z-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/assets/jiwandana_trailrun_1.jpeg"
             alt="Trailrun Lintas Candi Majapahit"
@@ -530,254 +517,196 @@ export default function DaftarTrailrunClient() {
             <span>Pendaftaran Online Resmi</span>
           </div>
           <h1 className="text-2xl sm:text-4xl md:text-5xl font-serif font-bold text-white tracking-wide leading-tight drop-shadow-md">
-            Formulir Pendaftaran
+            Pendaftaran Individu
           </h1>
           <p className="text-xs sm:text-sm md:text-base text-slate-200 max-w-xl mx-auto mt-3 leading-relaxed drop-shadow">
-            Isi formulir di bawah untuk mendaftar sebagai peserta Trailrun Lintas Candi Majapahit
+            Isi formulir di bawah untuk mendaftar sebagai peserta perorangan Trailrun Lintas Candi Majapahit
           </p>
         </div>
       </section>
 
       {/* ===== FORM SECTION ===== */}
       <section className="max-w-3xl mx-auto px-4 sm:px-6 -mt-10 relative z-20 pb-20">
-        {/* REGISTRATION TYPE TABS (Individu vs Kolektif/Excel) */}
-        <div className="flex items-center justify-center p-1 rounded-2xl bg-white border border-black/10 shadow-xs mb-6 max-w-xl mx-auto">
+        {/* REGISTRATION TYPE TABS (Individu vs Kolektif) */}
+        <RegistrationModeTabs />
+
+        {/* PAYMENT TIME LIMIT BANNER (1 JAM AUTO-HAPUS) */}
+        <div className="mb-4 p-3.5 sm:p-4 rounded-2xl bg-amber-50 border-2 border-amber-300/80 text-amber-950 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-2.5">
+            <span className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-800 flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-base">timer</span>
+            </span>
+            <div>
+              <span className="font-extrabold text-amber-900 block sm:inline">Wajib Bayar Dalam 1 Jam: </span>
+              <span className="text-amber-800">Pendaftaran akan otomatis dibatalkan &amp; dihapus dari sistem jika tidak diselesaikan dalam 1 jam.</span>
+            </div>
+          </div>
           <button
             type="button"
-            onClick={() => setRegisterMode('individual')}
-            className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${registerMode === 'individual'
-                ? 'bg-[#C9A227] text-[#0d1c32] shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
+            onClick={() => setShowTimeLimitModal(true)}
+            className="px-3 py-1.5 rounded-xl bg-amber-200/60 hover:bg-amber-200 text-amber-900 font-bold text-[11px] uppercase tracking-wider transition-all shrink-0 cursor-pointer"
           >
-            <span className="material-symbols-outlined text-sm">person</span>
-            <span>Individu</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setRegisterMode('bulk')}
-            className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${registerMode === 'bulk'
-                ? 'bg-[#C9A227] text-[#0d1c32] shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-          >
-            <span className="material-symbols-outlined text-sm">groups</span>
-            <span>Kolektif / Grup (Min. 5)</span>
+            Pelajari Aturan
           </button>
         </div>
 
-        {registerMode === 'bulk' ? (
-          <TrailrunBulkRegister />
-        ) : (
-          <>
-            {/* PAYMENT TIME LIMIT BANNER (1 JAM AUTO-HAPUS) */}
-            <div className="mb-4 p-3.5 sm:p-4 rounded-2xl bg-amber-50 border-2 border-amber-300/80 text-amber-950 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
-              <div className="flex items-center gap-2.5">
-                <span className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-800 flex items-center justify-center shrink-0">
-                  <span className="material-symbols-outlined text-base">timer</span>
-                </span>
-                <div>
-                  <span className="font-extrabold text-amber-900 block sm:inline">Wajib Bayar Dalam 1 Jam: </span>
-                  <span className="text-amber-800">Pendaftaran akan otomatis dibatalkan & dihapus dari sistem jika tidak diselesaikan dalam 1 jam.</span>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowTimeLimitModal(true)}
-                className="px-3 py-1.5 rounded-xl bg-amber-200/60 hover:bg-amber-200 text-amber-900 font-bold text-[11px] uppercase tracking-wider shrink-0 transition-colors cursor-pointer self-end sm:self-auto"
-              >
-                Baca Info Lengkap
-              </button>
+        {/* Form Container */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (currentStep === 3) handleSubmitRegistration();
+            else if (currentStep < 3) goNext();
+          }}
+          className="bg-white rounded-3xl border border-black/10 shadow-sm p-6 sm:p-10 space-y-8"
+        >
+          {/* Step Progress Indicator */}
+          <RegistrationStepIndicator currentStep={currentStep} />
+
+          {/* Error Message */}
+          {errorMsg && (
+            <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+              <span className="material-symbols-outlined text-sm shrink-0 text-rose-500">
+                error
+              </span>
+              <span>{errorMsg}</span>
             </div>
+          )}
 
-            {/* STEP INDICATOR */}
-            <RegistrationStepIndicator currentStep={currentStep} />
-
-            {/* ERROR MESSAGE */}
-            {errorMsg && (
-              <div className="mb-4 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs sm:text-sm flex items-center gap-3 animate-[fadeIn_0.3s_ease-out]">
-                <span className="material-symbols-outlined text-rose-600 text-lg">error</span>
-                <span>{errorMsg}</span>
-              </div>
+          {/* Form Step Contents */}
+          <div className="min-h-[300px]">
+            {currentStep === 1 && (
+              <StepKategoriLomba
+                categories={categories}
+                selectedKategori={formData.kategori}
+                onSelect={handleSelectCategory}
+                pricingInfoMap={pricingInfoMap}
+              />
             )}
 
-            {/* FORM CARD */}
-            <form onSubmit={(e) => e.preventDefault()}>
-              <div className="bg-white border border-black/10 rounded-2xl shadow-sm overflow-hidden">
-                {/* STEP 1: KATEGORI LOMBA */}
-                {currentStep === 1 && (
-                  <StepKategoriLomba
-                    categories={categories}
-                    selectedKategori={formData.kategori}
-                    onSelect={handleSelectCategory}
-                    pricingInfoMap={pricingInfoMap}
-                  />
-                )}
+            {currentStep === 2 && (
+              <StepDataPribadi
+                formData={formData}
+                selectedCategory={selectedCategory}
+                onChange={handleChange}
+                onChangeCategoryStep={() => {
+                  setCurrentStep(1);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                bibStatus={bibStatus}
+                bibMessage={bibMessage}
+                onCheckBib={handleManualCheckBib}
+                onGenerateBib={() => handleGenerateBib(formData.kategori, true)}
+                generatingBib={generatingBib}
+              />
+            )}
 
-                {/* STEP 2: DATA PRIBADI */}
-                {currentStep === 2 && (
-                  <StepDataPribadi
-                    formData={formData}
-                    selectedCategory={selectedCategory}
-                    onChange={handleChange}
-                    onChangeCategoryStep={() => setCurrentStep(1)}
-                    bibStatus={bibStatus}
-                    bibMessage={bibMessage}
-                    onCheckBib={handleManualCheckBib}
-                    onGenerateBib={() => handleGenerateBib(formData.kategori, true)}
-                    generatingBib={generatingBib}
-                  />
-                )}
+            {currentStep === 3 && (
+              <StepAlamatMedis
+                formData={formData}
+                onChange={handleChange}
+                onSelectGolonganDarah={handleSelectGolonganDarah}
+              />
+            )}
 
-                {/* STEP 3: ALAMAT & DATA MEDIS */}
-                {currentStep === 3 && (
-                  <StepAlamatMedis
-                    formData={formData}
-                    selectedCategory={selectedCategory}
-                    onChange={handleChange}
-                    onSelectGolonganDarah={handleSelectGolonganDarah}
-                  />
-                )}
+            {currentStep === 4 && (
+              <StepPembayaran
+                formData={formData}
+                selectedCategory={selectedCategory}
+                pricingInfoMap={pricingInfoMap}
+                paymentMethod={paymentMethod}
+                onSelectPaymentMethod={(id) => setPaymentMethod(id)}
+                paymentData={paymentData}
+                paymentStatus={paymentStatus}
+                checkingStatus={checkingStatus}
+                onCheckPaymentStatus={(isManual) => checkPaymentStatus(isManual)}
+                onChangePaymentMethod={() => {
+                  setPaymentData(null);
+                  setPaymentStatus('idle');
+                }}
+                onBack={goBack}
+                formatCurrency={formatCurrency}
+                formatExpiry={formatExpiry}
+              />
+            )}
+          </div>
 
-                {/* STEP 4: PEMBAYARAN */}
-                {currentStep === 4 && (
-                  <StepPembayaran
-                    formData={formData}
-                    selectedCategory={selectedCategory}
-                    pricingInfoMap={pricingInfoMap}
-                    paymentMethod={paymentMethod}
-                    onSelectPaymentMethod={setPaymentMethod}
-                    paymentData={paymentData}
-                    paymentStatus={paymentStatus}
-                    checkingStatus={checkingStatus}
-                    onCheckPaymentStatus={checkPaymentStatus}
-                    onChangePaymentMethod={() => {
-                      setPaymentData(null);
-                      setPaymentStatus('idle');
-                    }}
-                    onBack={goBack}
-                    formatCurrency={formatCurrency}
-                    formatExpiry={formatExpiry}
-                  />
-                )}
+          {/* Bottom Action Buttons */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-black/5">
+            <div>
+              {currentStep > 1 && (
+                <button
+                  type="button"
+                  onClick={goBack}
+                  disabled={loading || (currentStep === 4 && paymentStatus === 'completed')}
+                  className="px-5 py-2.5 rounded-xl border border-black/15 text-slate-700 hover:text-slate-900 font-semibold text-xs uppercase tracking-wider transition-all disabled:opacity-40"
+                >
+                  Kembali
+                </button>
+              )}
+            </div>
 
-                {/* ===== FOOTER NAVIGATION ===== */}
-                <div className="px-6 sm:px-8 py-5 bg-[#f8f8f8] border-t border-black/5 flex items-center justify-between gap-3">
-                  {currentStep > 1 ? (
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={goBack}
-                        disabled={paymentStatus === 'completed'}
-                        className="px-5 py-3 bg-white border border-black/10 text-slate-700 rounded-xl font-semibold text-xs uppercase tracking-wider hover:border-[#C9A227] hover:text-[#C9A227] transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                      >
-                        <span className="material-symbols-outlined text-sm">arrow_back</span>
-                        <span>{currentStep === 4 && paymentData ? 'Kembali ke Formulir' : 'Kembali'}</span>
-                      </button>
+            <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+              {currentStep < 3 && (
+                <button
+                  type="button"
+                  onClick={goNext}
+                  disabled={loading || (currentStep === 1 && !formData.kategori)}
+                  className="w-full sm:w-auto px-7 py-3 bg-[#C9A227] hover:bg-[#b08d20] disabled:opacity-40 text-[#0d1c32] rounded-xl font-bold text-xs uppercase tracking-wider transition-all transform active:scale-95 shadow-md flex items-center justify-center gap-2"
+                >
+                  <span>Lanjutkan</span>
+                  <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                </button>
+              )}
 
-
-                    </div>
-                  ) : (
-                    <Link
-                      href="/trailrun"
-                      className="px-5 py-3 bg-white border border-black/10 text-slate-700 rounded-xl font-semibold text-xs uppercase tracking-wider hover:border-[#C9A227] hover:text-[#C9A227] transition-all flex items-center gap-1.5"
-                    >
-                      <span className="material-symbols-outlined text-sm">arrow_back</span>
-                      <span>Halaman Trailrun</span>
-                    </Link>
-                  )}
-
-                  {currentStep < 3 && (
-                    <button
-                      type="button"
-                      onClick={goNext}
-                      disabled={checkingBib}
-                      className="px-6 py-3 bg-[#C9A227] hover:bg-[#b08d20] disabled:opacity-50 text-[#0d1c32] rounded-xl font-semibold text-xs uppercase tracking-wider shadow-md transition-all transform active:scale-95 flex items-center gap-1.5 cursor-pointer"
-                    >
-                      {checkingBib && currentStep === 2 ? (
-                        <>
-                          <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
-                          <span>Memeriksa BIB...</span>
-                        </>
-                      ) : (
-                        <>
-                          <span>Lanjutkan</span>
-                          <span className="material-symbols-outlined text-sm">arrow_forward</span>
-                        </>
-                      )}
-                    </button>
-                  )}
-
-                  {currentStep === 3 && (
-                    <button
-                      type="button"
-                      onClick={handleSubmitRegistration}
-                      disabled={loading}
-                      className="px-6 py-3 bg-[#C9A227] hover:bg-[#b08d20] disabled:opacity-50 text-[#0d1c32] rounded-xl font-semibold text-xs uppercase tracking-wider shadow-md transition-all transform active:scale-95 flex items-center gap-2 cursor-pointer"
-                    >
-                      {loading ? (
-                        <>
-                          <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
-                          <span>Menyimpan...</span>
-                        </>
-                      ) : (
-                        <>
-                          <span>Lanjut ke Pembayaran</span>
-                          <span className="material-symbols-outlined text-sm">arrow_forward</span>
-                        </>
-                      )}
-                    </button>
-                  )}
-
-                  {currentStep === 4 && !paymentData && (
-                    <button
-                      type="button"
-                      onClick={handleCreatePayment}
-                      disabled={loading}
-                      className="px-6 py-3 bg-[#C9A227] hover:bg-[#b08d20] disabled:opacity-50 text-[#0d1c32] rounded-xl font-semibold text-xs uppercase tracking-wider shadow-md transition-all transform active:scale-95 flex items-center gap-2 cursor-pointer"
-                    >
-                      {loading ? (
-                        <>
-                          <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
-                          <span>Memproses...</span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="material-symbols-outlined text-sm">lock</span>
-                          <span>Bayar Sekarang</span>
-                        </>
-                      )}
-                    </button>
-                  )}
-
-                  {currentStep === 4 && paymentData && paymentStatus !== 'completed' && (
-                    <button
-                      type="button"
-                      onClick={() => checkPaymentStatus(true)}
-                      disabled={checkingStatus}
-                      className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl font-semibold text-xs uppercase tracking-wider shadow-md transition-all flex items-center gap-2 cursor-pointer"
-                    >
-                      <span className={`material-symbols-outlined text-sm ${checkingStatus ? 'animate-spin' : ''}`}>
-                        {checkingStatus ? 'progress_activity' : 'refresh'}
+              {currentStep === 3 && (
+                <button
+                  type="button"
+                  onClick={handleSubmitRegistration}
+                  disabled={loading}
+                  className="w-full sm:w-auto px-7 py-3 bg-[#C9A227] hover:bg-[#b08d20] disabled:opacity-50 text-[#0d1c32] rounded-xl font-bold text-xs uppercase tracking-wider transition-all transform active:scale-95 shadow-md flex items-center justify-center gap-2"
+                >
+                  {loading ? (
+                    <>
+                      <span className="material-symbols-outlined text-sm animate-spin">
+                        progress_activity
                       </span>
-                      <span>{checkingStatus ? 'Mengecek...' : 'Cek Status Pembayaran'}</span>
-                    </button>
+                      <span>Menyimpan...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Lanjut ke Pembayaran</span>
+                      <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                    </>
                   )}
+                </button>
+              )}
 
-                  {currentStep === 4 && paymentData && paymentStatus === 'completed' && (
-                    <Link
-                      href="/trailrun"
-                      className="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-semibold text-xs uppercase tracking-wider shadow-md transition-all flex items-center gap-2"
-                    >
-                      <span className="material-symbols-outlined text-sm">check_circle</span>
-                      <span>Selesai</span>
-                    </Link>
-                  )}
-                </div>
-              </div>
-            </form>
-          </>
-        )}
+              {currentStep === 4 && paymentData && paymentStatus !== 'completed' && (
+                <button
+                  type="button"
+                  onClick={() => checkPaymentStatus(true)}
+                  disabled={checkingStatus}
+                  className="w-full sm:w-auto px-6 py-3 bg-slate-900 hover:bg-black text-white rounded-xl font-semibold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2"
+                >
+                  <span className={`material-symbols-outlined text-sm ${checkingStatus ? 'animate-spin' : ''}`}>
+                    {checkingStatus ? 'progress_activity' : 'refresh'}
+                  </span>
+                  <span>{checkingStatus ? 'Mengecek...' : 'Cek Status Pembayaran'}</span>
+                </button>
+              )}
+
+              {currentStep === 4 && paymentData && paymentStatus === 'completed' && (
+                <Link
+                  href="/trailrun"
+                  className="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-semibold text-xs uppercase tracking-wider shadow-md transition-all flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-sm">check_circle</span>
+                  <span>Selesai</span>
+                </Link>
+              )}
+            </div>
+          </div>
+        </form>
       </section>
 
       {/* ===== SUCCESS MODAL ===== */}
