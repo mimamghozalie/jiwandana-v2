@@ -35,10 +35,10 @@ export async function POST(request: NextRequest) {
     const body: BulkRequestBody = await request.json();
     const { group_name, pic_name, pic_email, pic_phone, payment_method, participants } = body;
 
-    // 1. Validasi jumlah peserta: Minimal 5 orang dan Maksimal 10 orang
-    if (!participants || !Array.isArray(participants) || participants.length < 5 || participants.length > 10) {
+    // 1. Validasi jumlah peserta: Minimal 5 orang dan Maksimal 20 orang
+    if (!participants || !Array.isArray(participants) || participants.length < 5 || participants.length > 20) {
       return NextResponse.json(
-        { error: 'Pendaftaran kolektif membutuhkan minimal 5 orang dan maksimal 10 orang peserta per transaksi.' },
+        { error: 'Pendaftaran kolektif membutuhkan minimal 5 orang dan maksimal 20 orang peserta per transaksi.' },
         { status: 400 }
       );
     }
@@ -89,13 +89,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Kalkulasi harga tiket tidak valid.' }, { status: 400 });
     }
 
-    // 4. Promo Diskon 10 Orang: Potongan tetap Rp 320.000 (setara 1 tiket 12K)
-    let discountAmount = 0;
-    let promoNote: string | null = null;
-    if (evaluatedParticipants.length === 10) {
-      discountAmount = 320000;
-      promoNote = 'Promo 10 Peserta: Potongan Tetap Rp 320.000 (Setara 1 Tiket 12K)';
-    }
+    // 4. Promo Diskon Kelipatan 10 Orang: Rp 320.000 per 10 orang (contoh 10 org = Rp 320.000, 20 org = Rp 640.000)
+    const discountMultiplier = Math.floor(evaluatedParticipants.length / 10);
+    const discountAmount = discountMultiplier * 320000;
+    const promoNote =
+      discountMultiplier > 0
+        ? `Promo Kelompok: Diskon ${discountMultiplier}x Rp 320.000 = Rp ${discountAmount.toLocaleString('id-ID')}`
+        : null;
 
     const subtotalTickets = Math.max(0, rawSubtotalTickets - discountAmount);
 
@@ -171,18 +171,31 @@ export async function POST(request: NextRequest) {
       .insert(insertPayload)
       .select('id, nama, email, kategori, no_bib');
 
-    // Graceful fallback jika kolom tertentu belum termigrasi di database Supabase
+    // Graceful fallback jika kolom tertentu belum termigrasi di database Supabase (misal pic_email)
     if (regError) {
       console.warn('Initial insert trailrun_registrations error:', regError.message);
-      const fallbackPayload = insertPayload.map(
-        ({ nik, kk, ukuran_jersey, pic_name, pic_phone, pic_email, ...rest }) => rest
-      );
-      const fallbackRes = await supabase
+      // Coba pertahankan pic_name dan pic_phone, hanya hapus pic_email
+      const payloadWithoutPicEmail = insertPayload.map(({ pic_email, ...rest }) => rest);
+      const retryWithoutEmail = await supabase
         .from('trailrun_registrations')
-        .insert(fallbackPayload)
+        .insert(payloadWithoutPicEmail)
         .select('id, nama, email, kategori, no_bib');
-      insertedRegistrations = fallbackRes.data;
-      regError = fallbackRes.error;
+
+      if (!retryWithoutEmail.error) {
+        insertedRegistrations = retryWithoutEmail.data;
+        regError = null;
+      } else {
+        console.warn('Retry without pic_email error:', retryWithoutEmail.error.message);
+        const minimalFallbackPayload = insertPayload.map(
+          ({ nik, kk, ukuran_jersey, pic_name, pic_phone, pic_email, ...rest }) => rest
+        );
+        const fallbackRes = await supabase
+          .from('trailrun_registrations')
+          .insert(minimalFallbackPayload)
+          .select('id, nama, email, kategori, no_bib');
+        insertedRegistrations = fallbackRes.data;
+        regError = fallbackRes.error;
+      }
     }
 
     if (regError) {
@@ -191,9 +204,11 @@ export async function POST(request: NextRequest) {
     }
 
     // 9. Save payment record to trailrun_payments
-    const firstRegId = insertedRegistrations?.[0]?.id || orderId;
-    const paymentRecords = (insertedRegistrations || []).map((reg) => ({
-      registration_id: reg.id,
+    // NOTE: Tabel trailrun_payments memiliki UNIQUE constraint pada `order_id`
+    // Jadi untuk pendaftaran rombongan, cukup 1 baris payment record per order_id (mewakili PIC / rombongan)
+    const primaryRegId = insertedRegistrations?.[0]?.id || orderId;
+    const singlePaymentRecord = {
+      registration_id: primaryRegId,
       order_id: orderId,
       txn_id: transaction.txn_id,
       amount: subtotalTickets,
@@ -211,49 +226,19 @@ export async function POST(request: NextRequest) {
       admin_profit: adminProfit,
       pic_name: pic_name || null,
       pic_phone: pic_phone || null,
-      pic_email: pic_email || null,
-    }));
+    };
 
-    if (paymentRecords.length > 0) {
-      const { error: insErr } = await supabase.from('trailrun_payments').insert(paymentRecords);
-      if (insErr) {
-        console.error('❌ Gagal insert ke trailrun_payments dengan field PIC:', insErr.message);
-        // Fallback coba tanpa field admin profit / fees dulu sebelum strip PIC
-        const retryWithPic = paymentRecords.map(
-          ({ admin_fee, gateway_fee, admin_profit, ...rest }) => rest
-        );
-        const { error: retryErr } = await supabase.from('trailrun_payments').insert(retryWithPic);
-        if (retryErr) {
-          console.error('❌ Retry insert trailrun_payments error:', retryErr.message);
-          const baseRecords = paymentRecords.map(
-            ({ admin_fee, gateway_fee, admin_profit, pic_name, pic_phone, pic_email, ...rest }) => rest
-          );
-          await supabase.from('trailrun_payments').insert(baseRecords);
-        }
-      }
-    } else {
-      const singleRecord = {
-        registration_id: firstRegId,
-        order_id: orderId,
-        txn_id: transaction.txn_id,
-        amount: subtotalTickets,
-        fee: ADMIN_FEE,
-        total_payment: finalTotalPayment,
-        payment_method: transaction.payment_method,
-        qr_string: transaction.qr_string || null,
-        va_number: transaction.va_number || null,
-        payment_link: transaction.payment_link || null,
-        expired_at: expiredAt,
-        is_sandbox: transaction.is_sandbox ?? true,
-        status: 'pending',
-        pic_name: pic_name || null,
-        pic_phone: pic_phone || null,
-        pic_email: pic_email || null,
-      };
-      const { error: singleErr } = await supabase.from('trailrun_payments').insert([singleRecord]);
-      if (singleErr) {
-        const { pic_name: _, pic_phone: __, pic_email: ___, ...fallbackSingle } = singleRecord;
-        await supabase.from('trailrun_payments').insert([fallbackSingle]);
+    // Insert 1 record payment
+    const { error: insErr } = await supabase.from('trailrun_payments').insert([singlePaymentRecord]);
+    if (insErr) {
+      console.warn('⚠️ Gagal insert ke trailrun_payments dengan field profit/fees:', insErr.message);
+      // Fallback tanpa profit fields
+      const { admin_fee, gateway_fee, admin_profit, ...fallbackRecord } = singlePaymentRecord;
+      const { error: fallbackErr } = await supabase.from('trailrun_payments').insert([fallbackRecord]);
+      if (fallbackErr) {
+        console.warn('⚠️ Fallback insert tanpa pic fields:', fallbackErr.message);
+        const { pic_name: _, pic_phone: __, ...basicRecord } = fallbackRecord;
+        await supabase.from('trailrun_payments').insert([basicRecord]);
       }
     }
 

@@ -153,6 +153,34 @@ export default function PesertaKelompokPage() {
     }
   };
 
+  // Batalkan transaksi kelompok & hapus peserta terkait
+  const handleCancelBatch = async (orderId: string, groupName: string, participantCount: number) => {
+    const confirmed = window.confirm(
+      `Apakah Anda yakin ingin membatalkan transaksi "${orderId}"?\n\n` +
+      `Komunitas: ${groupName}\n` +
+      `Jumlah Peserta: ${participantCount} orang\n\n` +
+      `Semua data peserta yang didaftarkan pada transaksi ini akan dihapus dari sistem.`
+    );
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch('/api/payment/cancel-bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order_id: orderId }),
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        throw new Error(result.message || 'Gagal membatalkan transaksi kelompok.');
+      }
+
+      alert(result.message || 'Transaksi berhasil dibatalkan.');
+      await fetchData();
+    } catch (err: any) {
+      alert(`Terjadi kesalahan: ${err.message}`);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* 1. Header Bar */}
@@ -204,6 +232,7 @@ export default function PesertaKelompokPage() {
         batches={batches}
         loading={loading}
         onSelectParticipant={(row) => setSelectedRow(row)}
+        onCancelBatch={handleCancelBatch}
       />
 
       {/* 4. Detail Modal */}

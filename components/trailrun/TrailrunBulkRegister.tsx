@@ -25,6 +25,9 @@ import {
   Calculator,
   Tag,
   Sparkles,
+  Clock,
+  XCircle,
+  AlertCircle,
 } from 'lucide-react';
 
 const PAYMENT_METHODS = [
@@ -109,8 +112,76 @@ export default function TrailrunBulkRegister() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [paymentData, setPaymentData] = useState<BulkPaymentResponse | null>(null);
-  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'completed' | 'error'>('pending');
+  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'completed' | 'error' | 'cancelled' | 'expired'>('pending');
   const [checkingStatus, setCheckingStatus] = useState(false);
+  const [cancellingPayment, setCancellingPayment] = useState(false);
+  const [timeLeft, setTimeLeft] = useState<{ minutes: number; seconds: number; isExpired: boolean }>({
+    minutes: 60,
+    seconds: 0,
+    isExpired: false,
+  });
+
+  // Timer Countdown 1 Jam Pembayaran Kolektif
+  useEffect(() => {
+    if (!paymentData?.expired_at || paymentStatus === 'completed' || paymentStatus === 'cancelled') {
+      return;
+    }
+
+    const updateTimer = () => {
+      const now = Date.now();
+      const expiry = new Date(paymentData.expired_at).getTime();
+      const diff = expiry - now;
+
+      if (diff <= 0) {
+        setTimeLeft({ minutes: 0, seconds: 0, isExpired: true });
+        setPaymentStatus('expired');
+      } else {
+        const totalSecs = Math.floor(diff / 1000);
+        const mins = Math.floor(totalSecs / 60);
+        const secs = totalSecs % 60;
+        setTimeLeft({ minutes: mins, seconds: secs, isExpired: false });
+      }
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [paymentData?.expired_at, paymentStatus]);
+
+  // Fungsi Batalkan Transaksi Pendaftaran Kelompok
+  const handleCancelTransaction = async () => {
+    if (!paymentData?.order_id) return;
+
+    const confirmed = window.confirm(
+      'Apakah Anda yakin ingin membatalkan transaksi pendaftaran kelompok ini?\n\n' +
+      'Data peserta yang didaftarkan pada transaksi ini akan dihapus dari sistem.'
+    );
+    if (!confirmed) return;
+
+    setCancellingPayment(true);
+    try {
+      const res = await fetch('/api/payment/cancel-bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          order_id: paymentData.order_id,
+          txn_id: paymentData.txn_id,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.message || 'Gagal membatalkan transaksi.');
+      }
+
+      alert('Transaksi pendaftaran kelompok berhasil dibatalkan.');
+      setPaymentData(null);
+      setPaymentStatus('pending');
+    } catch (err: any) {
+      alert(`Terjadi kesalahan: ${err.message}`);
+    } finally {
+      setCancellingPayment(false);
+    }
+  };
 
   // Active pricing tier information from trailrun-pricing.json & database counts
   const [pricingInfo, setPricingInfo] = useState<Record<string, ActiveTierResult>>({
@@ -243,8 +314,8 @@ export default function TrailrunBulkRegister() {
       return;
     }
 
-    if (validCount > 10) {
-      setSubmitError(`Pendaftaran kolektif dibatasi maksimal 10 orang peserta per transaksi (saat ini ${validCount} peserta). Silakan kurangi peserta atau buat transaksi kedua.`);
+    if (validCount > 20) {
+      setSubmitError(`Pendaftaran kolektif dibatasi maksimal 20 orang peserta per transaksi (saat ini ${validCount} peserta). Silakan kurangi peserta atau buat transaksi kedua.`);
       return;
     }
 
@@ -357,18 +428,18 @@ export default function TrailrunBulkRegister() {
     const subtotal12k = count12k * PRICE_12K;
     const rawSubtotalTickets = subtotal7k + subtotal12k;
 
-    // Promo 10 Peserta: Potongan Tetap Rp 320.000 jika validCount === 10
-    const isPromoActive = validCount === 10;
-    const discountAmount = isPromoActive ? 320000 : 0;
+    // Promo Kelipatan 10 Peserta: Diskon Rp 320.000 tiap 10 peserta (10 = 320k, 20 = 640k)
+    const discountMultiplier = Math.floor(validCount / 10);
+    const isPromoActive = discountMultiplier > 0;
+    const discountAmount = discountMultiplier * 320000;
     const subtotalTickets = Math.max(0, rawSubtotalTickets - discountAmount);
 
-    // Biaya Layanan Admin Rp 3.000 / orang
+    // Biaya Layanan: Biaya Layanan Admin Rp 3.000 / orang + Biaya Transaksi QRIS (0.7% + Rp 300)
     const adminFee = validCount * ADMIN_FEE_PER_PERSON;
-
-    // SKEMA B: Gateway Pakasir (0.7% + Rp 300) dibebankan ke user
     const amountToSend = subtotalTickets + adminFee;
     const estimatedGatewayFee = validCount > 0 ? Math.round(amountToSend * 0.007 + 300) : 0;
-    const grandTotal = amountToSend + estimatedGatewayFee;
+    const totalServiceFee = adminFee + estimatedGatewayFee;
+    const grandTotal = subtotalTickets + totalServiceFee;
 
     return {
       count7k,
@@ -381,10 +452,12 @@ export default function TrailrunBulkRegister() {
       tierName12k: 'Pre-Sale (Tarif Tetap)',
       rawSubtotalTickets,
       isPromoActive,
+      discountMultiplier,
       discountAmount,
       subtotalTickets,
       adminFee,
       estimatedGatewayFee,
+      totalServiceFee,
       grandTotal,
       participantPriceMap,
     };
@@ -397,41 +470,80 @@ export default function TrailrunBulkRegister() {
       ========================================================================= */}
       {paymentData ? (
         <div className="space-y-6">
-          {/* Header Status Banner */}
+          {/* Header Status Banner dengan Countdown Timer 1 Jam */}
           <div
-            className={`p-5 rounded-2xl border flex items-center gap-4 ${
+            className={`p-5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
               paymentStatus === 'completed'
                 ? 'bg-emerald-50 border-emerald-200'
+                : paymentStatus === 'expired'
+                ? 'bg-rose-50 border-rose-200'
                 : 'bg-amber-50 border-amber-200'
             }`}
           >
-            <div
-              className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
-                paymentStatus === 'completed' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'
-              }`}
-            >
-              {paymentStatus === 'completed' ? (
-                <CheckCircle2 className="w-6 h-6" />
-              ) : (
-                <RefreshCw className="w-6 h-6 animate-spin text-amber-600" />
-              )}
-            </div>
-            <div>
-              <h3
-                className={`text-base sm:text-lg font-bold font-serif ${
-                  paymentStatus === 'completed' ? 'text-emerald-800' : 'text-amber-800'
+            <div className="flex items-center gap-4">
+              <div
+                className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+                  paymentStatus === 'completed'
+                    ? 'bg-emerald-100 text-emerald-600'
+                    : paymentStatus === 'expired'
+                    ? 'bg-rose-100 text-rose-600'
+                    : 'bg-amber-100 text-amber-600'
                 }`}
               >
-                {paymentStatus === 'completed'
-                  ? 'Pembayaran Kolektif Berhasil Dikonfirmasi!'
-                  : 'Menunggu Pembayaran Kolektif'}
-              </h3>
-              <p className="text-xs text-slate-600">
-                {paymentStatus === 'completed'
-                  ? `Seluruh ${paymentData.participant_count} peserta telah resmi terdaftar pada Trailrun Lintas Candi.`
-                  : `Batas waktu pembayaran hingga: ${formatExpiry(paymentData.expired_at)}`}
-              </p>
+                {paymentStatus === 'completed' ? (
+                  <CheckCircle2 className="w-6 h-6" />
+                ) : paymentStatus === 'expired' ? (
+                  <AlertCircle className="w-6 h-6 text-rose-600" />
+                ) : (
+                  <RefreshCw className="w-6 h-6 animate-spin text-amber-600" />
+                )}
+              </div>
+              <div>
+                <h3
+                  className={`text-base sm:text-lg font-bold font-serif ${
+                    paymentStatus === 'completed'
+                      ? 'text-emerald-800'
+                      : paymentStatus === 'expired'
+                      ? 'text-rose-800'
+                      : 'text-amber-800'
+                  }`}
+                >
+                  {paymentStatus === 'completed'
+                    ? 'Pembayaran Kolektif Berhasil Dikonfirmasi!'
+                    : paymentStatus === 'expired'
+                    ? 'Waktu Pembayaran Telah Habis (Expired)'
+                    : 'Menunggu Pembayaran Kolektif'}
+                </h3>
+                <p className="text-xs text-slate-600">
+                  {paymentStatus === 'completed'
+                    ? `Seluruh ${paymentData.participant_count} peserta telah resmi terdaftar pada Trailrun Lintas Candi.`
+                    : paymentStatus === 'expired'
+                    ? 'Batas waktu 1 jam telah berakhir. Silakan batalkan atau daftar ulang rombongan.'
+                    : `Batas waktu pembayaran hingga: ${formatExpiry(paymentData.expired_at)}`}
+                </p>
+              </div>
             </div>
+
+            {/* Countdown Box 1 Jam */}
+            {paymentStatus !== 'completed' && (
+              <div className="flex items-center gap-3 bg-white/80 backdrop-blur-xs border border-black/10 px-4 py-2.5 rounded-xl self-start sm:self-center shadow-xs">
+                <Clock className={`w-4 h-4 ${paymentStatus === 'expired' ? 'text-rose-600' : 'text-amber-600 animate-pulse'}`} />
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">
+                    Sisa Waktu Bayar
+                  </span>
+                  <div className="font-mono text-base font-extrabold text-slate-900">
+                    {paymentStatus === 'expired' ? (
+                      <span className="text-rose-600 font-bold">KADALUARSA</span>
+                    ) : (
+                      <span>
+                        {String(timeLeft.minutes).padStart(2, '0')}:{String(timeLeft.seconds).padStart(2, '0')}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Payment Breakdown Card (Light Theme) */}
@@ -468,17 +580,20 @@ export default function TrailrunBulkRegister() {
               </div>
               <div>
                 <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block mb-0.5">
-                  Biaya Admin ({paymentData.participant_count} x Rp 3.000)
+                  Biaya Layanan
                 </span>
                 <span className="text-slate-900 font-semibold">
-                  {formatCurrency(paymentData.admin_fee || paymentData.participant_count * 3000)}
+                  {formatCurrency(
+                    (paymentData.admin_fee || paymentData.participant_count * 3000) +
+                      (paymentData.gateway_fee || 0)
+                  )}
                 </span>
               </div>
             </div>
 
-            {/* Promo Discount & Gateway Fee Row */}
-            <div className="pt-2 border-t border-black/5 space-y-1.5 text-xs">
-              {paymentData.discount_amount && paymentData.discount_amount > 0 ? (
+            {/* Promo Discount Row jika ada */}
+            {paymentData.discount_amount && paymentData.discount_amount > 0 ? (
+              <div className="pt-2 border-t border-black/5 text-xs">
                 <div className="flex justify-between items-center text-emerald-700 font-bold bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
                   <span className="flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
@@ -486,15 +601,8 @@ export default function TrailrunBulkRegister() {
                   </span>
                   <span className="font-mono">-{formatCurrency(paymentData.discount_amount)}</span>
                 </div>
-              ) : null}
-
-              {paymentData.gateway_fee && paymentData.gateway_fee > 0 ? (
-                <div className="flex justify-between items-center text-slate-600 px-1">
-                  <span>Biaya Transaksi QRIS (Pakasir):</span>
-                  <span className="font-mono font-semibold">{formatCurrency(paymentData.gateway_fee)}</span>
-                </div>
-              ) : null}
-            </div>
+              </div>
+            ) : null}
 
             {paymentData.participants && paymentData.participants.length > 0 && (
               <div className="pt-2 border-t border-black/5 flex flex-wrap gap-2 text-xs">
@@ -571,12 +679,26 @@ export default function TrailrunBulkRegister() {
             <button
               type="button"
               onClick={checkStatus}
-              disabled={checkingStatus}
+              disabled={checkingStatus || paymentStatus === 'expired'}
               className="flex-1 py-3.5 px-4 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
             >
               <RefreshCw className={`w-4 h-4 ${checkingStatus ? 'animate-spin' : ''}`} />
               <span>{checkingStatus ? 'Mengecek...' : 'Cek Status Pembayaran'}</span>
             </button>
+
+            {paymentStatus !== 'completed' && (
+              <button
+                type="button"
+                onClick={handleCancelTransaction}
+                disabled={cancellingPayment}
+                className="py-3.5 px-4 bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 hover:text-rose-800 border border-rose-200 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                title="Batalkan pendaftaran rombongan ini dan hapus tagihan"
+              >
+                <XCircle className="w-4 h-4 text-rose-600" />
+                <span>{cancellingPayment ? 'Membatalkan...' : 'Batalkan Transaksi'}</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => {
@@ -603,7 +725,7 @@ export default function TrailrunBulkRegister() {
                     Pendaftaran Komunitas / Rombongan
                   </span>
                   <span className="px-2.5 py-0.5 rounded-full bg-[#C9A227]/10 text-[#C9A227] border border-[#C9A227]/30 text-[10px] font-bold whitespace-nowrap">
-                    5 - 10 Peserta
+                    5 - 20 Peserta
                   </span>
                   <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold whitespace-nowrap">
                     Tarif Pre-Sale Terkunci
@@ -613,7 +735,7 @@ export default function TrailrunBulkRegister() {
                   Registrasi Kolektif via File Excel (7K &amp; 12K)
                 </h3>
                 <p className="text-xs text-slate-500 max-w-xl leading-relaxed">
-                  Daftarkan rombongan pelari (5 hingga 10 orang) dengan tarif khusus Pre-Sale tetap (7K: Rp 270.000, 12K: Rp 320.000). Rombongan genap 10 orang mendapatkan potongan otomatis <strong>Rp 320.000</strong>.
+                  Daftarkan rombongan pelari (5 hingga 20 orang) dengan tarif khusus Pre-Sale tetap (7K: Rp 270.000, 12K: Rp 320.000). Rombongan mendapatkan potongan otomatis <strong>Rp 320.000 tiap kelipatan 10 orang</strong> (10 peserta diskon Rp 320.000, 20 peserta diskon Rp 640.000).
                 </p>
               </div>
 
@@ -835,39 +957,47 @@ export default function TrailrunBulkRegister() {
                 </div>
               )}
 
-              {/* Warning jika lebih dari 10 */}
-              {validCount > 10 && (
+              {/* Warning jika lebih dari 20 */}
+              {validCount > 20 && (
                 <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
                   <span>
-                    Pendaftaran kolektif dibatasi <strong>maksimal 10 orang peserta per transaksi</strong> (saat ini {validCount} peserta). Silakan hapus {validCount - 10} peserta atau bagi menjadi transaksi terpisah.
+                    Pendaftaran kolektif dibatasi <strong>maksimal 20 orang peserta per transaksi</strong> (saat ini {validCount} peserta). Silakan hapus {validCount - 20} peserta atau bagi menjadi transaksi terpisah.
                   </span>
                 </div>
               )}
 
-              {/* Banner Interaktif Promo 10 Peserta */}
-              {validCount === 10 ? (
+              {/* Banner Interaktif Promo Kelipatan 10 Peserta */}
+              {routeCalculations.isPromoActive ? (
                 <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-500/10 via-amber-500/10 to-emerald-500/10 border border-emerald-500/30 text-xs flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shrink-0">
                     🎉
                   </div>
                   <div className="flex-1">
                     <strong className="text-emerald-800 font-bold block text-sm">
-                      Selamat! Promo Spesial 10 Peserta Aktif
+                      Selamat! Promo Spesial {routeCalculations.discountMultiplier * 10} Peserta Aktif
                     </strong>
                     <span className="text-slate-600">
-                      Rombongan Anda berjumlah tepat 10 orang. Otomatis mendapatkan potongan diskon tetap senilai <strong>Rp 320.000</strong>!
+                      Rombongan Anda berjumlah {validCount} orang. Otomatis mendapatkan potongan diskon {routeCalculations.discountMultiplier}x Rp 320.000 senilai{' '}
+                      <strong>{formatCurrency(routeCalculations.discountAmount)}</strong>!
                     </span>
                   </div>
                   <span className="px-3 py-1 rounded-full bg-emerald-600 text-white font-mono font-bold text-xs shrink-0">
-                    -Rp 320.000
+                    -{formatCurrency(routeCalculations.discountAmount)}
                   </span>
                 </div>
-              ) : validCount === 9 ? (
+              ) : validCount >= 7 && validCount < 10 ? (
                 <div className="p-3.5 rounded-xl bg-amber-50 border border-[#C9A227]/40 text-xs flex items-center gap-2.5">
                   <span className="text-lg shrink-0">💡</span>
                   <span className="text-slate-700">
-                    <strong>Tinggal 1 peserta lagi!</strong> Lengkapi rombongan menjadi 10 orang untuk otomatis mendapatkan <strong>potongan diskon Rp 320.000</strong>.
+                    <strong>Tinggal {10 - validCount} peserta lagi!</strong> Lengkapi rombongan menjadi 10 orang untuk otomatis mendapatkan <strong>potongan diskon Rp 320.000</strong>.
+                  </span>
+                </div>
+              ) : validCount >= 17 && validCount < 20 ? (
+                <div className="p-3.5 rounded-xl bg-amber-50 border border-[#C9A227]/40 text-xs flex items-center gap-2.5">
+                  <span className="text-lg shrink-0">💡</span>
+                  <span className="text-slate-700">
+                    <strong>Tinggal {20 - validCount} peserta lagi!</strong> Lengkapi rombongan menjadi 20 orang untuk mendapatkan <strong>potongan diskon 2x Rp 320.000 = Rp 640.000</strong>!
                   </span>
                 </div>
               ) : null}
@@ -1102,29 +1232,28 @@ export default function TrailrunBulkRegister() {
                     </strong>
                   </div>
 
-                  {/* Diskon Promo 10 Peserta jika ada */}
+                  {/* Diskon Promo Kelipatan 10 Peserta jika ada */}
                   {routeCalculations.isPromoActive && (
                     <div className="flex justify-between items-center py-1 px-2.5 rounded-lg bg-emerald-50 text-emerald-700 font-semibold text-xs border border-emerald-200">
-                      <span>Promo Spesial 10 Peserta</span>
+                      <span>
+                        Promo Spesial {routeCalculations.discountMultiplier * 10} Peserta ({routeCalculations.discountMultiplier}x Rp 320.000)
+                      </span>
                       <strong className="font-mono">
                         -{formatCurrency(routeCalculations.discountAmount)}
                       </strong>
                     </div>
                   )}
 
-                  {/* Biaya Layanan Admin Rp 3.000 / orang */}
+                  {/* Biaya Layanan (Admin + Biaya Transaksi QRIS) */}
                   <div className="flex justify-between items-center text-slate-600">
-                    <span>Biaya Layanan Admin ({validCount} peserta × Rp 3.000)</span>
+                    <div>
+                      <span className="block text-slate-700 font-medium">Biaya Layanan</span>
+                      <span className="text-[10px] text-slate-400">
+                        Termasuk biaya admin ({validCount} peserta) dan pemrosesan QRIS
+                      </span>
+                    </div>
                     <strong className="text-slate-900 font-mono text-xs">
-                      {formatCurrency(routeCalculations.adminFee)}
-                    </strong>
-                  </div>
-
-                  {/* Estimasi Biaya Transaksi QRIS (Skema B) */}
-                  <div className="flex justify-between items-center text-slate-500 text-[11px] pt-1 border-t border-black/5">
-                    <span>Biaya Transaksi QRIS (0.7% + Rp 300)</span>
-                    <strong className="font-mono text-slate-700">
-                      +{formatCurrency(routeCalculations.estimatedGatewayFee)}
+                      +{formatCurrency(routeCalculations.totalServiceFee)}
                     </strong>
                   </div>
                 </div>
@@ -1136,7 +1265,7 @@ export default function TrailrunBulkRegister() {
                       Total Tagihan Pembayaran
                     </span>
                     <span className="text-[10px] text-slate-400">
-                      Tarif tiket Pre-Sale tetap + Admin Rp 3.000/orang + Gateway QRIS
+                      Tarif tiket Pre-Sale tetap + Biaya Layanan
                     </span>
                   </div>
                   <span className="text-2xl font-bold text-[#C9A227] font-mono">
@@ -1161,11 +1290,11 @@ export default function TrailrunBulkRegister() {
                 </div>
               )}
 
-              {validCount > 10 && (
+              {validCount > 20 && (
                 <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
                   <span>
-                    Jumlah peserta melebihi batas maksimal pendaftaran kolektif (<strong>{validCount}/10 peserta valid</strong>).
+                    Jumlah peserta melebihi batas maksimal pendaftaran kolektif (<strong>{validCount}/20 peserta valid</strong>).
                   </span>
                 </div>
               )}
@@ -1174,7 +1303,7 @@ export default function TrailrunBulkRegister() {
               <button
                 type="button"
                 onClick={handleProcessPayment}
-                disabled={submitting || validCount < 5 || validCount > 10 || invalidCount > 0}
+                disabled={submitting || validCount < 5 || validCount > 20 || invalidCount > 0}
                 className="w-full py-4 px-6 bg-[#C9A227] hover:bg-[#b08d20] disabled:opacity-50 text-[#0d1c32] font-bold text-sm uppercase tracking-wider rounded-xl transition-all transform active:scale-95 shadow-md flex items-center justify-center gap-2 cursor-pointer"
               >
                 {submitting ? (
@@ -1186,9 +1315,9 @@ export default function TrailrunBulkRegister() {
                   <>
                     <span>Minimal 5 Peserta ({validCount}/5 Valid)</span>
                   </>
-                ) : validCount > 10 ? (
+                ) : validCount > 20 ? (
                   <>
-                    <span>Maksimal 10 Peserta ({validCount}/10 Valid)</span>
+                    <span>Maksimal 20 Peserta ({validCount}/20 Valid)</span>
                   </>
                 ) : (
                   <>

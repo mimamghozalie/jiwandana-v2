@@ -23,12 +23,14 @@ interface KelompokBatchTableProps {
   batches: GroupRegistrationBatch[];
   loading: boolean;
   onSelectParticipant?: (row: TrailrunRow) => void;
+  onCancelBatch?: (orderId: string, groupName: string, participantCount: number) => void;
 }
 
 export default function KelompokBatchTable({
   batches,
   loading,
   onSelectParticipant,
+  onCancelBatch,
 }: KelompokBatchTableProps) {
   const [search, setSearch] = useState('');
   const [filterPayment, setFilterPayment] = useState<'all' | 'paid' | 'pending'>('all');
@@ -354,17 +356,33 @@ export default function KelompokBatchTable({
 
                         {/* Aksi Button */}
                         <td className="py-3.5 px-4 text-center">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setExpandedOrderId(isExpanded ? null : batch.orderId);
-                            }}
-                            className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-semibold flex items-center justify-center gap-1 mx-auto cursor-pointer border border-white/10"
-                          >
-                            <span>{isExpanded ? 'Tutup' : `Lihat ${batch.totalParticipants} Org`}</span>
-                            {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                          </button>
+                          <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setExpandedOrderId(isExpanded ? null : batch.orderId);
+                              }}
+                              className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-semibold flex items-center justify-center gap-1 cursor-pointer border border-white/10"
+                            >
+                              <span>{isExpanded ? 'Tutup' : `Lihat ${batch.totalParticipants} Org`}</span>
+                              {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                            </button>
+
+                            {!batch.isFullyPaid && onCancelBatch && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onCancelBatch(batch.orderId, batch.namaKomunitas, batch.totalParticipants);
+                                }}
+                                className="px-2 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer"
+                                title="Batalkan transaksi ini dan hapus data peserta yang belum bayar"
+                              >
+                                <span>Batalkan</span>
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
 

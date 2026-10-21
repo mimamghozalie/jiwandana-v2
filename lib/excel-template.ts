@@ -27,7 +27,7 @@ export interface BulkParticipant {
  * Downloads the official formatted Excel template for Trailrun Bulk Registration
  */
 export function downloadTrailrunExcelTemplate(communityName = '') {
-  // 1. Column headers only (clean template ready to fill, minimal 5 - maksimal 10 peserta)
+  // 1. Column headers only (clean template ready to fill, minimal 5 - maksimal 20 peserta)
   // No. BIB diatur otomatis oleh sistem (F-XXXXX untuk perempuan, M-XXXXX untuk laki-laki), tidak perlu diisi di Excel.
   const headers = [
     'No',
