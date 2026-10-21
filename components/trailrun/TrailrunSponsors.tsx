@@ -198,7 +198,7 @@ export default function TrailrunSponsors() {
                   key={index}
                   item={item}
                   minHeightClass="min-h-[150px] sm:min-h-[180px]"
-                  imgMaxHeightClass="max-h-24 sm:max-h-28"
+                  imgMaxHeightClass="max-h-24 sm:max-h-32"
                 />
               ))}
             </div>
@@ -217,18 +217,18 @@ export default function TrailrunSponsors() {
                   <SponsorCard
                     key={index}
                     item={item}
-                    minHeightClass="min-h-[110px] sm:min-h-[125px]"
-                    imgMaxHeightClass="max-h-14 sm:max-h-16"
+                    minHeightClass="min-h-[125px] sm:min-h-[145px]"
+                    imgMaxHeightClass="max-h-16 sm:max-h-22"
                   />
                 ))}
               </div>
               {/* 1 box baris bawah (center) */}
               {supportSponsors.length > 2 && (
-                <div className="max-w-[50%] mx-auto">
+                <div className="max-w-[65%] mx-auto">
                   <SponsorCard
                     item={supportSponsors[2]}
-                    minHeightClass="min-h-[110px] sm:min-h-[125px]"
-                    imgMaxHeightClass="max-h-14 sm:max-h-16"
+                    minHeightClass="min-h-[125px] sm:min-h-[145px]"
+                    imgMaxHeightClass="max-h-16 sm:max-h-22"
                   />
                 </div>
               )}
@@ -238,13 +238,13 @@ export default function TrailrunSponsors() {
           {/* KOLOM KANAN: MEDIA PARTNER (2 Box Tersusun Vertikal) */}
           <div className="space-y-4">
             <SectionLabel title="Media Partner" />
-            <div className="flex flex-col gap-4 max-w-[65%] mx-auto">
+            <div className="flex flex-col gap-4 max-w-[60%] sm:max-w-[55%] mx-auto">
               {mediaPartnerSponsors.map((item, index) => (
                 <SponsorCard
                   key={index}
                   item={item}
-                  minHeightClass="min-h-[110px] sm:min-h-[125px]"
-                  imgMaxHeightClass="max-h-14 sm:max-h-16"
+                  minHeightClass="min-h-[100px] sm:min-h-[115px]"
+                  imgMaxHeightClass="max-h-18 sm:max-h-14"
                 />
               ))}
             </div>
