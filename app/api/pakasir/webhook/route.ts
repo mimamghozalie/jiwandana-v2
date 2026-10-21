@@ -113,6 +113,15 @@ export async function POST(request: NextRequest) {
       }
 
       // 3c. Update status registrasi seluruh peserta terkait menjadi "paid"
+      // Prioritas 1: Jika ada kolom order_id di trailrun_registrations, update seluruh anggota kelompok sekaligus
+      if (orderId) {
+        await supabase
+          .from('trailrun_registrations')
+          .update({ status: 'paid' })
+          .eq('order_id', orderId);
+      }
+
+      // Prioritas 2: Update berdasarkan daftar registration_id
       if (regIds.length > 0) {
         const { error: regError } = await supabase
           .from('trailrun_registrations')
@@ -140,6 +149,15 @@ export async function POST(request: NextRequest) {
 
       const { data: canceledPayments } = await paymentCancelQuery.select('registration_id');
       console.log(`ℹ️ Status pembayaran ${txnId || orderId} diperbarui menjadi ${finalStatus}`);
+
+      // Update seluruh peserta di order tersebut jika orderId tersedia
+      if (orderId) {
+        await supabase
+          .from('trailrun_registrations')
+          .update({ status: finalStatus })
+          .eq('order_id', orderId)
+          .neq('status', 'paid');
+      }
 
       // Ambil seluruh registration_id terkait untuk melepaskan status registrasi
       let cancelRegIds = (canceledPayments || []).map((p: any) => p.registration_id).filter(Boolean);

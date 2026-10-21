@@ -121,6 +121,14 @@ export async function GET(request: NextRequest) {
         })
         .eq('txn_id', txnId);
 
+      // Update seluruh peserta pada order tersebut jika order_id tersedia
+      if (dbPayment?.order_id) {
+        await supabase
+          .from('trailrun_registrations')
+          .update({ status: 'paid' })
+          .eq('order_id', dbPayment.order_id);
+      }
+
       // Ambil seluruh peserta jika bulk atau single
       const { data: relPayments } = await supabase
         .from('trailrun_payments')
