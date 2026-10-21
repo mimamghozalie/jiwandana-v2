@@ -18,19 +18,30 @@ export const supabaseAnonClient = createClient(supabaseUrl, supabaseAnonKey);
 export const supabase = supabaseAnonClient;
 
 /**
- * Server-side Admin Supabase Client (Service Role Key)
+ * Server-side Admin / Service Supabase Client (Service Role Key)
  * Digunakan untuk:
  * - Next.js Route Handlers (`app/api/**`)
  * - Server Actions & Server Components
  * - Operasi database privileged (bypass RLS, bulk insert, update status, webhook gateway)
  */
-export const supabaseServerClient = createClient(
-  supabaseUrl,
-  supabaseServiceRoleKey || supabaseAnonKey,
-  {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  }
-);
+export function getSupabaseServiceClient() {
+  const serviceKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY ||
+    '';
+
+  return createClient(
+    supabaseUrl,
+    serviceKey || supabaseAnonKey,
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    }
+  );
+}
+
+export const supabaseServiceClient = getSupabaseServiceClient();
+export const supabaseServerClient = supabaseServiceClient;
+

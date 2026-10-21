@@ -1,17 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServerClient as supabase } from '@/lib/supabaseClient';
+import { getSupabaseServiceClient } from '@/lib/supabaseClient';
 
 export const dynamic = 'force-dynamic';
 
 /**
  * POST /api/payment/cancel-bulk
  * Membatalkan transaksi pendaftaran kelompok dan menghapus data pendaftaran terkait.
- * Body: { order_id?: string, txn_id?: string }
+ * Body: { order_id?: string, txn_id?: string, registration_ids?: string[] }
  */
 export async function POST(request: NextRequest) {
   try {
+    const supabase = getSupabaseServiceClient();
+    const serviceKeyPresent = !!(
+      process.env.SUPABASE_SERVICE_ROLE_KEY ||
+      process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY
+    );
+    console.log(`[Cancel Bulk] Service Role Key aktif: ${serviceKeyPresent}`);
+
     const body = await request.json();
-    const { order_id, txn_id, registration_ids, pic_phone: bodyPicPhone } = body;
+    const { order_id, txn_id, registration_ids } = body;
 
     if (!order_id && !txn_id && (!registration_ids || registration_ids.length === 0)) {
       return NextResponse.json(
@@ -34,7 +41,7 @@ export async function POST(request: NextRequest) {
     const { data: payments, error: findError } = await payQuery;
 
     if (findError) {
-      console.error('Error finding payments to cancel:', findError);
+      console.error('[Cancel Bulk] Error finding payments to cancel:', findError);
     }
 
     // Pastikan tidak membatalkan yang sudah lunas
@@ -50,7 +57,6 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Kumpulkan SEMUA registration_id yang perlu dihapus
-    let deletedCount = 0;
     const allRegIds = new Set<string>();
 
     // Tambahkan id dari body jika ada
@@ -65,47 +71,53 @@ export async function POST(request: NextRequest) {
       if (p.registration_id) allRegIds.add(p.registration_id);
     });
 
-    // 3. Hapus peserta dari trailrun_registrations berdasarkan list ID
     const regIdList = Array.from(allRegIds);
+    console.log(`[Cancel Bulk] Menghapus ${regIdList.length} peserta dengan ID:`, regIdList);
+
+    // 3. Hapus data transaksi dari trailrun_payments terlebih dahulu
+    // (Mencegah foreign key constraint error jika registration_id direferensikan)
+    if (order_id) {
+      const { error: delPayErr } = await supabase
+        .from('trailrun_payments')
+        .delete()
+        .eq('order_id', order_id);
+      if (delPayErr) console.error('[Cancel Bulk] Gagal delete payment by order_id:', delPayErr.message);
+    }
+    if (txn_id) {
+      const { error: delTxnErr } = await supabase
+        .from('trailrun_payments')
+        .delete()
+        .eq('txn_id', txn_id);
+      if (delTxnErr) console.error('[Cancel Bulk] Gagal delete payment by txn_id:', delTxnErr.message);
+    }
     if (regIdList.length > 0) {
-      const { data: delData, error: regDelErr } = await supabase
+      // Hapus sisa payment yang mereferensikan registration_id tersebut jika ada
+      await supabase
+        .from('trailrun_payments')
+        .delete()
+        .in('registration_id', regIdList);
+    }
+
+    // 4. Hapus peserta dari trailrun_registrations berdasarkan list ID
+    let deletedCount = 0;
+    if (regIdList.length > 0) {
+      const { data: deletedRows, error: delResultError } = await supabase
         .from('trailrun_registrations')
         .delete()
         .in('id', regIdList)
-        .neq('status', 'paid')
         .select('id');
 
-      if (!regDelErr && delData) {
-        deletedCount += delData.length;
+      if (delResultError) {
+        console.error('[Cancel Bulk] Gagal delete trailrun_registrations:', delResultError.message);
+      } else {
+        deletedCount = deletedRows?.length || 0;
+        console.log(`[Cancel Bulk] Berhasil menghapus ${deletedCount} baris dari database.`);
       }
-    }
-
-    // 4. Hapus juga via nomor HP PIC (jika ada di payment atau di body)
-    const picPhone = bodyPicPhone || payments?.[0]?.pic_phone;
-    if (picPhone) {
-      const { data: delPicData } = await supabase
-        .from('trailrun_registrations')
-        .delete()
-        .eq('pic_phone', picPhone)
-        .neq('status', 'paid')
-        .select('id');
-
-      if (delPicData) {
-        deletedCount += delPicData.length;
-      }
-    }
-
-    // 5. Terakhir, hapus data transaksi dari trailrun_payments
-    if (order_id) {
-      await supabase.from('trailrun_payments').delete().eq('order_id', order_id);
-    }
-    if (txn_id) {
-      await supabase.from('trailrun_payments').delete().eq('txn_id', txn_id);
     }
 
     return NextResponse.json({
       success: true,
-      message: `Transaksi kelompok berhasil dibatalkan. Data pendaftaran telah dibersihkan.`,
+      message: `Transaksi kelompok berhasil dibatalkan. ${deletedCount} data pendaftaran telah dibersihkan.`,
       deleted: {
         order_id: order_id || null,
         txn_id: txn_id || null,
