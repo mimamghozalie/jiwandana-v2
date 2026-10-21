@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { supabaseServerClient as supabase } from '@/lib/supabaseClient';
 import { createPakasirTransaction } from '@/lib/pakasir';
 import { getActivePricingTier, normalizeCategoryKey } from '@/lib/pricing';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 interface BulkRequestBody {
   group_name?: string;
@@ -144,7 +140,7 @@ export async function POST(request: NextRequest) {
     const adminProfit = ADMIN_FEE; // Keuntungan bersih utuh Rp 3.000 / orang
     const finalTotalPayment = transaction.total_payment || (amountToSend + gatewayFee);
 
-    // 8. Batch Insert participants into trailrun_registrations (termasuk ukuran_jersey, nik, kk)
+    // 8. Batch Insert participants into trailrun_registrations (termasuk ukuran_jersey, nik, kk, pic_name, pic_phone, pic_email)
     const insertPayload = evaluatedParticipants.map((p) => ({
       nama: p.nama,
       nik: p.nik || null,
@@ -165,6 +161,9 @@ export async function POST(request: NextRequest) {
       kontak_darurat: p.kontak_darurat,
       kategori: p.kategori.toUpperCase(),
       status: 'pending',
+      pic_name: pic_name || null,
+      pic_phone: pic_phone || null,
+      pic_email: pic_email || null,
     }));
 
     let { data: insertedRegistrations, error: regError } = await supabase
@@ -172,15 +171,12 @@ export async function POST(request: NextRequest) {
       .insert(insertPayload)
       .select('id, nama, email, kategori, no_bib');
 
-    // Graceful fallback jika kolom nik/kk/ukuran_jersey belum termigrasi
-    if (
-      regError &&
-      (regError.message?.toLowerCase().includes('nik') ||
-        regError.message?.toLowerCase().includes('kk') ||
-        regError.message?.toLowerCase().includes('ukuran_jersey'))
-    ) {
-      console.warn('Fallback insert bulk registrations without nik/kk/ukuran_jersey:', regError.message);
-      const fallbackPayload = insertPayload.map(({ nik, kk, ukuran_jersey, ...rest }) => rest);
+    // Graceful fallback jika kolom tertentu belum termigrasi di database Supabase
+    if (regError) {
+      console.warn('Initial insert trailrun_registrations error:', regError.message);
+      const fallbackPayload = insertPayload.map(
+        ({ nik, kk, ukuran_jersey, pic_name, pic_phone, pic_email, ...rest }) => rest
+      );
       const fallbackRes = await supabase
         .from('trailrun_registrations')
         .insert(fallbackPayload)
@@ -221,11 +217,19 @@ export async function POST(request: NextRequest) {
     if (paymentRecords.length > 0) {
       const { error: insErr } = await supabase.from('trailrun_payments').insert(paymentRecords);
       if (insErr) {
-        console.warn('Fallback insert payment records without pic fields:', insErr.message);
-        const baseRecords = paymentRecords.map(
-          ({ admin_fee, gateway_fee, admin_profit, pic_name, pic_phone, pic_email, ...rest }) => rest
+        console.error('❌ Gagal insert ke trailrun_payments dengan field PIC:', insErr.message);
+        // Fallback coba tanpa field admin profit / fees dulu sebelum strip PIC
+        const retryWithPic = paymentRecords.map(
+          ({ admin_fee, gateway_fee, admin_profit, ...rest }) => rest
         );
-        await supabase.from('trailrun_payments').insert(baseRecords);
+        const { error: retryErr } = await supabase.from('trailrun_payments').insert(retryWithPic);
+        if (retryErr) {
+          console.error('❌ Retry insert trailrun_payments error:', retryErr.message);
+          const baseRecords = paymentRecords.map(
+            ({ admin_fee, gateway_fee, admin_profit, pic_name, pic_phone, pic_email, ...rest }) => rest
+          );
+          await supabase.from('trailrun_payments').insert(baseRecords);
+        }
       }
     } else {
       const singleRecord = {

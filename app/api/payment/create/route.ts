@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createPakasirTransaction, parsePriceToNumber } from '@/lib/pakasir';
-import { createClient } from '@supabase/supabase-js';
+import { supabaseServerClient as supabase } from '@/lib/supabaseClient';
 import trailrunData from '@/data/trailrun.json';
 import { getActivePricingTier, getJerseyExtraFee } from '@/lib/pricing';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function POST(request: NextRequest) {
   try {
