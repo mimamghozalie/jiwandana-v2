@@ -112,14 +112,14 @@ function SponsorCard({
 }) {
   return (
     <div
-      className={`bg-white/95 backdrop-blur-sm border border-black/10 rounded-2xl p-4 sm:p-6 flex items-center justify-center shadow-sm hover:shadow-xl hover:border-[#C9A227]/50 transition-all duration-300 group ${minHeightClass}`}
+      className={`bg-white/40 hover:bg-white/50 backdrop-blur-md border border-white/15 hover:border-[#C9A227]/60 rounded-2xl p-4 sm:p-6 flex items-center justify-center shadow-lg hover:shadow-2xl transition-all duration-300 group ${minHeightClass}`}
       title={item.name}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={item.src}
         alt={item.alt}
-        className={`${imgMaxHeightClass} max-w-full w-auto object-contain transition-transform duration-300 group-hover:scale-105`}
+        className={`${imgMaxHeightClass} max-w-full w-auto object-contain transition-transform duration-300 group-hover:scale-105 drop-shadow-md filter brightness-105 contrast-105`}
         loading="lazy"
       />
     </div>
