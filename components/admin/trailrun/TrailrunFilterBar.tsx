@@ -13,9 +13,9 @@ interface TrailrunFilterBarProps {
   setCategoryFilter: (val: string) => void;
   genderFilter: 'all' | 'laki-laki' | 'perempuan';
   setGenderFilter: (val: 'all' | 'laki-laki' | 'perempuan') => void;
-  groupFilter: 'all' | 'group' | 'individual';
-  setGroupFilter: (val: 'all' | 'group' | 'individual') => void;
-  counts: { all: number; paid: number; pending: number; group: number };
+  groupFilter: 'all' | 'group' | 'individual' | 'discount';
+  setGroupFilter: (val: 'all' | 'group' | 'individual' | 'discount') => void;
+  counts: { all: number; paid: number; pending: number; group: number; discount: number; totalDiscountAmount: number };
   availableCategories: string[];
   visibleColumns: string[];
   toggleColumn: (key: string) => void;
@@ -135,6 +135,29 @@ export default function TrailrunFilterBar({
             {counts.group}
           </span>
         </button>
+
+        {/* Tab Diskon Komunitas */}
+        <button
+          type="button"
+          onClick={() => {
+            setGroupFilter(groupFilter === 'discount' ? 'all' : 'discount');
+          }}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap border ${
+            groupFilter === 'discount'
+              ? 'bg-gradient-to-r from-amber-500 to-[#C9A227] text-slate-950 font-bold border-amber-300 shadow-md'
+              : 'text-amber-300 border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20'
+          }`}
+          title="Filter komunitas/kelompok yang mendapatkan promo potongan diskon"
+        >
+          <span>🏷️ Promo Diskon</span>
+          <span
+            className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold ${
+              groupFilter === 'discount' ? 'bg-black/30 text-slate-950' : 'bg-amber-400/20 text-amber-300'
+            }`}
+          >
+            {counts.discount}
+          </span>
+        </button>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
@@ -170,6 +193,7 @@ export default function TrailrunFilterBar({
               className="bg-transparent text-white font-medium text-xs outline-none cursor-pointer pr-2"
             >
               <option value="all" className="bg-[#0a1424]">Semua Jalur</option>
+              <option value="discount" className="bg-[#0a1424]">🏷️ Promo Diskon ({counts.discount})</option>
               <option value="group" className="bg-[#0a1424]">👥 Kelompok ({counts.group})</option>
               <option value="individual" className="bg-[#0a1424]">👤 Individu ({counts.all - counts.group})</option>
             </select>

@@ -37,6 +37,7 @@ interface TrailrunTableProps {
   updatingId: string | null;
   onOpenColumnFilter: () => void;
   onEditHasilLari: (row: TrailrunRow) => void;
+  discountOrderIds?: Set<string>;
 }
 
 export default function TrailrunTable({
@@ -57,6 +58,7 @@ export default function TrailrunTable({
   updatingId,
   onOpenColumnFilter,
   onEditHasilLari,
+  discountOrderIds,
 }: TrailrunTableProps) {
   const safeCurrentPage = Math.min(Math.max(currentPage, 1), Math.max(totalPages, 1));
 
@@ -155,6 +157,15 @@ export default function TrailrunTable({
                           {(row.payment?.order_id?.startsWith('TR-BULK') || (row.nama_komunitas && row.nama_komunitas.trim() !== '')) && (
                             <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-sky-500/15 text-sky-400 border border-sky-500/30">
                               Kelompok
+                            </span>
+                          )}
+                          {((row.payment?.order_id && discountOrderIds?.has(row.payment.order_id)) ||
+                            (row.payment?.txn_id && discountOrderIds?.has(row.payment.txn_id))) && (
+                            <span
+                              className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30"
+                              title="Promo 10 Peserta: Diskon Rp 320.000 / Kelompok"
+                            >
+                              🏷️ Promo 10 Org
                             </span>
                           )}
                         </div>

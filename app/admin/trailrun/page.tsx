@@ -18,6 +18,7 @@ import {
   TrailrunTable,
   TrailrunDetailModal,
   EditHasilLariModal,
+  CommunityDiscountTable,
 } from '@/components/admin/trailrun';
 
 export default function AdminTrailrunPage() {
@@ -26,6 +27,9 @@ export default function AdminTrailrunPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isCleaningUp, setIsCleaningUp] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Tab Tampilan Utama: 'participants' (Tabel Peserta Lengkap) atau 'discount' (Tabel Rekap Diskon Komunitas)
+  const [activeTab, setActiveTab] = useState<'participants' | 'discount'>('participants');
 
   // Column visibility state
   const [visibleColumns, setVisibleColumns] = useState<string[]>(DEFAULT_VISIBLE_KEYS);
@@ -36,7 +40,7 @@ export default function AdminTrailrunPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'paid' | 'pending' | 'confirmed'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [genderFilter, setGenderFilter] = useState<'all' | 'laki-laki' | 'perempuan'>('all');
-  const [groupFilter, setGroupFilter] = useState<'all' | 'group' | 'individual'>('all');
+  const [groupFilter, setGroupFilter] = useState<'all' | 'group' | 'individual' | 'discount'>('all');
 
   // Selected row for detail modal
   const [selectedRow, setSelectedRow] = useState<TrailrunRow | null>(null);
@@ -321,6 +325,118 @@ export default function AdminTrailrunPage() {
     return Array.from(set);
   }, [data]);
 
+  // Hitung jumlah pendaftar per order_id / transaksi kelompok untuk mendeteksi rombongan 10 orang (Promo Diskon)
+  const bulkOrderStats = useMemo(() => {
+    // Map order_id -> participants
+    const orderParticipantsMap: Record<string, TrailrunRow[]> = {};
+    // Map community -> participants (jika order_id tidak ada atau peserta didaftarkan dengan nama komunitas)
+    const communityParticipantsMap: Record<string, TrailrunRow[]> = {};
+
+    data.forEach((r) => {
+      const orderId = r.payment?.order_id || r.payment?.txn_id;
+      if (orderId) {
+        if (!orderParticipantsMap[orderId]) {
+          orderParticipantsMap[orderId] = [];
+        }
+        orderParticipantsMap[orderId].push(r);
+      } else if (r.nama_komunitas && r.nama_komunitas.trim() !== '') {
+        const commKey = `COMM-${r.nama_komunitas.trim().toLowerCase()}`;
+        if (!communityParticipantsMap[commKey]) {
+          communityParticipantsMap[commKey] = [];
+        }
+        communityParticipantsMap[commKey].push(r);
+      }
+    });
+
+    const discountOrderIds = new Set<string>();
+    let discountEligibleParticipantsCount = 0;
+    let totalDiscountAmount = 0;
+    let totalPaidDiscountAmount = 0;
+    const discountGroups: any[] = [];
+
+    // Gabungkan grup berbasis orderId dan fallback grup berbasis nama_komunitas
+    const allGroupsToEvaluate = [
+      ...Object.entries(orderParticipantsMap),
+      ...Object.entries(communityParticipantsMap),
+    ];
+
+    allGroupsToEvaluate.forEach(([groupKey, participants]) => {
+      const count = participants.length;
+      const isBulkOrder = groupKey.startsWith('TR-BULK') || participants.some((p) => p.payment?.order_id?.startsWith('TR-BULK'));
+      
+      // Kriteria diskon:
+      // 1. Tepat 10 orang atau kelipatan 10 orang
+      // 2. ATAU transaksi berawalan TR-BULK (pendaftaran kolektif kelompok)
+      // 3. ATAU jika minimal ada 10 orang dalam satu komunitas
+      const isEligible = count >= 10 || isBulkOrder;
+
+      if (isEligible) {
+        discountOrderIds.add(groupKey);
+        participants.forEach((p) => {
+          if (p.payment?.order_id) discountOrderIds.add(p.payment.order_id);
+          if (p.payment?.txn_id) discountOrderIds.add(p.payment.txn_id);
+        });
+
+        // Hitung pengali diskon (setiap 10 orang dapat 320.000, minimal 1x diskon jika bulk order)
+        const discountMultiplier = Math.max(1, Math.floor(count / 10));
+        const groupDiscount = discountMultiplier * 320000;
+
+        discountEligibleParticipantsCount += count;
+        totalDiscountAmount += groupDiscount;
+
+        const first = participants[0];
+        const paidCount = participants.filter((p) => p.status === 'paid').length;
+        const pendingCount = count - paidCount;
+        const isFullyPaid = paidCount > 0 && paidCount === count;
+
+        if (isFullyPaid) {
+          totalPaidDiscountAmount += groupDiscount;
+        }
+
+        // Hitung nominal harga tiket normal
+        let rawTicketTotal = 0;
+        participants.forEach((p) => {
+          const is12k = (p.kategori || '').toLowerCase().includes('12');
+          rawTicketTotal += is12k ? 320000 : 270000;
+        });
+
+        const finalTicketTotal = Math.max(0, rawTicketTotal - groupDiscount);
+        const adminFeeTotal = count * 3000; // Rp 3.000 / orang
+        const totalPayment = finalTicketTotal + adminFeeTotal;
+
+        discountGroups.push({
+          orderId: first.payment?.order_id || groupKey,
+          namaKomunitas: first.nama_komunitas || (groupKey.startsWith('TR-BULK') ? 'Komunitas Kolektif' : 'Komunitas Lari'),
+          picName: first.pic_name || first.payment?.pic_name || first.nama,
+          picPhone: first.pic_phone || first.payment?.pic_phone || first.no_hp,
+          picEmail: first.pic_email || first.payment?.pic_email || first.email,
+          totalParticipants: count,
+          paidParticipants: paidCount,
+          pendingParticipants: pendingCount,
+          isFullyPaid,
+          rawTicketTotal,
+          discountAmount: groupDiscount,
+          finalTicketTotal,
+          adminFeeTotal,
+          totalPayment: first.payment?.total_payment || totalPayment,
+          paymentMethod: first.payment?.payment_method?.toUpperCase() || 'QRIS',
+          paymentStatus: isFullyPaid ? 'paid' : 'pending',
+          participants,
+          createdAt: first.created_at,
+        });
+      }
+    });
+
+    return {
+      discountOrderIds,
+      discountEligibleParticipantsCount,
+      totalDiscountAmount,
+      totalPaidDiscountAmount,
+      totalDiscountGroups: discountGroups.length,
+      discountGroups,
+    };
+  }, [data]);
+
   // Filter counts
   const filterCounts = useMemo(() => {
     const all = data.length;
@@ -331,12 +447,27 @@ export default function AdminTrailrunPage() {
         r.payment?.order_id?.startsWith('TR-BULK') ||
         (r.nama_komunitas && r.nama_komunitas.trim() !== '')
     ).length;
-    return { all, paid, pending, group };
-  }, [data]);
+    const discount = data.filter((r) => {
+      const orderId = r.payment?.order_id || r.payment?.txn_id;
+      return orderId ? bulkOrderStats.discountOrderIds.has(orderId) : false;
+    }).length;
+
+    return {
+      all,
+      paid,
+      pending,
+      group,
+      discount,
+      totalDiscountAmount: bulkOrderStats.totalDiscountAmount,
+    };
+  }, [data, bulkOrderStats]);
 
   // Filtered rows
   const filteredData = useMemo(() => {
     return data.filter((row) => {
+      const orderId = row.payment?.order_id || row.payment?.txn_id;
+      const isDiscountEligible = orderId ? bulkOrderStats.discountOrderIds.has(orderId) : false;
+
       // Status filter
       if (statusFilter !== 'all') {
         if (row.status !== statusFilter) return false;
@@ -347,8 +478,14 @@ export default function AdminTrailrunPage() {
         const isGroup =
           Boolean(row.payment?.order_id?.startsWith('TR-BULK')) ||
           Boolean(row.nama_komunitas && row.nama_komunitas.trim() !== '');
-        if (groupFilter === 'group' && !isGroup) return false;
-        if (groupFilter === 'individual' && isGroup) return false;
+
+        if (groupFilter === 'discount') {
+          if (!isDiscountEligible) return false;
+        } else if (groupFilter === 'group') {
+          if (!isGroup) return false;
+        } else if (groupFilter === 'individual') {
+          if (isGroup) return false;
+        }
       }
 
       // Category filter
@@ -387,7 +524,7 @@ export default function AdminTrailrunPage() {
 
       return true;
     });
-  }, [data, statusFilter, groupFilter, categoryFilter, genderFilter, searchQuery]);
+  }, [data, statusFilter, groupFilter, categoryFilter, genderFilter, searchQuery, bulkOrderStats]);
 
   // Reset page to 1 when filters change
   useEffect(() => {
@@ -800,28 +937,118 @@ export default function AdminTrailrunPage() {
       {/* 2. Metrics Cards */}
       <TrailrunMetricsCards metrics={metrics} />
 
-      {/* 3. Filter Bar */}
-      <TrailrunFilterBar
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        statusFilter={statusFilter}
-        setStatusFilter={setStatusFilter}
-        categoryFilter={categoryFilter}
-        setCategoryFilter={setCategoryFilter}
-        genderFilter={genderFilter}
-        setGenderFilter={setGenderFilter}
-        groupFilter={groupFilter}
-        setGroupFilter={setGroupFilter}
-        counts={filterCounts}
-        availableCategories={availableCategories}
-        visibleColumns={visibleColumns}
-        toggleColumn={toggleColumn}
-        resetToDefaultColumns={resetToDefaultColumns}
-        selectAllColumns={selectAllColumns}
-        selectCompactColumns={selectCompactColumns}
-        showColumnFilter={showColumnFilter}
-        setShowColumnFilter={setShowColumnFilter}
-      />
+      {/* 2.1 Tab Switcher: Semua Peserta vs Rekap Diskon Komunitas */}
+      <div className="flex items-center gap-2 border-b border-white/10 pb-3">
+        <button
+          type="button"
+          onClick={() => setActiveTab('participants')}
+          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2.5 transition-all cursor-pointer border ${
+            activeTab === 'participants'
+              ? 'bg-[#C9A227] text-[#0d1c32] border-[#C9A227] shadow-md'
+              : 'bg-white/5 text-slate-400 hover:text-white border-white/5 hover:bg-white/10'
+          }`}
+        >
+          <Trophy className="w-4 h-4" />
+          <span>Daftar Peserta Trailrun</span>
+          <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-black/20 text-current">
+            {data.length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('discount')}
+          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2.5 transition-all cursor-pointer border ${
+            activeTab === 'discount'
+              ? 'bg-gradient-to-r from-amber-500 to-[#C9A227] text-slate-950 border-amber-300 shadow-lg'
+              : 'bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 border-amber-500/20'
+          }`}
+        >
+          <span>🏷️ Tabel Rekap Diskon Komunitas</span>
+          <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-amber-400/20 text-current">
+            {bulkOrderStats.totalDiscountGroups} Kelompok
+          </span>
+        </button>
+      </div>
+
+      {activeTab === 'discount' ? (
+        /* Tabel Khusus Rekap Diskon Komunitas */
+        <CommunityDiscountTable
+          groups={bulkOrderStats.discountGroups}
+          totalDiscountAmount={bulkOrderStats.totalDiscountAmount}
+          totalPaidDiscountAmount={bulkOrderStats.totalPaidDiscountAmount}
+          onSelectParticipant={(row) => setSelectedRow(row)}
+        />
+      ) : (
+        <>
+          {/* 3. Filter Bar */}
+          <TrailrunFilterBar
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+            categoryFilter={categoryFilter}
+            setCategoryFilter={setCategoryFilter}
+            genderFilter={genderFilter}
+            setGenderFilter={setGenderFilter}
+            groupFilter={groupFilter}
+            setGroupFilter={setGroupFilter}
+            counts={filterCounts}
+            availableCategories={availableCategories}
+            visibleColumns={visibleColumns}
+            toggleColumn={toggleColumn}
+            resetToDefaultColumns={resetToDefaultColumns}
+            selectAllColumns={selectAllColumns}
+            selectCompactColumns={selectCompactColumns}
+            showColumnFilter={showColumnFilter}
+            setShowColumnFilter={setShowColumnFilter}
+          />
+
+      {/* 3.1 Banner Ringkasan Tab Diskon Komunitas */}
+      {groupFilter === 'discount' && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-[#C9A227]/10 to-transparent border border-[#C9A227]/40 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#C9A227]/20 border border-[#C9A227]/40 flex items-center justify-center text-[#e9c176] shrink-0 text-lg">
+              🏷️
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm sm:text-base font-bold text-white">
+                  Komunitas Penerima Promo Diskon 10 Orang
+                </h3>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#C9A227] text-slate-950 font-mono">
+                  Potongan Rp 320.000 / Kelompok
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 mt-0.5">
+                Menampilkan pendaftar dari komunitas/rombongan 10 orang yang berhak mendapatkan promo potongan setara 1 tiket 12K gratis.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 self-stretch sm:self-auto justify-between sm:justify-end bg-black/40 border border-white/10 px-4 py-2.5 rounded-xl">
+            <div>
+              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">
+                Total Nilai Diskon
+              </span>
+              <span className="text-base sm:text-lg font-extrabold text-[#e9c176] font-mono">
+                {bulkOrderStats.totalDiscountAmount > 0
+                  ? `Rp ${bulkOrderStats.totalDiscountAmount.toLocaleString('id-ID')}`
+                  : 'Rp 0'}
+              </span>
+            </div>
+            <div className="h-8 w-px bg-white/10" />
+            <div>
+              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">
+                Kelompok
+              </span>
+              <span className="text-base sm:text-lg font-bold text-white font-mono">
+                {bulkOrderStats.totalDiscountGroups} <span className="text-xs font-normal text-slate-400">Grup ({bulkOrderStats.discountEligibleParticipantsCount} Org)</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 4. Table */}
       <TrailrunTable
@@ -842,7 +1069,10 @@ export default function AdminTrailrunPage() {
         updatingId={updatingId}
         onEditHasilLari={(row) => setEditingHasilLariRow(row)}
         onOpenColumnFilter={() => setShowColumnFilter(true)}
+        discountOrderIds={bulkOrderStats.discountOrderIds}
       />
+      </>
+      )}
 
       {/* 5. Detail Modal */}
       <TrailrunDetailModal
