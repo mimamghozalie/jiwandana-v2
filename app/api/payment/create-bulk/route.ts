@@ -140,7 +140,8 @@ export async function POST(request: NextRequest) {
     const adminProfit = ADMIN_FEE; // Keuntungan bersih utuh Rp 3.000 / orang
     const finalTotalPayment = transaction.total_payment || (amountToSend + gatewayFee);
 
-    // 8. Batch Insert participants into trailrun_registrations (termasuk ukuran_jersey, nik, kk, pic_name, pic_phone, pic_email)
+    // 8. Batch Insert participants into trailrun_registrations (hanya data peserta: nama, nik, kk, jersey, dll)
+    // NOTE: Data PIC (pic_name, pic_phone, pic_email) disimpan di tabel trailrun_payments
     const insertPayload = evaluatedParticipants.map((p) => ({
       nama: p.nama,
       nik: p.nik || null,
@@ -155,15 +156,12 @@ export async function POST(request: NextRequest) {
       kewarganegaraan: 'Indonesia',
       tanggal_lahir: p.tanggal_lahir,
       jenis_kelamin: p.jenis_kelamin,
-      nama_komunitas: p.nama_komunitas,
+      nama_komunitas: p.nama_komunitas || group_name || null,
       golongan_darah: p.golongan_darah || null,
       riwayat_medis: p.riwayat_medis || null,
       kontak_darurat: p.kontak_darurat,
       kategori: p.kategori.toUpperCase(),
       status: 'pending',
-      pic_name: pic_name || null,
-      pic_phone: pic_phone || null,
-      pic_email: pic_email || null,
     }));
 
     let { data: insertedRegistrations, error: regError } = await supabase
@@ -171,31 +169,27 @@ export async function POST(request: NextRequest) {
       .insert(insertPayload)
       .select('id, nama, email, kategori, no_bib');
 
-    // Graceful fallback jika kolom tertentu belum termigrasi di database Supabase (misal pic_email)
+    // Graceful fallback hanya jika kolom opsional tertentu (misal ukuran_jersey, nik, kk) belum termigrasi
     if (regError) {
       console.warn('Initial insert trailrun_registrations error:', regError.message);
-      // Coba pertahankan pic_name dan pic_phone, hanya hapus pic_email
-      const payloadWithoutPicEmail = insertPayload.map(({ pic_email, ...rest }) => rest);
-      const retryWithoutEmail = await supabase
+      let fallbackPayload = [...insertPayload];
+      if (regError.message?.toLowerCase().includes('ukuran_jersey')) {
+        fallbackPayload = fallbackPayload.map(({ ukuran_jersey, ...rest }: any) => rest);
+      }
+      if (regError.message?.toLowerCase().includes('nik')) {
+        fallbackPayload = fallbackPayload.map(({ nik, ...rest }: any) => rest);
+      }
+      if (regError.message?.toLowerCase().includes('kk')) {
+        fallbackPayload = fallbackPayload.map(({ kk, ...rest }: any) => rest);
+      }
+
+      const retryRes = await supabase
         .from('trailrun_registrations')
-        .insert(payloadWithoutPicEmail)
+        .insert(fallbackPayload)
         .select('id, nama, email, kategori, no_bib');
 
-      if (!retryWithoutEmail.error) {
-        insertedRegistrations = retryWithoutEmail.data;
-        regError = null;
-      } else {
-        console.warn('Retry without pic_email error:', retryWithoutEmail.error.message);
-        const minimalFallbackPayload = insertPayload.map(
-          ({ nik, kk, ukuran_jersey, pic_name, pic_phone, pic_email, ...rest }) => rest
-        );
-        const fallbackRes = await supabase
-          .from('trailrun_registrations')
-          .insert(minimalFallbackPayload)
-          .select('id, nama, email, kategori, no_bib');
-        insertedRegistrations = fallbackRes.data;
-        regError = fallbackRes.error;
-      }
+      insertedRegistrations = retryRes.data;
+      regError = retryRes.error;
     }
 
     if (regError) {
@@ -204,7 +198,8 @@ export async function POST(request: NextRequest) {
     }
 
     // 9. Save payment record to trailrun_payments
-    // NOTE: Tabel trailrun_payments memiliki UNIQUE constraint pada `order_id`
+    // NOTE: Tabel trailrun_payments adalah tempat utama untuk data PIC (pic_name, pic_phone, pic_email)
+    // dan memiliki UNIQUE constraint pada `order_id` (1 order = 1 record payment)
     // Jadi untuk pendaftaran rombongan, cukup 1 baris payment record per order_id (mewakili PIC / rombongan)
     const primaryRegId = insertedRegistrations?.[0]?.id || orderId;
     const singlePaymentRecord = {
@@ -226,6 +221,7 @@ export async function POST(request: NextRequest) {
       admin_profit: adminProfit,
       pic_name: pic_name || null,
       pic_phone: pic_phone || null,
+      pic_email: pic_email || null,
     };
 
     // Insert 1 record payment
@@ -270,6 +266,7 @@ export async function POST(request: NextRequest) {
           phone: pic_phone,
           group_name: group_name || null,
         },
+        registration_ids: (insertedRegistrations || []).map((r) => r.id),
         participants: evaluatedParticipants.map((p) => ({
           nama: p.nama,
           kategori: p.kategori,

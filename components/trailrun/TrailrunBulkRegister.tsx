@@ -166,6 +166,8 @@ export default function TrailrunBulkRegister() {
         body: JSON.stringify({
           order_id: paymentData.order_id,
           txn_id: paymentData.txn_id,
+          registration_ids: paymentData.registration_ids || [],
+          pic_phone: paymentData.pic?.phone || picData.pic_phone || null,
         }),
       });
       const json = await res.json();

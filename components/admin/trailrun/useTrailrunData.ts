@@ -28,14 +28,27 @@ export function useTrailrunData() {
       } else {
         // Map payments by registration_id
         const paymentsMap = new Map<string, any>();
+        const picPhonePaymentsMap = new Map<string, any>();
+        const picNamePaymentsMap = new Map<string, any>();
+
         payments.forEach((p) => {
           if (p.registration_id && !paymentsMap.has(p.registration_id)) {
             paymentsMap.set(p.registration_id, p);
           }
+          if (p.pic_phone && !picPhonePaymentsMap.has(p.pic_phone.trim())) {
+            picPhonePaymentsMap.set(p.pic_phone.trim(), p);
+          }
+          if (p.pic_name && !picNamePaymentsMap.has(p.pic_name.trim().toLowerCase())) {
+            picNamePaymentsMap.set(p.pic_name.trim().toLowerCase(), p);
+          }
         });
 
         const merged: TrailrunRow[] = registrations.map((r: any) => {
-          const pay = paymentsMap.get(r.id);
+          const pay =
+            paymentsMap.get(r.id) ||
+            (r.pic_phone ? picPhonePaymentsMap.get(r.pic_phone.trim()) : null) ||
+            (r.pic_name ? picNamePaymentsMap.get(r.pic_name.trim().toLowerCase()) : null);
+
           return {
             id: r.id,
             nama: r.nama,

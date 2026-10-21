@@ -45,7 +45,6 @@ export function downloadTrailrunExcelTemplate(communityName = '') {
     'Kota *',
     'Provinsi *',
     'Kontak Darurat (Nama & No HP) *',
-    'Nama Komunitas / Running Club',
     'Riwayat Medis (Opsional)',
   ];
 
@@ -71,7 +70,6 @@ export function downloadTrailrunExcelTemplate(communityName = '') {
     { wch: 18 }, // Kota
     { wch: 18 }, // Provinsi
     { wch: 30 }, // Kontak Darurat
-    { wch: 28 }, // Komunitas
     { wch: 28 }, // Riwayat Medis
   ];
 

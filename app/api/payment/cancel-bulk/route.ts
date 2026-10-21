@@ -11,20 +11,23 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { order_id, txn_id } = body;
+    const { order_id, txn_id, registration_ids, pic_phone: bodyPicPhone } = body;
 
-    if (!order_id && !txn_id) {
+    if (!order_id && !txn_id && (!registration_ids || registration_ids.length === 0)) {
       return NextResponse.json(
-        { success: false, message: 'order_id atau txn_id wajib disertakan.' },
+        { success: false, message: 'order_id, txn_id, atau registration_ids wajib disertakan.' },
         { status: 400 }
       );
     }
 
     // 1. Cari data pembayaran berdasarkan order_id atau txn_id
-    let payQuery = supabase.from('trailrun_payments').select('id, registration_id, status, order_id');
+    let payQuery = supabase
+      .from('trailrun_payments')
+      .select('id, registration_id, status, order_id, pic_phone, pic_name');
+
     if (order_id) {
       payQuery = payQuery.eq('order_id', order_id);
-    } else {
+    } else if (txn_id) {
       payQuery = payQuery.eq('txn_id', txn_id);
     }
 
@@ -32,10 +35,6 @@ export async function POST(request: NextRequest) {
 
     if (findError) {
       console.error('Error finding payments to cancel:', findError);
-      return NextResponse.json(
-        { success: false, message: `Gagal mencari transaksi: ${findError.message}` },
-        { status: 500 }
-      );
     }
 
     // Pastikan tidak membatalkan yang sudah lunas
@@ -50,45 +49,63 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 2. Hapus data dari trailrun_payments
-    if (order_id) {
-      await supabase.from('trailrun_payments').delete().eq('order_id', order_id);
-    } else if (txn_id) {
-      await supabase.from('trailrun_payments').delete().eq('txn_id', txn_id);
+    // 2. Kumpulkan SEMUA registration_id yang perlu dihapus
+    let deletedCount = 0;
+    const allRegIds = new Set<string>();
+
+    // Tambahkan id dari body jika ada
+    if (Array.isArray(registration_ids)) {
+      registration_ids.forEach((id: string) => {
+        if (id) allRegIds.add(id);
+      });
     }
 
-    // 3. Hapus data peserta rombongan dari trailrun_registrations
-    // Pertama gunakan list registration_id jika ada
-    let deletedCount = 0;
-    const regIds = (payments || []).map((p) => p.registration_id).filter(Boolean);
+    // Tambahkan registration_id dari record pembayaran
+    (payments || []).forEach((p) => {
+      if (p.registration_id) allRegIds.add(p.registration_id);
+    });
 
-    // Ambil data pembayaran untuk info PIC tambahan
-    const picPhone = payments?.[0]?.pic_phone;
-    const picName = payments?.[0]?.pic_name;
-
-    if (regIds.length > 0) {
-      const { error: regDelErr } = await supabase
+    // 3. Hapus peserta dari trailrun_registrations berdasarkan list ID
+    const regIdList = Array.from(allRegIds);
+    if (regIdList.length > 0) {
+      const { data: delData, error: regDelErr } = await supabase
         .from('trailrun_registrations')
         .delete()
-        .in('id', regIds);
+        .in('id', regIdList)
+        .neq('status', 'paid')
+        .select('id');
 
-      if (!regDelErr) {
-        deletedCount += regIds.length;
+      if (!regDelErr && delData) {
+        deletedCount += delData.length;
       }
     }
 
-    // Jika ada nomor HP PIC dan status masih pending, hapus peserta kelompok terkait yang belum paid
+    // 4. Hapus juga via nomor HP PIC (jika ada di payment atau di body)
+    const picPhone = bodyPicPhone || payments?.[0]?.pic_phone;
     if (picPhone) {
-      await supabase
+      const { data: delPicData } = await supabase
         .from('trailrun_registrations')
         .delete()
         .eq('pic_phone', picPhone)
-        .neq('status', 'paid');
+        .neq('status', 'paid')
+        .select('id');
+
+      if (delPicData) {
+        deletedCount += delPicData.length;
+      }
+    }
+
+    // 5. Terakhir, hapus data transaksi dari trailrun_payments
+    if (order_id) {
+      await supabase.from('trailrun_payments').delete().eq('order_id', order_id);
+    }
+    if (txn_id) {
+      await supabase.from('trailrun_payments').delete().eq('txn_id', txn_id);
     }
 
     return NextResponse.json({
       success: true,
-      message: `Transaksi kelompok berhasil dibatalkan. ${deletedCount} data pendaftaran telah dihapus.`,
+      message: `Transaksi kelompok berhasil dibatalkan. Data pendaftaran telah dibersihkan.`,
       deleted: {
         order_id: order_id || null,
         txn_id: txn_id || null,

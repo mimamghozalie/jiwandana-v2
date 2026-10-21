@@ -23,7 +23,13 @@ interface KelompokBatchTableProps {
   batches: GroupRegistrationBatch[];
   loading: boolean;
   onSelectParticipant?: (row: TrailrunRow) => void;
-  onCancelBatch?: (orderId: string, groupName: string, participantCount: number) => void;
+  onCancelBatch?: (
+    orderId: string,
+    groupName: string,
+    participantCount: number,
+    registrationIds?: string[],
+    picPhone?: string
+  ) => void;
 }
 
 export default function KelompokBatchTable({
@@ -374,7 +380,14 @@ export default function KelompokBatchTable({
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  onCancelBatch(batch.orderId, batch.namaKomunitas, batch.totalParticipants);
+                                  const regIds = batch.participants.map((p) => p.id);
+                                  onCancelBatch(
+                                    batch.orderId,
+                                    batch.namaKomunitas,
+                                    batch.totalParticipants,
+                                    regIds,
+                                    batch.picPhone
+                                  );
                                 }}
                                 className="px-2 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer"
                                 title="Batalkan transaksi ini dan hapus data peserta yang belum bayar"

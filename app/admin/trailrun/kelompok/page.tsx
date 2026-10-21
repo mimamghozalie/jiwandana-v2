@@ -154,7 +154,13 @@ export default function PesertaKelompokPage() {
   };
 
   // Batalkan transaksi kelompok & hapus peserta terkait
-  const handleCancelBatch = async (orderId: string, groupName: string, participantCount: number) => {
+  const handleCancelBatch = async (
+    orderId: string,
+    groupName: string,
+    participantCount: number,
+    registrationIds?: string[],
+    picPhone?: string
+  ) => {
     const confirmed = window.confirm(
       `Apakah Anda yakin ingin membatalkan transaksi "${orderId}"?\n\n` +
       `Komunitas: ${groupName}\n` +
@@ -167,7 +173,11 @@ export default function PesertaKelompokPage() {
       const res = await fetch('/api/payment/cancel-bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ order_id: orderId }),
+        body: JSON.stringify({
+          order_id: orderId,
+          registration_ids: registrationIds || [],
+          pic_phone: picPhone || null,
+        }),
       });
       const result = await res.json();
       if (!res.ok || !result.success) {
