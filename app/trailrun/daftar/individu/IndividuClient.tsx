@@ -681,6 +681,29 @@ export default function IndividuClient() {
                 </button>
               )}
 
+              {currentStep === 4 && !paymentData && (
+                <button
+                  type="button"
+                  onClick={handleCreatePayment}
+                  disabled={loading}
+                  className="w-full sm:w-auto px-7 py-3 bg-[#C9A227] hover:bg-[#b08d20] disabled:opacity-50 text-[#0d1c32] rounded-xl font-bold text-xs uppercase tracking-wider transition-all transform active:scale-95 shadow-md flex items-center justify-center gap-2"
+                >
+                  {loading ? (
+                    <>
+                      <span className="material-symbols-outlined text-sm animate-spin">
+                        progress_activity
+                      </span>
+                      <span>Memproses Pembayaran...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="material-symbols-outlined text-sm">payment</span>
+                      <span>Bayar Sekarang</span>
+                    </>
+                  )}
+                </button>
+              )}
+
               {currentStep === 4 && paymentData && paymentStatus !== 'completed' && (
                 <button
                   type="button"
