@@ -208,7 +208,7 @@ export function BulkPaymentActiveView({
         <div className="pt-3 border-t border-black/10 flex justify-between items-center">
           <div>
             <span className="text-xs text-slate-600 uppercase font-bold tracking-wider block">Total Tagihan Rombongan</span>
-            <span className="text-[10px] text-slate-400">Termasuk Tiket, Biaya Admin, dan Biaya QRIS</span>
+            <span className="text-[10px] text-slate-400">Termasuk Tiket, Biaya Admin, dan Biaya Gateway ({paymentData.payment_method.toUpperCase()})</span>
           </div>
           <span className="text-2xl font-bold text-[#C9A227] font-mono">{formatCurrency(paymentData.total_payment)}</span>
         </div>

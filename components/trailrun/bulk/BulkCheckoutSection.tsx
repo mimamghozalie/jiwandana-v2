@@ -14,10 +14,11 @@ interface BulkCheckoutSectionProps {
 }
 
 const PAYMENT_METHODS = [
-  { id: 'qris', label: 'QRIS (Gopay, OVO, Dana, BCA, dll)', desc: 'Biaya admin flat + gateway live fee' },
-  { id: 'bca_va', label: 'BCA Virtual Account', desc: 'Transfer instan via Virtual Account BCA' },
-  { id: 'mandiri_va', label: 'Mandiri Virtual Account', desc: 'Transfer via Livin by Mandiri / ATM' },
-  { id: 'bri_va', label: 'BRI Virtual Account (BRIVA)', desc: 'Transfer via BRImo / ATM BRI' },
+  { id: 'qris', label: 'QRIS', desc: 'Gopay, OVO, Dana, ShopeePay, BCA, dll' },
+  { id: 'bri_va', label: 'BRI Virtual Account (BRIVA)', desc: 'Transfer instan via BRImo / ATM BRI' },
+  { id: 'bni_va', label: 'BNI Virtual Account', desc: 'Transfer instan via BNI Mobile / ATM' },
+  { id: 'mandiri_va', label: 'Mandiri Virtual Account', desc: 'Transfer instan via Livin / ATM Mandiri' },
+  { id: 'permata_va', label: 'Permata Virtual Account', desc: 'Transfer via Permata / Bank Lain' },
 ];
 
 export function BulkCheckoutSection({
