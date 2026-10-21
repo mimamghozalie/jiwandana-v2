@@ -135,8 +135,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const estimatedTxFee = Math.round(amountToSend * 0.007 + 300);
-    const gatewayFee = transaction.fee || estimatedTxFee;
+    // Biaya transaksi gateway Pakasir (1% untuk QRIS, flat 3.500 untuk VA)
+    const fallbackPakasirFee =
+      (payment_method || 'qris') === 'qris'
+        ? Math.round(subtotalTickets * 0.01)
+        : 3500;
+    const gatewayFee = transaction.fee || fallbackPakasirFee;
     const adminProfit = ADMIN_FEE; // Keuntungan bersih utuh Rp 3.000 / orang
     const finalTotalPayment = transaction.total_payment || (amountToSend + gatewayFee);
 

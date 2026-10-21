@@ -156,7 +156,7 @@ export default function TrailrunFilterBar({
             <span className="text-slate-400 text-xs font-medium">Jalur:</span>
             <select
               value={groupFilter}
-              onChange={(e) => setGroupFilter(e.target.value as any)}
+              onChange={(e) => setGroupFilter?.(e.target.value as any)}
               className="bg-transparent text-white font-medium text-xs outline-none cursor-pointer pr-2"
             >
               <option value="all" className="bg-[#0a1424]">Semua Jalur</option>
