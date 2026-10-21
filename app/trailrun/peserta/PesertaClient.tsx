@@ -381,8 +381,8 @@ export default function PesertaClient() {
                           fetchParticipant(item.no_bib);
                         }}
                         className={`px-3 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer border ${isActive
-                            ? 'bg-[#C9A227] text-[#0d1c32] border-[#C9A227] shadow-xs'
-                            : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-black/10'
+                          ? 'bg-[#C9A227] text-[#0d1c32] border-[#C9A227] shadow-xs'
+                          : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-black/10'
                           }`}
                       >
                         <span className="font-mono font-bold">{item.no_bib}</span>
@@ -691,7 +691,7 @@ export default function PesertaClient() {
                         <span>Waktu & Tanggal</span>
                       </div>
                       <p className="text-slate-600 text-[11px] leading-relaxed">
-                        H-1 sebelum lomba (10:00 - 18:00 WIB). Wajib hadir tepat waktu.
+                        28 november pukul 10.00 wib sd 29 november pukul 03.00 wib
                       </p>
                     </div>
 
