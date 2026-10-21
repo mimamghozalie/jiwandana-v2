@@ -105,23 +105,27 @@ function SponsorCard({
   item,
   minHeightClass = 'min-h-[110px] sm:min-h-[130px]',
   imgMaxHeightClass = 'max-h-16 sm:max-h-20',
+  imgMaxWidthClass = 'max-w-[85%]',
 }: {
   item: SponsorItem;
   minHeightClass?: string;
   imgMaxHeightClass?: string;
+  imgMaxWidthClass?: string;
 }) {
   return (
     <div
-      className={`bg-white/40 hover:bg-white/50 backdrop-blur-md border border-white/15 hover:border-[#C9A227]/60 rounded-2xl p-4 sm:p-6 flex items-center justify-center shadow-lg hover:shadow-2xl transition-all duration-300 group ${minHeightClass}`}
+      className={`bg-white/40 hover:bg-white/50 backdrop-blur-md border border-white/15 hover:border-[#C9A227]/60 rounded-2xl p-3 sm:p-5 flex items-center justify-center shadow-lg hover:shadow-2xl transition-all duration-300 group ${minHeightClass}`}
       title={item.name}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={item.src}
-        alt={item.alt}
-        className={`${imgMaxHeightClass} max-w-full w-auto object-contain transition-transform duration-300 group-hover:scale-105 drop-shadow-md filter brightness-105 contrast-105`}
-        loading="lazy"
-      />
+      <div className="w-full h-full flex items-center justify-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={item.src}
+          alt={item.alt}
+          className={`${imgMaxHeightClass} ${imgMaxWidthClass} w-auto h-auto object-contain transition-transform duration-300 group-hover:scale-105 drop-shadow-md filter brightness-105 contrast-105`}
+          loading="lazy"
+        />
+      </div>
     </div>
   );
 }
@@ -238,13 +242,14 @@ export default function TrailrunSponsors() {
           {/* KOLOM KANAN: MEDIA PARTNER (2 Box Tersusun Vertikal) */}
           <div className="space-y-4">
             <SectionLabel title="Media Partner" />
-            <div className="flex flex-col gap-4 max-w-[60%] sm:max-w-[55%] mx-auto">
+            <div className="flex flex-col gap-4 max-w-[70%] sm:max-w-[55%] mx-auto">
               {mediaPartnerSponsors.map((item, index) => (
                 <SponsorCard
                   key={index}
                   item={item}
-                  minHeightClass="min-h-[100px] sm:min-h-[115px]"
-                  imgMaxHeightClass="max-h-18 sm:max-h-14"
+                  minHeightClass="min-h-[110px] sm:min-h-[125px]"
+                  imgMaxHeightClass="max-h-14 sm:max-h-16"
+                  imgMaxWidthClass={item.name.toLowerCase().includes('radio') ? 'max-w-[92%]' : 'max-w-[65%] sm:max-w-[60%]'}
                 />
               ))}
             </div>
