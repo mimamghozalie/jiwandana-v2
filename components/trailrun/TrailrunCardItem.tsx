@@ -115,9 +115,22 @@ export default function TrailrunCardItem({
                 {item.badge}
               </div>
 
+              {/* Logo ITRA 0 pada pojok kiri bawah kategori 3K dan 7K */}
+              {(catKey === '3k' || catKey === '7k' || item.id?.toLowerCase().includes('3') || item.id?.toLowerCase().includes('7')) && (
+                <div className="absolute bottom-2.5 left-2.5 sm:bottom-3 sm:left-3 z-20 pointer-events-none">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/assets/trailrun/jiwandana_itra_0.png"
+                    alt="ITRA 0 Points"
+                    className="h-6 sm:h-7 w-auto object-contain drop-shadow-md rounded-xs"
+                  />
+                </div>
+              )}
+
               {/* Logo 20K M pada pojok kiri bawah kategori 12K */}
               {(catKey === '12k' || item.id?.toLowerCase().includes('12')) && (
                 <div className="absolute bottom-2.5 left-2.5 sm:bottom-3 sm:left-3 z-20 pointer-events-none">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/20km.png"
                     alt="20K M"
