@@ -154,6 +154,13 @@ export default function EventDetailClient({ slug }: EventDetailClientProps) {
       ? event.rules_url.trim()
       : null;
 
+  const registrationUrl =
+    event.registration_url &&
+    event.registration_url.trim() !== '' &&
+    event.registration_url !== '#'
+      ? event.registration_url.trim()
+      : null;
+
   return (
     <main className="pt-20 bg-[#f8f8f8]">
       <section className="py-16 md:py-24 bg-[#f8f8f8] min-h-screen text-slate-800">
@@ -267,16 +274,26 @@ export default function EventDetailClient({ slug }: EventDetailClientProps) {
                         <Camera className="w-4 h-4" />
                         <span>Lihat Dokumentasi</span>
                       </Link>
-                    ) : (
+                    ) : registrationUrl ? (
                       <a
-                        href={event.registration_url || `/booking-event?category=${event.category}`}
-                        target={event.registration_url?.startsWith('http') ? '_blank' : undefined}
-                        rel={event.registration_url?.startsWith('http') ? 'noopener noreferrer' : undefined}
+                        href={registrationUrl}
+                        target={registrationUrl.startsWith('http') ? '_blank' : undefined}
+                        rel={registrationUrl.startsWith('http') ? 'noopener noreferrer' : undefined}
                         className="flex-1 bg-[#C9A227] hover:bg-[#b08d20] text-[#0d1c32] font-semibold py-3.5 px-4 rounded-xl text-center shadow-md transition-all transform active:scale-95 text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer"
                       >
                         <CheckCircle2 className="w-4 h-4" />
                         <span>Daftar Sekarang</span>
                       </a>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled
+                        className="flex-1 bg-slate-200 text-slate-400 font-semibold py-3.5 px-4 rounded-xl text-center text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 cursor-not-allowed border border-slate-300 shadow-none opacity-80"
+                        title="Pendaftaran belum dibuka atau link pendaftaran belum tersedia"
+                      >
+                        <AlertCircle className="w-4 h-4 text-slate-400" />
+                        <span>Pendaftaran Belum Dibuka</span>
+                      </button>
                     )}
 
                     {juknisUrl && (
