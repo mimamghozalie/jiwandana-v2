@@ -4,6 +4,7 @@ import type { AtletItem } from '../types';
 interface AtletTableProps {
   atlets: AtletItem[];
   onOpenModal: () => void;
+  onEdit: (item: AtletItem) => void;
   onDelete: (id: string) => void;
   title?: string;
   defaultCategory?: string;
@@ -13,6 +14,7 @@ interface AtletTableProps {
 export default function AtletTable({
   atlets,
   onOpenModal,
+  onEdit,
   onDelete,
   title = 'DATA ATLET',
   defaultCategory = 'Semua',
@@ -71,6 +73,8 @@ export default function AtletTable({
             <option value="Semua">Semua Kategori</option>
             <option value="Tanding">Tanding</option>
             <option value="Tunggal Ganda Regu">Tunggal Ganda Regu</option>
+            <option value="Silat Bebas">Silat Bebas</option>
+            <option value="Silat Festival">Silat Festival</option>
           </select>
         </div>
       )}
@@ -117,14 +121,24 @@ export default function AtletTable({
                   </td>
                   <td className="py-2.5 px-3 font-medium text-slate-600">{item.noHp}</td>
                   <td className="py-2.5 px-3 text-center">
-                    <button
-                      type="button"
-                      onClick={() => onDelete(item.id)}
-                      title="Hapus Atlet"
-                      className="w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 inline-flex items-center justify-center transition-colors border border-red-200 cursor-pointer"
-                    >
-                      <span className="material-symbols-outlined text-sm">delete</span>
-                    </button>
+                    <div className="flex items-center justify-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => onEdit(item)}
+                        title="Edit Atlet"
+                        className="w-7 h-7 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-600 inline-flex items-center justify-center transition-colors border border-amber-200 cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-sm">edit</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onDelete(item.id)}
+                        title="Hapus Atlet"
+                        className="w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 inline-flex items-center justify-center transition-colors border border-red-200 cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-sm">delete</span>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))

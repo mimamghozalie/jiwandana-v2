@@ -5,12 +5,14 @@ import { JABATAN_OFFICIAL_OPTIONS } from '../types';
 interface OfficialTableProps {
   officials: OfficialItem[];
   onOpenModal: () => void;
+  onEdit: (item: OfficialItem) => void;
   onDelete: (id: string) => void;
 }
 
 export default function OfficialTable({
   officials,
   onOpenModal,
+  onEdit,
   onDelete,
 }: OfficialTableProps) {
   const [filterJabatan, setFilterJabatan] = useState('Semua');
@@ -103,14 +105,24 @@ export default function OfficialTable({
                   <td className="py-2.5 px-3 font-medium text-slate-700">{item.noHp}</td>
                   <td className="py-2.5 px-3 text-slate-500">{item.email}</td>
                   <td className="py-2.5 px-3 text-center">
-                    <button
-                      type="button"
-                      onClick={() => onDelete(item.id)}
-                      title="Hapus Official"
-                      className="w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 inline-flex items-center justify-center transition-colors border border-red-200 cursor-pointer"
-                    >
-                      <span className="material-symbols-outlined text-sm">delete</span>
-                    </button>
+                    <div className="flex items-center justify-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => onEdit(item)}
+                        title="Edit Official"
+                        className="w-7 h-7 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-600 inline-flex items-center justify-center transition-colors border border-amber-200 cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-sm">edit</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onDelete(item.id)}
+                        title="Hapus Official"
+                        className="w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 inline-flex items-center justify-center transition-colors border border-red-200 cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-sm">delete</span>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { AtletItem } from '../types';
 import {
   KELAS_SENI_OPTIONS,
@@ -10,8 +10,9 @@ import {
 interface ModalAddAtletProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: Omit<AtletItem, 'id'>) => void;
+  onSave: (data: Omit<AtletItem, 'id'>, id?: string) => void;
   defaultCategory?: string;
+  initialData?: AtletItem | null;
 }
 
 export default function ModalAddAtlet({
@@ -19,8 +20,9 @@ export default function ModalAddAtlet({
   onClose,
   onSave,
   defaultCategory = 'Tanding',
+  initialData,
 }: ModalAddAtletProps) {
-  const initialFormState: Omit<AtletItem, 'id'> = {
+  const getInitialState = (): Omit<AtletItem, 'id'> => ({
     nama: '',
     asalSekolah: '',
     nik: '',
@@ -35,9 +37,32 @@ export default function ModalAddAtlet({
     kategoriKelasSeni: KELAS_SENI_OPTIONS[0],
     noHp: '',
     email: '',
-  };
+  });
 
-  const [form, setForm] = useState<Omit<AtletItem, 'id'>>(initialFormState);
+  const [form, setForm] = useState<Omit<AtletItem, 'id'>>(getInitialState());
+
+  useEffect(() => {
+    if (initialData) {
+      setForm({
+        nama: initialData.nama,
+        asalSekolah: initialData.asalSekolah,
+        nik: initialData.nik,
+        tanggalLahir: initialData.tanggalLahir,
+        umur: initialData.umur,
+        tinggi: initialData.tinggi,
+        berat: initialData.berat,
+        kota: initialData.kota,
+        jenisKelamin: initialData.jenisKelamin,
+        tingkatPendidikan: initialData.tingkatPendidikan,
+        kategoriLomba: initialData.kategoriLomba,
+        kategoriKelasSeni: initialData.kategoriKelasSeni,
+        noHp: initialData.noHp,
+        email: initialData.email,
+      });
+    } else {
+      setForm(getInitialState());
+    }
+  }, [initialData, defaultCategory, isOpen]);
 
   if (!isOpen) return null;
 
@@ -47,9 +72,11 @@ export default function ModalAddAtlet({
       alert('Nama dan NIK Atlet wajib diisi!');
       return;
     }
-    onSave(form);
-    setForm(initialFormState);
+    onSave(form, initialData?.id);
+    setForm(getInitialState());
   };
+
+  const isEdit = !!initialData;
 
   return (
     <div
@@ -64,7 +91,7 @@ export default function ModalAddAtlet({
           <div className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-full bg-[#00b4d8]" />
             <h3 className="text-base sm:text-lg font-black text-slate-900 uppercase tracking-wider">
-              TAMBAH DATA ATLET
+              {isEdit ? 'EDIT DATA ATLET' : 'TAMBAH DATA ATLET'}
             </h3>
           </div>
           <button
@@ -276,7 +303,7 @@ export default function ModalAddAtlet({
               type="submit"
               className="py-2.5 px-6 bg-gradient-to-r from-[#ff007f] to-[#d6006c] hover:from-[#ff1a8c] hover:to-[#e60074] text-white font-extrabold rounded-xl shadow-md transition-all cursor-pointer"
             >
-              Simpan Data Atlet
+              {isEdit ? 'Perbarui Data Atlet' : 'Simpan Data Atlet'}
             </button>
           </div>
         </form>

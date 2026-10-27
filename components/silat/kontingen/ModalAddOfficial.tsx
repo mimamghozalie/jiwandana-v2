@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { OfficialItem } from '../types';
 import { JABATAN_OFFICIAL_OPTIONS } from '../types';
 
 interface ModalAddOfficialProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: Omit<OfficialItem, 'id'>) => void;
+  onSave: (data: Omit<OfficialItem, 'id'>, id?: string) => void;
+  initialData?: OfficialItem | null;
 }
 
-const initialFormState: Omit<OfficialItem, 'id'> = {
+const emptyFormState: Omit<OfficialItem, 'id'> = {
   nama: '',
   jabatan: 'Pelatih Kepala',
   nik: '',
@@ -23,8 +24,26 @@ export default function ModalAddOfficial({
   isOpen,
   onClose,
   onSave,
+  initialData,
 }: ModalAddOfficialProps) {
-  const [form, setForm] = useState<Omit<OfficialItem, 'id'>>(initialFormState);
+  const [form, setForm] = useState<Omit<OfficialItem, 'id'>>(emptyFormState);
+
+  useEffect(() => {
+    if (initialData) {
+      setForm({
+        nama: initialData.nama,
+        jabatan: initialData.jabatan,
+        nik: initialData.nik,
+        tanggalLahir: initialData.tanggalLahir,
+        kota: initialData.kota,
+        jenisKelamin: initialData.jenisKelamin,
+        noHp: initialData.noHp,
+        email: initialData.email,
+      });
+    } else {
+      setForm(emptyFormState);
+    }
+  }, [initialData, isOpen]);
 
   if (!isOpen) return null;
 
@@ -34,9 +53,11 @@ export default function ModalAddOfficial({
       alert('Nama dan NIK Official wajib diisi!');
       return;
     }
-    onSave(form);
-    setForm(initialFormState);
+    onSave(form, initialData?.id);
+    setForm(emptyFormState);
   };
+
+  const isEdit = !!initialData;
 
   return (
     <div
@@ -51,7 +72,7 @@ export default function ModalAddOfficial({
           <div className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-full bg-[#ff007f]" />
             <h3 className="text-base sm:text-lg font-black text-slate-900 uppercase tracking-wider">
-              TAMBAH DATA OFFICIAL
+              {isEdit ? 'EDIT DATA OFFICIAL' : 'TAMBAH DATA OFFICIAL'}
             </h3>
           </div>
           <button
@@ -180,7 +201,7 @@ export default function ModalAddOfficial({
               type="submit"
               className="py-2.5 px-6 bg-gradient-to-r from-[#00b4d8] to-[#0077b6] hover:from-[#009ec3] hover:to-[#00669e] text-white font-extrabold rounded-xl shadow-md transition-all cursor-pointer"
             >
-              Simpan Official
+              {isEdit ? 'Perbarui Data Official' : 'Simpan Official'}
             </button>
           </div>
         </form>

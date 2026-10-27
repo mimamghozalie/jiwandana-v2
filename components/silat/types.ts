@@ -89,6 +89,8 @@ export const TINGKAT_PENDIDIKAN_OPTIONS = [
 export const KATEGORI_LOMBA_OPTIONS = [
   'Tanding',
   'Tunggal Ganda Regu',
+  "Silat Bebas",
+  "Silat Festival"
 ];
 
 // Helper fungsi hitung umur otomatis presisi dari tanggal lahir

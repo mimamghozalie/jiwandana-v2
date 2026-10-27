@@ -16,9 +16,12 @@ export default function DataKontingenClient() {
   const [atlets, setAtlets] = useState<AtletItem[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Modal Visibility States
+  // Modal Visibility & Editing States
   const [isOfficialModalOpen, setIsOfficialModalOpen] = useState(false);
+  const [editingOfficial, setEditingOfficial] = useState<OfficialItem | null>(null);
+
   const [isAtletModalOpen, setIsAtletModalOpen] = useState(false);
+  const [editingAtlet, setEditingAtlet] = useState<AtletItem | null>(null);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -57,14 +60,33 @@ export default function DataKontingenClient() {
     }
   }, [atlets, isLoaded]);
 
-  // Handler Tambah & Hapus Official
-  const handleSaveOfficial = (data: Omit<OfficialItem, 'id'>) => {
-    const newOfficial: OfficialItem = {
-      id: `OFF-${Date.now()}-${String(officials.length + 1).padStart(2, '0')}`,
-      ...data,
-    };
-    setOfficials((prev) => [...prev, newOfficial]);
+  // Handler Tambah/Edit & Hapus Official
+  const handleOpenAddOfficial = () => {
+    setEditingOfficial(null);
+    setIsOfficialModalOpen(true);
+  };
+
+  const handleOpenEditOfficial = (item: OfficialItem) => {
+    setEditingOfficial(item);
+    setIsOfficialModalOpen(true);
+  };
+
+  const handleSaveOfficial = (data: Omit<OfficialItem, 'id'>, id?: string) => {
+    if (id) {
+      // Mode Edit
+      setOfficials((prev) =>
+        prev.map((item) => (item.id === id ? { ...data, id } : item))
+      );
+    } else {
+      // Mode Tambah Baru
+      const newOfficial: OfficialItem = {
+        id: `OFF-${Date.now()}-${String(officials.length + 1).padStart(2, '0')}`,
+        ...data,
+      };
+      setOfficials((prev) => [...prev, newOfficial]);
+    }
     setIsOfficialModalOpen(false);
+    setEditingOfficial(null);
   };
 
   const handleDeleteOfficial = (id: string) => {
@@ -73,14 +95,33 @@ export default function DataKontingenClient() {
     }
   };
 
-  // Handler Tambah & Hapus Atlet
-  const handleSaveAtlet = (data: Omit<AtletItem, 'id'>) => {
-    const newAtlet: AtletItem = {
-      id: `ATL-${Date.now()}-${String(atlets.length + 1).padStart(2, '0')}`,
-      ...data,
-    };
-    setAtlets((prev) => [...prev, newAtlet]);
+  // Handler Tambah/Edit & Hapus Atlet
+  const handleOpenAddAtlet = () => {
+    setEditingAtlet(null);
+    setIsAtletModalOpen(true);
+  };
+
+  const handleOpenEditAtlet = (item: AtletItem) => {
+    setEditingAtlet(item);
+    setIsAtletModalOpen(true);
+  };
+
+  const handleSaveAtlet = (data: Omit<AtletItem, 'id'>, id?: string) => {
+    if (id) {
+      // Mode Edit
+      setAtlets((prev) =>
+        prev.map((item) => (item.id === id ? { ...data, id } : item))
+      );
+    } else {
+      // Mode Tambah Baru
+      const newAtlet: AtletItem = {
+        id: `ATL-${Date.now()}-${String(atlets.length + 1).padStart(2, '0')}`,
+        ...data,
+      };
+      setAtlets((prev) => [...prev, newAtlet]);
+    }
     setIsAtletModalOpen(false);
+    setEditingAtlet(null);
   };
 
   const handleDeleteAtlet = (id: string) => {
@@ -119,44 +160,60 @@ export default function DataKontingenClient() {
             {/* TABEL 1: DATA OFFICIAL */}
             <OfficialTable
               officials={officials}
-              onOpenModal={() => setIsOfficialModalOpen(true)}
+              onOpenModal={handleOpenAddOfficial}
+              onEdit={handleOpenEditOfficial}
               onDelete={handleDeleteOfficial}
             />
 
             {/* TABEL 2: DATA ATLET */}
             <AtletTable
               atlets={atlets}
-              onOpenModal={() => setIsAtletModalOpen(true)}
+              onOpenModal={handleOpenAddAtlet}
+              onEdit={handleOpenEditAtlet}
               onDelete={handleDeleteAtlet}
             />
+
+            {/* BOTTOM SECTION: TOMBOL LINK KE PAGE DAFTAR & NAVIGASI KEMBALI */}
+            <div className="w-full flex flex-col items-center justify-center sm:mt-8 space-y-3">
+              <div className="flex items-center justify-center gap-4 sm:gap-6 w-full max-w-md">
+                {/* Tombol Utama: KE HALAMAN PENDAFTARAN */}
+                <Link
+                  href="/silat/daftar"
+                  className="flex-1 py-3.5 sm:py-4 px-6 sm:px-8 bg-gradient-to-r from-[#00d2ff] via-[#00b4d8] to-[#0099ff] hover:from-[#00c5ee] hover:to-[#0088ee] text-white font-black text-base sm:text-xl tracking-wider uppercase rounded-2xl shadow-xl shadow-cyan-500/30 border-2 border-white transform hover:scale-105 active:scale-95 transition-all text-center cursor-pointer select-none flex items-center justify-center gap-2"
+                >
+                  <span>PENDAFTARAN</span>
+                  <span className="material-symbols-outlined text-lg sm:text-xl">arrow_forward</span>
+                </Link>
+              </div>
+
+            </div>
           </div>
 
           {/* PILAR KANAN: SPONSORSHIP CYAN/TOSCA PASTEL */}
           <SilatSponsorPillar variant="tosca" />
         </div>
 
-        {/* BOTTOM SECTION: NAVIGASI KEMBALI */}
-        <div className="w-full flex items-center justify-center mt-6">
-          <Link
-            href="/silat"
-            className="text-xs font-semibold text-slate-500 hover:text-[#0088cc] transition-colors inline-flex items-center gap-1"
-          >
-            <span className="material-symbols-outlined text-sm">arrow_back</span>
-            <span>Kembali ke Beranda Silat</span>
-          </Link>
-        </div>
+
       </main>
 
-      {/* 3. MODALS FORM TAMBAH DATA */}
+      {/* 3. MODALS FORM TAMBAH / EDIT DATA */}
       <ModalAddOfficial
         isOpen={isOfficialModalOpen}
-        onClose={() => setIsOfficialModalOpen(false)}
+        initialData={editingOfficial}
+        onClose={() => {
+          setIsOfficialModalOpen(false);
+          setEditingOfficial(null);
+        }}
         onSave={handleSaveOfficial}
       />
 
       <ModalAddAtlet
         isOpen={isAtletModalOpen}
-        onClose={() => setIsAtletModalOpen(false)}
+        initialData={editingAtlet}
+        onClose={() => {
+          setIsAtletModalOpen(false);
+          setEditingAtlet(null);
+        }}
         onSave={handleSaveAtlet}
       />
     </div>
