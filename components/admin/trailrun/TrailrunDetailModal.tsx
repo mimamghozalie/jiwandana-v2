@@ -190,13 +190,30 @@ export function TrailrunDetailModal({
                 <span className="text-slate-500">Gender:</span>
                 <span className="text-white">{selectedRow.jenis_kelamin || '-'}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">NIK:</span>
-                <span className="text-white font-mono">{selectedRow.nik || '-'}</span>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500">NIK / Passport:</span>
+                <span className="text-white font-mono flex items-center gap-1.5">
+                  {selectedRow.nik ? (
+                    <>
+                      <span>{selectedRow.nik}</span>
+                      {/^\d{16}$/.test(selectedRow.nik) ? (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                          NIK
+                        </span>
+                      ) : (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-blue-500/15 text-blue-400 border border-blue-500/30">
+                          Passport
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-slate-500">-</span>
+                  )}
+                </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">No. KK:</span>
-                <span className="text-white font-mono">{selectedRow.kk || '-'}</span>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500">No. KK (Opsional):</span>
+                <span className="text-white font-mono">{selectedRow.kk || <span className="text-slate-500">-</span>}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Tgl Lahir:</span>

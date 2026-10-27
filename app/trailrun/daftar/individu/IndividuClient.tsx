@@ -162,9 +162,17 @@ export default function IndividuClient() {
       return;
     }
 
-    if (name === 'nik' || name === 'kk') {
+    if (name === 'nik') {
+      // Izinkan alfanumerik (huruf dan angka), uppercase untuk passport atau 16 digit NIK
+      const sanitized = value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 20).toUpperCase();
+      setFormData((prev) => ({ ...prev, nik: sanitized }));
+      if (errorMsg) setErrorMsg('');
+      return;
+    }
+
+    if (name === 'kk') {
       const digitsOnly = value.replace(/\D/g, '').slice(0, 16);
-      setFormData((prev) => ({ ...prev, [name]: digitsOnly }));
+      setFormData((prev) => ({ ...prev, kk: digitsOnly }));
       if (errorMsg) setErrorMsg('');
       return;
     }
@@ -236,15 +244,22 @@ export default function IndividuClient() {
       case 2:
         if (!formData.nama.trim()) return fail('Nama lengkap wajib diisi.');
         if (!formData.jenis_kelamin) return fail('Jenis kelamin wajib dipilih terlebih dahulu.');
-        if (!formData.nik?.trim()) return fail('NIK (Nomor Induk Kependudukan) wajib diisi.');
+        if (!formData.nik?.trim()) return fail('NIK atau Nomor Passport wajib diisi.');
         const cleanNik = formData.nik.trim();
-        if (cleanNik.length !== 16 || !/^\d{16}$/.test(cleanNik)) {
-          return fail('NIK harus berjumlah tepat 16 digit angka.');
+        // Cek apakah format angka 16 digit (NIK KTP) atau format passport (alfanumerik min 6 karakter)
+        const isNumericNik = /^\d+$/.test(cleanNik);
+        if (isNumericNik && cleanNik.length !== 16) {
+          return fail('Jika menggunakan NIK KTP, harus tepat berjumlah 16 digit angka.');
         }
-        if (!formData.kk?.trim()) return fail('Nomor Kartu Keluarga (KK) wajib diisi.');
-        const cleanKk = formData.kk.trim();
-        if (cleanKk.length !== 16 || !/^\d{16}$/.test(cleanKk)) {
-          return fail('Nomor KK harus berjumlah tepat 16 digit angka.');
+        if (!isNumericNik && cleanNik.length < 6) {
+          return fail('Nomor Passport minimal terdiri dari 6 karakter.');
+        }
+        // No KK sekarang opsional. Jika diisi oleh peserta, validasi 16 digit angka.
+        if (formData.kk && formData.kk.trim().length > 0) {
+          const cleanKk = formData.kk.trim();
+          if (cleanKk.length !== 16 || !/^\d{16}$/.test(cleanKk)) {
+            return fail('Jika diisi, Nomor KK harus berjumlah tepat 16 digit angka.');
+          }
         }
         if (!formData.no_bib.trim()) return fail('Nomor BIB wajib diisi.');
         const bibClean = formData.no_bib.trim().toUpperCase();

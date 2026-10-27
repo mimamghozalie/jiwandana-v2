@@ -172,17 +172,32 @@ export default function TrailrunTable({
                       </td>
                     )}
 
-                    {/* NIK */}
+                    {/* NIK / No. Passport */}
                     {visibleColumns.includes('nik') && (
                       <td className="py-3.5 px-4 text-slate-300 font-mono text-[11px] whitespace-nowrap">
-                        {row.nik || '-'}
+                        {row.nik ? (
+                          <div className="flex items-center gap-1.5">
+                            <span>{row.nik}</span>
+                            {/^\d{16}$/.test(row.nik) ? (
+                              <span className="px-1 py-0.2 rounded text-[9px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                                NIK
+                              </span>
+                            ) : (
+                              <span className="px-1 py-0.2 rounded text-[9px] font-semibold bg-blue-500/15 text-blue-400 border border-blue-500/30">
+                                Passport
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-slate-600">-</span>
+                        )}
                       </td>
                     )}
 
-                    {/* No. KK */}
+                    {/* No. KK (Opsional) */}
                     {visibleColumns.includes('kk') && (
                       <td className="py-3.5 px-4 text-slate-300 font-mono text-[11px] whitespace-nowrap">
-                        {row.kk || '-'}
+                        {row.kk ? row.kk : <span className="text-slate-600">-</span>}
                       </td>
                     )}
 

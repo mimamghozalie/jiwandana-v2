@@ -127,8 +127,8 @@ export const getRowFinancials = (row: TrailrunRow) => {
 export const ALL_COLUMNS: ColumnConfig[] = [
   { key: 'no_bib', label: 'No. BIB', category: 'Utama', defaultVisible: true },
   { key: 'nama', label: 'Nama Peserta', category: 'Utama', defaultVisible: true },
-  { key: 'nik', label: 'NIK', category: 'Utama', defaultVisible: true },
-  { key: 'kk', label: 'No. KK', category: 'Utama', defaultVisible: true },
+  { key: 'nik', label: 'NIK / No. Passport', category: 'Utama', defaultVisible: true },
+  { key: 'kk', label: 'No. KK (Opsional)', category: 'Utama', defaultVisible: true },
   { key: 'kategori', label: 'Kategori', category: 'Utama', defaultVisible: true },
   { key: 'ukuran_jersey', label: 'Ukuran Jersey', category: 'Utama', defaultVisible: true },
   { key: 'hasil_lari', label: 'Hasil Lari', category: 'Utama', defaultVisible: true },

@@ -46,7 +46,7 @@ export const exportIndividuToExcel = (data: TrailrunRow[], fileNamePrefix = 'pes
     'Email',
     'WhatsApp / HP',
     'Jenis Kelamin',
-    'NIK',
+    'NIK / No. Passport',
     'No. KK',
     'Tanggal Lahir',
     'Kewarganegaraan',
