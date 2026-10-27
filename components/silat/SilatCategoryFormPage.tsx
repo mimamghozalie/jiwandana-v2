@@ -24,8 +24,10 @@ export default function SilatCategoryFormPage({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAtlet, setEditingAtlet] = useState<AtletItem | null>(null);
 
-  // Kategori yang dihandle halaman ini
-  const categoryFilter = type === 'tanding' ? 'Tanding' : 'Tunggal Ganda Regu';
+  // Kategori yang dihandle halaman ini (Dikelompokkan sesuai Hub Pendaftaran)
+  const allowedCategories =
+    type === 'tanding' ? ['Tanding', 'Silat Bebas'] : ['Tunggal Ganda Regu', 'Silat Festival'];
+  const defaultCategory = allowedCategories[0];
 
   // Load data atlet dari localStorage
   useEffect(() => {
@@ -66,14 +68,13 @@ export default function SilatCategoryFormPage({
     if (id) {
       // Mode Edit
       setAtlets((prev) =>
-        prev.map((item) => (item.id === id ? { ...data, id, kategoriLomba: categoryFilter } : item))
+        prev.map((item) => (item.id === id ? { ...data, id } : item))
       );
     } else {
       // Mode Tambah Baru
       const newAtlet: AtletItem = {
         id: `ATL-${Date.now()}-${String(atlets.length + 1).padStart(2, '0')}`,
         ...data,
-        kategoriLomba: categoryFilter, // pastikan kategori sesuai halaman
       };
       setAtlets((prev) => [...prev, newAtlet]);
     }
@@ -124,12 +125,13 @@ export default function SilatCategoryFormPage({
               </div>
             </div>
 
-            {/* TABEL DATA ATLET KATEGORI SPESIFIK (TANDING / TUNGGAL GANDA REGU) */}
+            {/* TABEL DATA ATLET KATEGORI SPESIFIK */}
             <AtletTable
               atlets={atlets}
-              title={`DATA ATLET (${categoryFilter.toUpperCase()})`}
-              defaultCategory={categoryFilter}
-              hideCategoryFilter={true}
+              title={`DATA ATLET (${allowedCategories.join(' & ').toUpperCase()})`}
+              defaultCategory="Semua"
+              allowedCategories={allowedCategories}
+              hideCategoryFilter={false}
               onOpenModal={handleOpenAddAtlet}
               onEdit={handleOpenEditAtlet}
               onDelete={handleDeleteAtlet}
@@ -177,7 +179,8 @@ export default function SilatCategoryFormPage({
       {/* MODAL DIALOG FORM TAMBAH / EDIT ATLET */}
       <ModalAddAtlet
         isOpen={isModalOpen}
-        defaultCategory={categoryFilter}
+        defaultCategory={defaultCategory}
+        allowedCategories={allowedCategories}
         initialData={editingAtlet}
         onClose={() => {
           setIsModalOpen(false);

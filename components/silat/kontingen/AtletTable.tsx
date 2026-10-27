@@ -9,6 +9,7 @@ interface AtletTableProps {
   title?: string;
   defaultCategory?: string;
   hideCategoryFilter?: boolean;
+  allowedCategories?: string[];
 }
 
 export default function AtletTable({
@@ -19,11 +20,24 @@ export default function AtletTable({
   title = 'DATA ATLET',
   defaultCategory = 'Semua',
   hideCategoryFilter = false,
+  allowedCategories,
 }: AtletTableProps) {
   const [filterKategori, setFilterKategori] = useState(defaultCategory);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
+  // Kategori yang tersedia untuk dropdown filter
+  const categoryOptions = allowedCategories || [
+    'Tanding',
+    'Tunggal Ganda Regu',
+    'Silat Bebas',
+    'Silat Festival',
+  ];
+
   const filteredAtlets = atlets.filter((item) => {
+    // Jika allowedCategories ada, batasi data atlet hanya pada kategori yang diizinkan halaman
+    if (allowedCategories && !allowedCategories.includes(item.kategoriLomba)) {
+      return false;
+    }
     if (filterKategori === 'Semua') return true;
     return item.kategoriLomba === filterKategori;
   });
@@ -70,11 +84,12 @@ export default function AtletTable({
             onChange={(e) => setFilterKategori(e.target.value)}
             className="py-1 px-2.5 bg-white border border-slate-300 rounded-lg font-semibold text-slate-800 outline-none text-xs"
           >
-            <option value="Semua">Semua Kategori</option>
-            <option value="Tanding">Tanding</option>
-            <option value="Tunggal Ganda Regu">Tunggal Ganda Regu</option>
-            <option value="Silat Bebas">Silat Bebas</option>
-            <option value="Silat Festival">Silat Festival</option>
+            <option value="Semua">Semua ({allowedCategories ? allowedCategories.join(' & ') : 'Kategori'})</option>
+            {categoryOptions.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
           </select>
         </div>
       )}

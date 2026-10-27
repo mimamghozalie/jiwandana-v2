@@ -13,6 +13,7 @@ interface ModalAddAtletProps {
   onSave: (data: Omit<AtletItem, 'id'>, id?: string) => void;
   defaultCategory?: string;
   initialData?: AtletItem | null;
+  allowedCategories?: string[];
 }
 
 export default function ModalAddAtlet({
@@ -21,6 +22,7 @@ export default function ModalAddAtlet({
   onSave,
   defaultCategory = 'Tanding',
   initialData,
+  allowedCategories,
 }: ModalAddAtletProps) {
   const getInitialState = (): Omit<AtletItem, 'id'> => ({
     nama: '',
@@ -240,7 +242,7 @@ export default function ModalAddAtlet({
                 onChange={(e) => setForm({ ...form, kategoriLomba: e.target.value })}
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:border-[#00b4d8] font-semibold text-slate-900"
               >
-                {KATEGORI_LOMBA_OPTIONS.map((kat) => (
+                {(allowedCategories || KATEGORI_LOMBA_OPTIONS).map((kat) => (
                   <option key={kat} value={kat}>
                     {kat}
                   </option>
