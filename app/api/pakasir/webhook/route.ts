@@ -134,6 +134,25 @@ export async function POST(request: NextRequest) {
           console.log(`🎉 Berhasil update ${regIds.length} peserta menjadi PAID untuk order: ${orderId || txnId}!`);
         }
       }
+
+      // 3d. Update silat jika transaksi berasal dari kejuaraan silat
+      if (orderId?.startsWith('DSC-SILAT') || txnId) {
+        try {
+          await supabase
+            .from('silat_payments')
+            .update({ status: 'completed', completed_at: completedAt })
+            .or(`order_id.eq.${orderId || ''},txn_id.eq.${txnId || ''}`);
+
+          if (orderId) {
+            await supabase
+              .from('silat_atlets')
+              .update({ status: 'paid' })
+              .eq('order_id', orderId);
+          }
+        } catch (silatErr) {
+          console.warn('Webhook silat update warning:', silatErr);
+        }
+      }
     } else if (status === 'canceled' || status === 'expired' || status === 'failed') {
       // 4. Proses jika pembayaran batal atau kedaluwarsa
       const finalStatus = status === 'failed' ? 'canceled' : status;

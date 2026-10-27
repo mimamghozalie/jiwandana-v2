@@ -153,6 +153,7 @@ export default function PembayaranSilatClient() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           atlets,
+          officials,
           kontingen_name: kontingenName || 'Kontingen Pencak Silat DSC',
           pic_name: picName,
           pic_phone: picPhone,

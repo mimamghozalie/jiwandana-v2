@@ -118,7 +118,36 @@ export default function AtletTable({
               filteredAtlets.map((item, index) => (
                 <tr key={item.id} className="hover:bg-blue-50/40 transition-colors">
                   <td className="py-2.5 px-3 font-mono font-bold text-slate-400">{index + 1}</td>
-                  <td className="py-2.5 px-3 font-bold text-slate-900">{item.nama}</td>
+                  <td className="py-2.5 px-3 font-bold text-slate-900">
+                    <div className="flex items-center gap-2">
+                      {item.fotoUrl ? (
+                        <a href={item.fotoUrl} target="_blank" rel="noopener noreferrer" title="Lihat Foto">
+                          <img
+                            src={item.fotoUrl}
+                            alt={item.nama}
+                            className="w-8 h-8 rounded-full object-cover border border-slate-300 hover:scale-110 transition-transform"
+                          />
+                        </a>
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 text-xs font-bold">
+                          {item.nama.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div>
+                        <span>{item.nama}</span>
+                        {item.kkUrl && (
+                          <a
+                            href={item.kkUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block text-[10px] text-pink-600 hover:underline font-semibold"
+                          >
+                            📄 Berkas KK
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </td>
                   <td className="py-2.5 px-3 text-slate-600">{item.asalSekolah}</td>
                   <td className="py-2.5 px-3 font-mono text-slate-600">{item.nik}</td>
                   <td className="py-2.5 px-3">

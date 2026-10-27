@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createPakasirTransaction } from '@/lib/pakasir';
 import { getSilatCategoryPrice } from '@/components/silat/types';
+import { supabaseServerClient as supabase } from '@/lib/supabaseClient';
 
 export async function POST(request: NextRequest) {
   try {
@@ -48,6 +49,92 @@ export async function POST(request: NextRequest) {
       method: payment_method,
       amount: finalAmount,
     });
+
+    // Simpan ke Supabase agar data tersimpan permanen
+    try {
+      // 1. Simpan Kontingen
+      const { data: kontingenRecord } = await supabase
+        .from('silat_kontingen')
+        .insert({
+          nama_kontingen: kontingen_name || 'Kontingen Silat DSC',
+          asal_sekolah: atlets[0]?.asalSekolah || '',
+          pic_name: pic_name || '',
+          pic_phone: pic_phone || '',
+          status: 'pending',
+        })
+        .select('id')
+        .maybeSingle();
+
+      const kontingenId = kontingenRecord?.id || null;
+
+      // 2. Simpan Seluruh Atlet
+      const atletsPayload = atlets.map((item: any) => ({
+        kontingen_id: kontingenId,
+        order_id: orderId,
+        nama: item.nama || '',
+        asal_sekolah: item.asalSekolah || '',
+        nik: item.nik || '',
+        tanggal_lahir: item.tanggalLahir || new Date().toISOString().split('T')[0],
+        umur: item.umur ? parseInt(String(item.umur), 10) : null,
+        tinggi: item.tinggi ? parseInt(String(item.tinggi), 10) : null,
+        berat: item.berat ? parseInt(String(item.berat), 10) : null,
+        kota: item.kota || '',
+        jenis_kelamin: item.jenisKelamin || 'Laki-Laki',
+        tingkat_pendidikan: item.tingkatPendidikan || '',
+        kategori_lomba: item.kategoriLomba || 'Tanding - Pemasalan',
+        kategori_kelas_seni: item.kategoriKelasSeni || '',
+        no_hp: item.noHp || '',
+        email: item.email || '',
+        foto_url: item.fotoUrl || null,
+        kk_url: item.kkUrl || null,
+        status: 'pending',
+      }));
+
+      await supabase.from('silat_atlets').insert(atletsPayload);
+
+      // 2b. Simpan Officials jika ada
+      const { officials } = body;
+      if (Array.isArray(officials) && officials.length > 0) {
+        const officialsPayload = officials.map((off: any) => ({
+          kontingen_id: kontingenId,
+          order_id: orderId,
+          nama: off.nama || '',
+          jabatan: off.jabatan || 'Official',
+          nik: off.nik || '',
+          tanggal_lahir: off.tanggalLahir || null,
+          kota: off.kota || '',
+          jenis_kelamin: off.jenisKelamin || 'Laki-Laki',
+          no_hp: off.noHp || '',
+          email: off.email || '',
+          foto_url: off.fotoUrl || null,
+          kk_url: off.kkUrl || null,
+        }));
+        await supabase.from('silat_officials').insert(officialsPayload);
+      }
+
+      // 3. Simpan Record Transaksi Pembayaran
+      await supabase.from('silat_payments').insert({
+        order_id: orderId,
+        txn_id: pakasirRes.txn_id,
+        kontingen_id: kontingenId,
+        kontingen_name: kontingen_name || 'Kontingen Silat DSC',
+        pic_name: pic_name || '',
+        pic_phone: pic_phone || '',
+        total_atlet: atlets.length,
+        subtotal: totalNominal,
+        fee: adminFee,
+        admin_fee: adminFee,
+        total_payment: finalAmount,
+        payment_method: payment_method,
+        qr_string: pakasirRes.qr_string || null,
+        va_number: pakasirRes.va_number || null,
+        expired_at: pakasirRes.expired_at || null,
+        status: 'pending',
+        is_sandbox: pakasirRes.is_sandbox || false,
+      });
+    } catch (dbErr) {
+      console.warn('Supabase insert warning for silat payment:', dbErr);
+    }
 
     return NextResponse.json({
       success: true,

@@ -9,6 +9,8 @@ export interface OfficialItem {
   jenisKelamin: 'Laki-Laki' | 'Perempuan';
   noHp: string;
   email: string;
+  fotoUrl?: string;
+  kkUrl?: string;
 }
 
 // Interface Data Atlet (Sesuai DATA atlet.xlsx)
@@ -28,6 +30,8 @@ export interface AtletItem {
   kategoriKelasSeni: string;
   noHp: string;
   email: string;
+  fotoUrl?: string;
+  kkUrl?: string;
 }
 
 // Daftar Pilihan Kategori Kelas / Seni sesuai standar kejuaraan

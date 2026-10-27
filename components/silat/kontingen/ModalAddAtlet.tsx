@@ -8,6 +8,7 @@ import {
   getSilatCategoryPrice,
   formatRupiah,
 } from '../types';
+import { uploadSilatDocument } from '@/lib/silatStorage';
 
 interface ModalAddAtletProps {
   isOpen: boolean;
@@ -41,9 +42,13 @@ export default function ModalAddAtlet({
     kategoriKelasSeni: KELAS_SENI_OPTIONS[0],
     noHp: '',
     email: '',
+    fotoUrl: '',
+    kkUrl: '',
   });
 
   const [form, setForm] = useState<Omit<AtletItem, 'id'>>(getInitialState());
+  const [uploadingFoto, setUploadingFoto] = useState(false);
+  const [uploadingKk, setUploadingKk] = useState(false);
 
   useEffect(() => {
     if (initialData) {
@@ -62,6 +67,8 @@ export default function ModalAddAtlet({
         kategoriKelasSeni: initialData.kategoriKelasSeni,
         noHp: initialData.noHp,
         email: initialData.email,
+        fotoUrl: initialData.fotoUrl || '',
+        kkUrl: initialData.kkUrl || '',
       });
     } else {
       setForm(getInitialState());
@@ -296,6 +303,70 @@ export default function ModalAddAtlet({
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
                   className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl outline-none focus:border-[#ff007f] text-slate-900"
                 />
+              </div>
+            </div>
+          </div>
+
+          {/* DOKUMEN: UPLOAD PAS FOTO & KK ATLET */}
+          <div className="p-3.5 bg-slate-50 border border-slate-300 rounded-2xl space-y-3">
+            <span className="text-[11px] font-extrabold text-slate-700 uppercase tracking-wider block">
+              DOKUMEN ATLET (PAS FOTO &amp; KARTU KELUARGA / KIA / AKTA)
+            </span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* 1. Upload Pas Foto */}
+              <div className="space-y-1">
+                <label className="block text-slate-700 font-semibold text-[11px]">
+                  PAS FOTO RESMI ATLET (3X4 / 4X6)
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setUploadingFoto(true);
+                    const res = await uploadSilatDocument(file, 'foto', form.nama || 'atlet');
+                    setUploadingFoto(false);
+                    if (res.url) setForm((prev) => ({ ...prev, fotoUrl: res.url }));
+                    else alert(res.error || 'Gagal mengunggah pas foto.');
+                  }}
+                  className="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#00b4d8] file:text-white hover:file:bg-[#0096c7] cursor-pointer"
+                />
+                {uploadingFoto && <p className="text-[10px] text-blue-600 font-bold animate-pulse">Mengunggah foto...</p>}
+                {form.fotoUrl && (
+                  <div className="mt-1 flex items-center gap-2">
+                    <img src={form.fotoUrl} alt="Foto Preview" className="w-10 h-10 object-cover rounded-lg border border-slate-300" />
+                    <span className="text-[10px] text-emerald-600 font-bold">✓ Foto Terunggah</span>
+                  </div>
+                )}
+              </div>
+
+              {/* 2. Upload KK / KIA */}
+              <div className="space-y-1">
+                <label className="block text-slate-700 font-semibold text-[11px]">
+                  BERKAS KK / KIA / AKTA KELAHIRAN
+                </label>
+                <input
+                  type="file"
+                  accept="image/*,application/pdf"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setUploadingKk(true);
+                    const res = await uploadSilatDocument(file, 'kk', form.nama || 'atlet_kk');
+                    setUploadingKk(false);
+                    if (res.url) setForm((prev) => ({ ...prev, kkUrl: res.url }));
+                    else alert(res.error || 'Gagal mengunggah berkas KK.');
+                  }}
+                  className="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#ff007f] file:text-white hover:file:bg-[#d6006c] cursor-pointer"
+                />
+                {uploadingKk && <p className="text-[10px] text-pink-600 font-bold animate-pulse">Mengunggah KK...</p>}
+                {form.kkUrl && (
+                  <div className="mt-1 flex items-center gap-2">
+                    <img src={form.kkUrl} alt="KK Preview" className="w-10 h-10 object-cover rounded-lg border border-slate-300" />
+                    <span className="text-[10px] text-emerald-600 font-bold">✓ KK Terunggah</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -24,12 +24,30 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 1. Cek di database Supabase terlebih dahulu
-    const { data: dbPayment } = await supabase
+    // 1. Cek di database Supabase terlebih dahulu (Trailrun atau Silat)
+    let { data: dbPayment } = await supabase
       .from('trailrun_payments')
       .select('registration_id, status, completed_at, is_sandbox, order_id, expired_at')
       .eq('txn_id', txnId)
       .maybeSingle();
+
+    if (!dbPayment) {
+      const { data: silatPayment } = await supabase
+        .from('silat_payments')
+        .select('id, status, completed_at, is_sandbox, order_id, expired_at')
+        .eq('txn_id', txnId)
+        .maybeSingle();
+      if (silatPayment) {
+        dbPayment = {
+          registration_id: silatPayment.id,
+          status: silatPayment.status,
+          completed_at: silatPayment.completed_at,
+          is_sandbox: silatPayment.is_sandbox,
+          order_id: silatPayment.order_id,
+          expired_at: silatPayment.expired_at,
+        };
+      }
+    }
 
     // Jika sudah tercatat selesai di Supabase (misal dari webhook), langsung respon sukses
     if (dbPayment?.status === 'completed') {
