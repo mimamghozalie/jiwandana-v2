@@ -180,13 +180,12 @@ export default function SilatClient() {
               </a>
 
               {/* Tombol KONTINGEN (Tepat di bawah JUKNIS) */}
-              <button
-                type="button"
-                onClick={scrollToKontingen}
+              <Link
+                href="/silat/kontingen"
                 className="w-full max-w-[220px] py-3 sm:py-3.5 px-6 bg-gradient-to-r from-[#00b4d8] to-[#0077b6] hover:from-[#00a0c2] hover:to-[#00669e] text-white font-extrabold text-base sm:text-lg tracking-wider rounded-2xl shadow-md hover:shadow-lg transform hover:-translate-y-0.5 active:scale-95 transition-all text-center border-2 border-white/60 cursor-pointer flex items-center justify-center gap-2"
               >
-                <span>MERCHANDISE</span>
-              </button>
+                <span>KONTINGEN</span>
+              </Link>
 
               {/* 4 Tombol Bulat Medsos Magenta dengan Icon Resmi (Centered) */}
               <div className="w-full max-w-[220px] flex justify-center pt-1">
@@ -261,14 +260,14 @@ export default function SilatClient() {
                   loading="eager"
                 />
 
-                {/* BADGE MELENGKUNG: DATA KONTINGEN */}
+                {/* BADGE MELENGKUNG: DATA KONTINGEN (Link ke /silat/kontingen) */}
                 <div className="relative -mt-4 sm:-mt-6 mx-auto w-[92%] sm:w-[85%] z-20">
-                  <div
-                    onClick={scrollToKontingen}
-                    className="py-3 sm:py-4 px-6 bg-gradient-to-r from-[#00d2ff] via-[#00b4d8] to-[#0099ff] text-white font-black text-lg sm:text-2xl md:text-3xl tracking-widest uppercase rounded-2xl sm:rounded-3xl shadow-xl shadow-cyan-500/40 border-2 sm:border-4 border-white transform hover:scale-105 transition-all text-center cursor-pointer select-none"
+                  <Link
+                    href="/silat/kontingen"
+                    className="block py-3 sm:py-4 px-6 bg-gradient-to-r from-[#00d2ff] via-[#00b4d8] to-[#0099ff] hover:from-[#00c2ea] hover:to-[#008be6] text-white font-black text-lg sm:text-2xl md:text-3xl tracking-widest uppercase rounded-2xl sm:rounded-3xl shadow-xl shadow-cyan-500/40 border-2 sm:border-4 border-white transform hover:scale-105 transition-all text-center cursor-pointer select-none"
                   >
                     DATA KONTINGEN
-                  </div>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -276,15 +275,13 @@ export default function SilatClient() {
             {/* SAYAP KANAN (DESKTOP: col-span-3, MOBILE: Order 3): 4 TOMBOL KAPSUL */}
             <div className="order-3 md:order-3 md:col-span-3 flex flex-col items-center md:items-start gap-3 sm:gap-3.5">
 
-              {/* 1. DAFTAR (Cyan) */}
-              <a
-                href="https://wa.me/6281234567890?text=Halo%20Admin%20JIWANDANA,%20saya%20ingin%20mendaftarkan%20kontingen%20Kejuaraan%20Silat%20DSC%202026"
-                target="_blank"
-                rel="noopener noreferrer"
+              {/* 1. DAFTAR (Cyan) - Link ke Hub Pendaftaran /silat/daftar */}
+              <Link
+                href="/silat/daftar"
                 className="w-full max-w-[220px] py-3 sm:py-3.5 px-6 bg-gradient-to-r from-[#00e5ff] to-[#00b4d8] hover:from-[#00d0e6] hover:to-[#009ec3] text-white font-black text-sm sm:text-base tracking-widest rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-0.5 active:scale-95 transition-all text-center border-2 border-white/70 cursor-pointer block"
               >
                 DAFTAR
-              </a>
+              </Link>
 
               {/* 2. BAGAN (Biru Cerah) */}
               <button
