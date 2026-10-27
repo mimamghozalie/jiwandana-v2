@@ -184,7 +184,7 @@ export default function SilatClient() {
                 href="/silat/kontingen"
                 className="w-full max-w-[220px] py-3 sm:py-3.5 px-6 bg-gradient-to-r from-[#00b4d8] to-[#0077b6] hover:from-[#00a0c2] hover:to-[#00669e] text-white font-extrabold text-base sm:text-lg tracking-wider rounded-2xl shadow-md hover:shadow-lg transform hover:-translate-y-0.5 active:scale-95 transition-all text-center border-2 border-white/60 cursor-pointer flex items-center justify-center gap-2"
               >
-                <span>KONTINGEN</span>
+                <span>MERCHANDISE</span>
               </Link>
 
               {/* 4 Tombol Bulat Medsos Magenta dengan Icon Resmi (Centered) */}
