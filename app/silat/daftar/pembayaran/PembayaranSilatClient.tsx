@@ -222,7 +222,7 @@ export default function PembayaranSilatClient() {
         {/* TOP: BADGE JUDUL PEMBAYARAN */}
         <div className="w-full text-center mb-6">
           <div className="inline-block py-3 sm:py-3.5 px-8 sm:px-14 bg-gradient-to-r from-[#00d2ff] via-[#00b4d8] to-[#0099ff] text-white font-black text-base sm:text-xl md:text-2xl tracking-wider uppercase rounded-2xl shadow-lg shadow-cyan-500/25 border-2 border-white">
-            PEMBAYARAN KONTINGEN (PAKASIR)
+            PEMBAYARAN
           </div>
           <p className="text-xs sm:text-sm font-semibold text-slate-700 mt-2">
             Rincian pendaftaran atlet dan pembayaran otomatis QRIS / Virtual Account
@@ -507,8 +507,8 @@ export default function PembayaranSilatClient() {
                           key={method.id}
                           onClick={() => setSelectedMethod(method.id)}
                           className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between ${isSelected
-                              ? 'border-[#00b4d8] bg-cyan-50/50 shadow-md ring-2 ring-[#00b4d8]/30'
-                              : 'border-slate-200 hover:border-slate-300 bg-white'
+                            ? 'border-[#00b4d8] bg-cyan-50/50 shadow-md ring-2 ring-[#00b4d8]/30'
+                            : 'border-slate-200 hover:border-slate-300 bg-white'
                             }`}
                         >
                           <div className="flex items-start justify-between gap-2">
