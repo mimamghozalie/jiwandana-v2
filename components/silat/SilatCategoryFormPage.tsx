@@ -24,9 +24,20 @@ export default function SilatCategoryFormPage({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAtlet, setEditingAtlet] = useState<AtletItem | null>(null);
 
-  // Kategori yang dihandle halaman ini (Dikelompokkan sesuai Hub Pendaftaran)
+  // Kategori yang dihandle halaman ini (Dikelompokkan sesuai 11 Kategori Resmi)
   const allowedCategories =
-    type === 'tanding' ? ['Tanding', 'Silat Bebas'] : ['Tunggal Ganda Regu', 'Silat Festival'];
+    type === 'tanding'
+      ? ['Tanding - Pemasalan', 'Tanding - Prestasi', 'Silat Bebas']
+      : [
+          'Jurus Baku Tunggal - Pemasalan',
+          'Jurus Baku Tunggal - Prestasi',
+          'Jurus Bebas - Pemasalan',
+          'Jurus Bebas - Prestasi',
+          'Silat Festival - Perorangan',
+          'Silat Festival - Berpasangan',
+          'Silat Festival - Berkelompok 3',
+          'Silat Festival - Berkelompok 5',
+        ];
   const defaultCategory = allowedCategories[0];
 
   // Load data atlet dari localStorage

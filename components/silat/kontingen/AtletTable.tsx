@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { AtletItem } from '../types';
+import { KATEGORI_LOMBA_OPTIONS, getSilatCategoryPrice, formatRupiah } from '../types';
 
 interface AtletTableProps {
   atlets: AtletItem[];
@@ -26,12 +27,7 @@ export default function AtletTable({
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   // Kategori yang tersedia untuk dropdown filter
-  const categoryOptions = allowedCategories || [
-    'Tanding',
-    'Tunggal Ganda Regu',
-    'Silat Bebas',
-    'Silat Festival',
-  ];
+  const categoryOptions = allowedCategories || (KATEGORI_LOMBA_OPTIONS as unknown as string[]);
 
   const filteredAtlets = atlets.filter((item) => {
     // Jika allowedCategories ada, batasi data atlet hanya pada kategori yang diizinkan halaman
@@ -126,9 +122,14 @@ export default function AtletTable({
                   <td className="py-2.5 px-3 text-slate-600">{item.asalSekolah}</td>
                   <td className="py-2.5 px-3 font-mono text-slate-600">{item.nik}</td>
                   <td className="py-2.5 px-3">
-                    <span className="px-2 py-0.5 rounded-full bg-blue-50 text-[#0066cc] font-bold text-[10px] border border-blue-200">
-                      {item.kategoriLomba}
-                    </span>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="px-2 py-0.5 rounded-full bg-blue-50 text-[#0066cc] font-bold text-[10px] border border-blue-200 inline-block w-fit">
+                        {item.kategoriLomba}
+                      </span>
+                      <span className="text-[10px] font-extrabold text-emerald-700">
+                        {formatRupiah(getSilatCategoryPrice(item.kategoriLomba))}
+                      </span>
+                    </div>
                   </td>
                   <td className="py-2.5 px-3 font-semibold text-slate-800">{item.kategoriKelasSeni}</td>
                   <td className="py-2.5 px-3 text-center font-mono text-slate-700">

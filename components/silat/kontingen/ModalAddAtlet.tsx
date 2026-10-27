@@ -5,6 +5,8 @@ import {
   TINGKAT_PENDIDIKAN_OPTIONS,
   KATEGORI_LOMBA_OPTIONS,
   calculateAgeFromBirthDate,
+  getSilatCategoryPrice,
+  formatRupiah,
 } from '../types';
 
 interface ModalAddAtletProps {
@@ -236,7 +238,12 @@ export default function ModalAddAtlet({
               </select>
             </div>
             <div>
-              <label className="block text-slate-700 font-bold mb-1">KATEGORI LOMBA</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-slate-700 font-bold">KATEGORI LOMBA</label>
+                <span className="text-[11px] font-extrabold text-[#0088cc]">
+                  {formatRupiah(getSilatCategoryPrice(form.kategoriLomba))}
+                </span>
+              </div>
               <select
                 value={form.kategoriLomba}
                 onChange={(e) => setForm({ ...form, kategoriLomba: e.target.value })}
@@ -244,7 +251,7 @@ export default function ModalAddAtlet({
               >
                 {(allowedCategories || KATEGORI_LOMBA_OPTIONS).map((kat) => (
                   <option key={kat} value={kat}>
-                    {kat}
+                    {kat} — {formatRupiah(getSilatCategoryPrice(kat))}
                   </option>
                 ))}
               </select>
