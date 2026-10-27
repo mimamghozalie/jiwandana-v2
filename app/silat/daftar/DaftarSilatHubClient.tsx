@@ -40,7 +40,7 @@ export default function DaftarSilatHubClient() {
           2. MAIN CONTENT HUB PENDAFTARAN SESUAI WIREFRAME
       ========================================================================= */}
       <main className="relative z-10 pt-24 sm:pt-28 md:pt-36 lg:pt-40 pb-16 px-3 sm:px-6 max-w-7xl mx-auto flex flex-col items-center justify-between min-h-[calc(100vh-2rem)]">
-        
+
         {/* TOP: TOMBOL CEK ATLET (Magenta / Hot Pink) */}
         <div className="w-full text-center mb-4 sm:mb-6">
           <Link
@@ -54,12 +54,25 @@ export default function DaftarSilatHubClient() {
         {/* MIDDLE SECTION: 4 KOLOM
             [ PILAR SPONSOR KIRI ] - [ KARTU TANDING ] - [ KARTU JURUS ] - [ PILAR SPONSOR KANAN ] */}
         <div className="w-full grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-6 items-center my-auto">
-          
+
           {/* PILAR KIRI: SPONSORSHIP PINK PASTEL */}
-          <div className="hidden md:flex md:col-span-2 h-[340px] lg:h-[380px] bg-[#f8a5c2]/80 backdrop-blur-md border-2 border-white/80 rounded-3xl p-4 flex-col items-center justify-center text-center shadow-md">
+          <div className="hidden md:flex md:col-span-2 h-[340px] lg:h-[380px] bg-[#f8a5c2]/80 backdrop-blur-md border-2 border-white/80 rounded-3xl p-4 flex-col items-center justify-between text-center shadow-md">
+            <span className="text-[10px] font-black uppercase tracking-wider text-white/80">
+              KOLABORASI
+            </span>
             <span className="text-xs lg:text-sm font-black uppercase tracking-[0.25em] text-[#0088cc] drop-shadow-xs rotate-[-90deg] whitespace-nowrap">
               SPONSORSHIP
             </span>
+            <a
+              href="https://wa.me/6285804333939?text=Halo%20Admin%20JIWANDANA,%20kami%20tertarik%20menjadi%20Sponsor%20Kejuaraan%20Silat%20DSC%202026"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="py-1.5 px-3 bg-white/90 hover:bg-white text-[#0088cc] hover:text-[#0066aa] font-black text-[11px] uppercase tracking-wider rounded-xl shadow-xs transition-all transform hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-1"
+              title="Hubungi Admin untuk Sponsorship"
+            >
+              <span>HUB</span>
+              <span className="text-[10px]">💬</span>
+            </a>
           </div>
 
           {/* KARTU KIRI: KATEGORI TANDING & SILAT BEBAS */}
@@ -108,11 +121,24 @@ export default function DaftarSilatHubClient() {
             </Link>
           </div>
 
-          {/* PILAR KANAN: SPONSORSHIP CYAN/TOSCA PASTEL */}
-          <div className="hidden md:flex md:col-span-2 h-[340px] lg:h-[380px] bg-[#81ecec]/80 backdrop-blur-md border-2 border-white/80 rounded-3xl p-4 flex-col items-center justify-center text-center shadow-md">
-            <span className="text-xs lg:text-sm font-black uppercase tracking-[0.25em] text-[#ff007f] drop-shadow-xs rotate-[90deg] whitespace-nowrap">
-              SPONSORSHIP
+          {/* PILAR KANAN: MEDIA PARTNER CYAN/TOSCA PASTEL */}
+          <div className="hidden md:flex md:col-span-2 h-[340px] lg:h-[380px] bg-[#81ecec]/80 backdrop-blur-md border-2 border-white/80 rounded-3xl p-4 flex-col items-center justify-between text-center shadow-md">
+            <span className="text-[10px] font-black uppercase tracking-wider text-white/80">
+              KOLABORASI
             </span>
+            <span className="text-xs lg:text-sm font-black uppercase tracking-[0.25em] text-[#ff007f] drop-shadow-xs rotate-[90deg] whitespace-nowrap">
+              MEDIA PARTNER
+            </span>
+            <a
+              href="https://wa.me/6285804333939?text=Halo%20Admin%20JIWANDANA,%20kami%20ingin%20bekerja%20sama%20sebagai%20Media%20Partner%20Kejuaraan%20Silat%20DSC%202026"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="py-1.5 px-3 bg-white/90 hover:bg-white text-[#ff007f] hover:text-[#d6006c] font-black text-[11px] uppercase tracking-wider rounded-xl shadow-xs transition-all transform hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-1"
+              title="Hubungi Admin untuk Media Partner"
+            >
+              <span>HUB</span>
+              <span className="text-[10px]">💬</span>
+            </a>
           </div>
 
         </div>
@@ -120,8 +146,6 @@ export default function DaftarSilatHubClient() {
         {/* BOTTOM SECTION: TOMBOL PEMBAYARAN HIJAU DENGAN PANAH CYAN */}
         <div className="w-full flex flex-col items-center justify-center mt-6 sm:mt-8 space-y-2">
           <div className="flex items-center gap-3 sm:gap-4">
-            {/* Panah Cyan Kiri Sesuai Wireframe */}
-            <div className="w-0 h-0 border-y-[14px] sm:border-y-[18px] border-y-transparent border-r-[24px] sm:border-r-[32px] border-r-[#00e5ff] animate-pulse drop-shadow-sm" />
 
             {/* Tombol Hijau: PEMBAYARAN */}
             <Link
