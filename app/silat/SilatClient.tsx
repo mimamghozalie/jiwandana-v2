@@ -192,7 +192,7 @@ export default function SilatClient() {
                 <div className="grid grid-cols-4 sm:grid-cols-2 gap-2.5 sm:gap-3 place-items-center">
                   {/* WhatsApp */}
                   <a
-                    href="https://wa.me/6281234567890?text=Halo%20Admin%20JIWANDANA,%20saya%20ingin%20informasi%20Kejuaraan%20Silat%20DSC%202026"
+                    href="https://wa.me/6285804333939?text=Halo%20Admin%20JIWANDANA,%20saya%20ingin%20informasi%20Kejuaraan%20Silat%20DSC%202026"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-[#ff007f] to-[#d6006c] hover:from-[#ff1a8c] hover:to-[#e60074] text-white flex items-center justify-center shadow-md shadow-pink-500/30 hover:scale-110 active:scale-95 transition-all border-2 border-white"
@@ -206,7 +206,7 @@ export default function SilatClient() {
 
                   {/* TikTok */}
                   <a
-                    href="https://www.tiktok.com/@jiwandana.event.organizer"
+                    href="https://www.tiktok.com/@jiwandana.event.organize"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-[#ff007f] to-[#d6006c] hover:from-[#ff1a8c] hover:to-[#e60074] text-white flex items-center justify-center shadow-md shadow-pink-500/30 hover:scale-110 active:scale-95 transition-all border-2 border-white"
@@ -336,71 +336,6 @@ export default function SilatClient() {
       {/* =========================================================================
           MODALS INTERAKTIF (JUKNIS, BAGAN, JUARA, DOKUMENTASI)
       ========================================================================= */}
-
-      {/* 1. MODAL JUKNIS */}
-      {selectedJuknisModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]"
-          onClick={() => setSelectedJuknisModal(false)}
-        >
-          <div
-            className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-5 shadow-2xl border border-slate-100 relative"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#0066cc] flex items-center justify-center font-bold">
-                  <span className="material-symbols-outlined">menu_book</span>
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900">Petunjuk Teknis (Juknis)</h3>
-                  <p className="text-xs text-slate-500">Kejuaraan Pencak Silat DSC 2026</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedJuknisModal(false)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="space-y-3 text-xs sm:text-sm text-slate-600 leading-relaxed max-h-[60vh] overflow-y-auto pr-1">
-              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
-                <strong className="text-slate-900 block font-bold">1. Peraturan Pertandingan</strong>
-                <p>Mengacu pada Peraturan Pertandingan Hasil Musyawarah Nasional IPSI Tahun 2022/2024.</p>
-              </div>
-              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
-                <strong className="text-slate-900 block font-bold">2. Kategori Pertandingan</strong>
-                <p>Usia Dini (SD), Pra-Remaja (SMP), Remaja (SMA/SMK), dan Dewasa / Umum.</p>
-              </div>
-              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
-                <strong className="text-slate-900 block font-bold">3. Sistem Penilaian</strong>
-                <p>Digital Scoring system resmi IPSI dengan layar monitor transparansi di setiap gelanggang.</p>
-              </div>
-            </div>
-
-            <div className="pt-2 flex items-center gap-3">
-              <a
-                href="https://wa.me/6281234567890?text=Halo%20Admin,%20mohon%20file%20PDF%20Juknis%20Lengkap%20Silat%20DSC%202026"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 py-3 px-4 bg-[#0066cc] hover:bg-[#0055bb] text-white rounded-xl font-bold text-xs uppercase tracking-wider text-center shadow-md transition-all"
-              >
-                Unduh PDF Juknis (WA)
-              </a>
-              <button
-                type="button"
-                onClick={() => setSelectedJuknisModal(false)}
-                className="py-3 px-5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs"
-              >
-                Tutup
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* 2. MODAL BAGAN */}
       {selectedBaganModal && (
