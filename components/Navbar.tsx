@@ -25,8 +25,8 @@ export default function Navbar() {
     return false;
   };
 
-  // Hide Navbar on the root portal page and all admin CMS pages
-  if (pathname === '/' || pathname.startsWith('/admin')) {
+  // Hide Navbar on the root portal page, all admin CMS pages, and silat page
+  if (pathname === '/' || pathname.startsWith('/admin') || pathname.startsWith('/silat')) {
     return null;
   }
 

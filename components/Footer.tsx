@@ -6,8 +6,8 @@ import { usePathname } from 'next/navigation';
 export default function Footer() {
   const pathname = usePathname();
 
-  // Hide on root page and all admin CMS pages
-  if (pathname === '/' || pathname.startsWith('/admin')) {
+  // Hide on root page, all admin CMS pages, and silat page
+  if (pathname === '/' || pathname.startsWith('/admin') || pathname.startsWith('/silat')) {
     return null;
   }
 
