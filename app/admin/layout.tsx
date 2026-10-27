@@ -16,6 +16,7 @@ import {
   X,
   ShieldCheck,
   Trophy,
+  Swords,
   ChevronRight,
   LogOut,
 } from 'lucide-react';
@@ -30,6 +31,7 @@ export default function AdminLayout({
 
   const menuItems = [
     { name: 'Ringkasan CMS', href: '/admin', icon: LayoutDashboard },
+    { name: 'Kejuaraan Silat', href: '/admin/silat', icon: Swords },
     { name: 'Peserta Trailrun', href: '/admin/trailrun', icon: Trophy },
     { name: 'Kelola Event', href: '/admin/events', icon: Calendar },
     { name: 'Kelola Portofolio', href: '/admin/portofolio', icon: ImageIcon },
@@ -40,7 +42,9 @@ export default function AdminLayout({
 
   // Get active menu item name
   const currentMenuItem = menuItems.find((item) => item.href === pathname) || {
-    name: pathname.includes('/trailrun')
+    name: pathname.includes('/silat')
+      ? 'Kejuaraan Silat'
+      : pathname.includes('/trailrun')
       ? 'Peserta Trailrun'
       : pathname.includes('/events')
       ? 'Kelola Event'
@@ -114,7 +118,9 @@ export default function AdminLayout({
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive =
-                item.href === '/admin/trailrun'
+                item.href === '/admin/silat'
+                  ? pathname.startsWith('/admin/silat')
+                  : item.href === '/admin/trailrun'
                   ? pathname.startsWith('/admin/trailrun')
                   : pathname === item.href;
               return (
