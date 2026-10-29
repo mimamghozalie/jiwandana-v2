@@ -24,39 +24,54 @@ export function useSilatAdminData() {
   const fetchData = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      // 1. Fetch Atlets
-      const { data: atletsData, error: atletsErr } = await supabase
+      // 1. Coba fetch dari backend admin route (bypass RLS via Service Client)
+      const res = await fetch('/api/admin/silat/data', { cache: 'no-store' });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success) {
+          // Map payments to atlets by order_id if available
+          const paymentMap = new Map<string, SilatPaymentRow>();
+          (json.payments || []).forEach((p: SilatPaymentRow) => {
+            if (p.order_id) paymentMap.set(p.order_id, p);
+          });
+
+          const enrichedAtlets: SilatAtletRow[] = (json.atlets || []).map((a: SilatAtletRow) => {
+            const pay = a.order_id ? paymentMap.get(a.order_id) : undefined;
+            return {
+              ...a,
+              payment: pay,
+            };
+          });
+
+          setAtlets(enrichedAtlets);
+          setOfficials(json.officials || []);
+          setKontingen(json.kontingen || []);
+          setPayments(json.payments || []);
+          return;
+        }
+      }
+
+      // Fallback: direct anon client query
+      const { data: atletsData } = await supabase
         .from('silat_atlets')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (atletsErr) console.warn('Fetch silat_atlets warning:', atletsErr);
-
-      // 2. Fetch Officials
-      const { data: officialsData, error: offErr } = await supabase
+      const { data: officialsData } = await supabase
         .from('silat_officials')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (offErr) console.warn('Fetch silat_officials warning:', offErr);
-
-      // 3. Fetch Kontingen
-      const { data: kontingenData, error: kontErr } = await supabase
+      const { data: kontingenData } = await supabase
         .from('silat_kontingen')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (kontErr) console.warn('Fetch silat_kontingen warning:', kontErr);
-
-      // 4. Fetch Payments
-      const { data: paymentsData, error: payErr } = await supabase
+      const { data: paymentsData } = await supabase
         .from('silat_payments')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (payErr) console.warn('Fetch silat_payments warning:', payErr);
-
-      // Map payments to atlets by order_id
       const paymentMap = new Map<string, SilatPaymentRow>();
       (paymentsData || []).forEach((p: SilatPaymentRow) => {
         if (p.order_id) paymentMap.set(p.order_id, p);

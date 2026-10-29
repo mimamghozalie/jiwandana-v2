@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useMemo, useDeferredValue } from 'react';
+import React, { useState, useMemo, useDeferredValue, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Trophy, FileSpreadsheet } from 'lucide-react';
 import {
   useSilatAdminData,
@@ -13,7 +14,10 @@ import {
   SilatAtletRow,
 } from '@/components/admin/silat';
 
-export default function AdminSilatAtletPage() {
+function AdminSilatAtletContent() {
+  const searchParams = useSearchParams();
+  const initialKontingenId = searchParams.get('kontingen_id') || 'all';
+
   const {
     atlets,
     kontingen,
@@ -34,6 +38,15 @@ export default function AdminSilatAtletPage() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [educationFilter, setEducationFilter] = useState('all');
   const [genderFilter, setGenderFilter] = useState<'all' | 'Laki-Laki' | 'Perempuan'>('all');
+  const [kontingenFilter, setKontingenFilter] = useState<string>(initialKontingenId);
+
+  // Sync kontingenFilter if URL query param changes
+  useEffect(() => {
+    const kId = searchParams.get('kontingen_id');
+    if (kId) {
+      setKontingenFilter(kId);
+    }
+  }, [searchParams]);
 
   // Selected row for detail modal
   const [selectedRow, setSelectedRow] = useState<SilatAtletRow | null>(null);
@@ -45,14 +58,21 @@ export default function AdminSilatAtletPage() {
   // Filtered Data
   const filteredData = useMemo(() => {
     return atlets.filter((row) => {
+      // 0. Filter Akun / Kontingen
+      if (kontingenFilter !== 'all' && row.kontingen_id !== kontingenFilter) {
+        return false;
+      }
+
       // 1. Search Query
       if (deferredSearch.trim() !== '') {
         const q = deferredSearch.toLowerCase().trim();
         const matchName = row.nama.toLowerCase().includes(q);
         const matchSchool = (row.asal_sekolah || '').toLowerCase().includes(q);
+        const matchKontingen = (row.kontingen_name || '').toLowerCase().includes(q);
+        const matchEmail = (row.account_email || '').toLowerCase().includes(q);
         const matchNik = (row.nik || '').includes(q);
         const matchOrder = (row.order_id || '').toLowerCase().includes(q);
-        if (!matchName && !matchSchool && !matchNik && !matchOrder) return false;
+        if (!matchName && !matchSchool && !matchKontingen && !matchEmail && !matchNik && !matchOrder) return false;
       }
 
       // 2. Status Filter
@@ -69,7 +89,7 @@ export default function AdminSilatAtletPage() {
 
       return true;
     });
-  }, [atlets, deferredSearch, statusFilter, categoryFilter, educationFilter, genderFilter]);
+  }, [atlets, deferredSearch, kontingenFilter, statusFilter, categoryFilter, educationFilter, genderFilter]);
 
   // Paginated Data
   const totalPages = Math.max(1, Math.ceil(filteredData.length / pageSize));
@@ -84,8 +104,14 @@ export default function AdminSilatAtletPage() {
     setCategoryFilter('all');
     setEducationFilter('all');
     setGenderFilter('all');
+    setKontingenFilter('all');
     setCurrentPage(1);
   };
+
+  const selectedKontingenObj = useMemo(() => {
+    if (kontingenFilter === 'all') return null;
+    return kontingen.find((k) => k.id === kontingenFilter) || null;
+  }, [kontingen, kontingenFilter]);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
@@ -134,6 +160,37 @@ export default function AdminSilatAtletPage() {
       {/* 3. Metrics Cards */}
       <SilatMetricsCards metrics={metrics} />
 
+      {/* Active Kontingen Banner if filtered */}
+      {selectedKontingenObj && (
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 bg-cyan-950/40 border border-cyan-500/30 rounded-2xl">
+          <div className="flex items-center gap-3">
+            <span className="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold text-lg">
+              🏛️
+            </span>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-white font-bold text-sm">
+                  Menampilkan Atlet untuk Kontingen: {selectedKontingenObj.nama_kontingen}
+                </h3>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+                  {filteredData.length} Atlet Terdaftar
+                </span>
+              </div>
+              <p className="text-xs text-slate-400">
+                Akun: <span className="text-cyan-300 font-mono">{selectedKontingenObj.account_email || 'Tidak ada email'}</span> • PIC: {selectedKontingenObj.pic_name || '-'} ({selectedKontingenObj.pic_phone || '-'})
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setKontingenFilter('all')}
+            className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-slate-200 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+          >
+            Tampilkan Semua Kontingen
+          </button>
+        </div>
+      )}
+
       {/* 4. Filter Bar */}
       <SilatFilterBar
         searchQuery={searchQuery}
@@ -161,6 +218,12 @@ export default function AdminSilatAtletPage() {
           setGenderFilter(g);
           setCurrentPage(1);
         }}
+        kontingenFilter={kontingenFilter}
+        onKontingenChange={(kId) => {
+          setKontingenFilter(kId);
+          setCurrentPage(1);
+        }}
+        kontingenList={kontingen}
         onReset={handleResetFilters}
       />
 
@@ -222,5 +285,20 @@ export default function AdminSilatAtletPage() {
         updatingId={updatingId}
       />
     </div>
+  );
+}
+
+export default function AdminSilatAtletPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-8 text-center text-slate-400">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-[#00b4d8] border-r-transparent mb-2" />
+          <p>Memuat halaman atlet...</p>
+        </div>
+      }
+    >
+      <AdminSilatAtletContent />
+    </Suspense>
   );
 }

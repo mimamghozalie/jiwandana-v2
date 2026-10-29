@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Users, FileSpreadsheet, Phone, ExternalLink } from 'lucide-react';
+import Link from 'next/link';
+import { Users, FileSpreadsheet, Phone, ExternalLink, Mail, UserCheck, Shield } from 'lucide-react';
 import {
   useSilatAdminData,
   SilatMetricsCards,
@@ -36,7 +37,7 @@ export default function AdminSilatKontingenPage() {
               Data Kontingen &amp; Official Silat
             </h1>
             <p className="text-xs sm:text-sm text-slate-400">
-              Kelola data sekolah / kontingen, pelatih kepala, dan pendamping official kejuaraan.
+              Kelola data akun kontingen, peserta atlet per kontingen, dan official pendamping.
             </p>
           </div>
         </div>
@@ -78,7 +79,7 @@ export default function AdminSilatKontingenPage() {
               : 'text-slate-400 hover:text-white bg-white/5'
           }`}
         >
-          Daftar Kontingen ({kontingen.length})
+          Daftar Akun Kontingen ({kontingen.length})
         </button>
         <button
           type="button"
@@ -97,16 +98,16 @@ export default function AdminSilatKontingenPage() {
       {activeTab === 'kontingen' && (
         <div className="w-full bg-[#0a1424] border border-white/10 rounded-2xl overflow-hidden shadow-xl">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs min-w-[720px] border-collapse">
+            <table className="w-full text-left text-xs min-w-[860px] border-collapse">
               <thead>
                 <tr className="bg-white/[0.04] text-slate-400 text-[10px] uppercase tracking-wider font-extrabold border-b border-white/10">
                   <th className="py-3 px-4 text-center w-12">No</th>
-                  <th className="py-3 px-4">Nama Kontingen / Tim</th>
+                  <th className="py-3 px-4">Kontingen &amp; Akun Login</th>
                   <th className="py-3 px-4">Asal Sekolah</th>
-                  <th className="py-3 px-4">PIC / Penanggung Jawab</th>
-                  <th className="py-3 px-4">Kontak WhatsApp</th>
+                  <th className="py-3 px-4 text-center">Jumlah Atlet</th>
+                  <th className="py-3 px-4">PIC &amp; Kontak</th>
                   <th className="py-3 px-4 text-center">Status</th>
-                  <th className="py-3 px-4">Waktu Daftar</th>
+                  <th className="py-3 px-4 text-center">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
@@ -119,26 +120,43 @@ export default function AdminSilatKontingenPage() {
                 ) : (
                   kontingen.map((k, idx) => (
                     <tr key={k.id} className="hover:bg-white/[0.03] transition-colors">
-                      <td className="py-3 px-4 text-center text-slate-500 font-mono">{idx + 1}</td>
-                      <td className="py-3 px-4 font-bold text-white">{k.nama_kontingen}</td>
-                      <td className="py-3 px-4 text-slate-300">{k.asal_sekolah || '-'}</td>
-                      <td className="py-3 px-4 text-slate-200 font-medium">{k.pic_name || '-'}</td>
-                      <td className="py-3 px-4">
-                        {k.pic_phone ? (
-                          <a
-                            href={`https://wa.me/${k.pic_phone.replace(/^0/, '62').replace(/[^0-9]/g, '')}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-emerald-400 hover:underline flex items-center gap-1 font-mono"
-                          >
-                            <Phone className="w-3.5 h-3.5" />
-                            <span>{k.pic_phone}</span>
-                          </a>
-                        ) : (
-                          <span className="text-slate-500">-</span>
-                        )}
+                      <td className="py-3.5 px-4 text-center text-slate-500 font-mono">{idx + 1}</td>
+                      <td className="py-3.5 px-4">
+                        <div className="flex flex-col">
+                          <span className="font-bold text-white text-sm">{k.nama_kontingen}</span>
+                          {k.account_email ? (
+                            <span className="text-[11px] text-cyan-400 flex items-center gap-1 font-mono mt-0.5">
+                              <Mail className="w-3 h-3" />
+                              {k.account_email}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-slate-500 italic">Akun belum terhubung</span>
+                          )}
+                        </div>
                       </td>
-                      <td className="py-3 px-4 text-center">
+                      <td className="py-3.5 px-4 text-slate-300">{k.asal_sekolah || '-'}</td>
+                      <td className="py-3.5 px-4 text-center">
+                        <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-bold bg-[#00b4d8]/15 text-[#38bdf8] border border-[#00b4d8]/30">
+                          {k.total_atlets || 0} Atlet
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <div className="flex flex-col">
+                          <span className="text-slate-200 font-medium">{k.pic_name || '-'}</span>
+                          {k.pic_phone ? (
+                            <a
+                              href={`https://wa.me/${k.pic_phone.replace(/^0/, '62').replace(/[^0-9]/g, '')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-emerald-400 hover:underline inline-flex items-center gap-1 font-mono text-[11px] mt-0.5"
+                            >
+                              <Phone className="w-3 h-3" />
+                              <span>{k.pic_phone}</span>
+                            </a>
+                          ) : null}
+                        </div>
+                      </td>
+                      <td className="py-3.5 px-4 text-center">
                         <span
                           className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
                             k.status === 'paid'
@@ -149,8 +167,14 @@ export default function AdminSilatKontingenPage() {
                           {k.status.toUpperCase()}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-slate-400 text-[11px]">
-                        {k.created_at ? new Date(k.created_at).toLocaleString('id-ID') : '-'}
+                      <td className="py-3.5 px-4 text-center">
+                        <Link
+                          href={`/admin/silat/atlet?kontingen_id=${k.id}`}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white rounded-xl text-xs font-bold transition-all shadow-sm"
+                        >
+                          <Users className="w-3.5 h-3.5" />
+                          <span>Lihat Atlet ({k.total_atlets || 0})</span>
+                        </Link>
                       </td>
                     </tr>
                   ))
@@ -170,6 +194,7 @@ export default function AdminSilatKontingenPage() {
                 <tr className="bg-white/[0.04] text-slate-400 text-[10px] uppercase tracking-wider font-extrabold border-b border-white/10">
                   <th className="py-3 px-4 text-center w-12">No</th>
                   <th className="py-3 px-4">Nama Official &amp; Foto</th>
+                  <th className="py-3 px-4">Kontingen</th>
                   <th className="py-3 px-4">Jabatan</th>
                   <th className="py-3 px-4">NIK</th>
                   <th className="py-3 px-4">WhatsApp</th>
@@ -179,7 +204,7 @@ export default function AdminSilatKontingenPage() {
               <tbody className="divide-y divide-white/5">
                 {officials.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-12 text-center text-slate-400 italic">
+                    <td colSpan={7} className="py-12 text-center text-slate-400 italic">
                       Belum ada data official / pelatih yang tersimpan.
                     </td>
                   </tr>
@@ -206,6 +231,14 @@ export default function AdminSilatKontingenPage() {
                               {off.jenis_kelamin} • {off.kota || 'Mojokerto'}
                             </span>
                           </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex flex-col">
+                          <span className="text-white font-semibold">{off.kontingen_name || '-'}</span>
+                          {off.account_email && (
+                            <span className="text-[10px] text-cyan-400 font-mono">{off.account_email}</span>
+                          )}
                         </div>
                       </td>
                       <td className="py-3 px-4">

@@ -95,10 +95,25 @@ export default function SilatAtletTable({
 
                     {/* Asal Sekolah / Kontingen */}
                     <td className="py-3.5 px-4 text-slate-300 whitespace-nowrap">
-                      <span className="block font-semibold">{row.asal_sekolah}</span>
-                      <span className="text-[10px] text-slate-400">
-                        {row.tingkat_pendidikan || 'Umum'} • {row.kota || 'Mojokerto'}
-                      </span>
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-white">
+                          {row.kontingen_name || row.asal_sekolah}
+                        </span>
+                        {row.kontingen_name && row.asal_sekolah !== row.kontingen_name && (
+                          <span className="text-[10px] text-slate-400">
+                            Sekolah: {row.asal_sekolah}
+                          </span>
+                        )}
+                        {row.account_email ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] text-cyan-400 font-mono mt-0.5">
+                            ✉️ {row.account_email}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-slate-500">
+                            {row.tingkat_pendidikan || 'Umum'} • {row.kota || 'Mojokerto'}
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     {/* Kategori Lomba */}

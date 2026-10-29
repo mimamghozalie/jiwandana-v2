@@ -29,15 +29,15 @@ export default function SilatCategoryFormPage({
     type === 'tanding'
       ? ['Tanding - Pemasalan', 'Tanding - Prestasi', 'Silat Bebas']
       : [
-          'Jurus Baku Tunggal - Pemasalan',
-          'Jurus Baku Tunggal - Prestasi',
-          'Jurus Bebas - Pemasalan',
-          'Jurus Bebas - Prestasi',
-          'Silat Festival - Perorangan',
-          'Silat Festival - Berpasangan',
-          'Silat Festival - Berkelompok 3',
-          'Silat Festival - Berkelompok 5',
-        ];
+        'Jurus Baku Tunggal - Pemasalan',
+        'Jurus Baku Tunggal - Prestasi',
+        'Jurus Bebas - Pemasalan',
+        'Jurus Bebas - Prestasi',
+        'Silat Festival - Perorangan',
+        'Silat Festival - Berpasangan',
+        'Silat Festival - Berkelompok 3',
+        'Silat Festival - Berkelompok 5',
+      ];
   const defaultCategory = allowedCategories[0];
 
   // Load data atlet dari localStorage
@@ -107,7 +107,7 @@ export default function SilatCategoryFormPage({
 
       {/* 2. MAIN CONTENT AREA */}
       <main className="relative z-10 pt-24 sm:pt-28 md:pt-36 lg:pt-40 pb-16 px-3 sm:px-6 max-w-7xl mx-auto flex flex-col items-center justify-between min-h-[calc(100vh-2rem)]">
-        
+
         {/* TOP: BADGE JUDUL BESAR */}
         <div className="w-full text-center mb-4 sm:mb-6">
           <div className="inline-block py-3 sm:py-3.5 px-6 sm:px-12 bg-gradient-to-r from-[#00d2ff] via-[#00b4d8] to-[#0099ff] text-white font-black text-sm sm:text-lg md:text-xl tracking-wider uppercase rounded-2xl shadow-lg shadow-cyan-500/25 border-2 border-white">
@@ -123,7 +123,7 @@ export default function SilatCategoryFormPage({
 
           {/* AREA TENGAH: WATERMARK ATLET DI BELAKANG TABEL + TABEL PESERTA SESUAI KONTINGEN */}
           <div className="md:col-span-8 relative flex flex-col items-center justify-center w-full space-y-6">
-            
+
             {/* Watermark Atlet (fight.png untuk Tanding, tgr_festival.png untuk Jurus) */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0">
               <div className="relative w-full max-w-[520px] h-[400px] opacity-30 sm:opacity-40">
@@ -139,7 +139,7 @@ export default function SilatCategoryFormPage({
             {/* TABEL DATA ATLET KATEGORI SPESIFIK */}
             <AtletTable
               atlets={atlets}
-              title={`DATA ATLET (${allowedCategories.join(' & ').toUpperCase()})`}
+              title={`DATA ATLET`}
               defaultCategory="Semua"
               allowedCategories={allowedCategories}
               hideCategoryFilter={false}

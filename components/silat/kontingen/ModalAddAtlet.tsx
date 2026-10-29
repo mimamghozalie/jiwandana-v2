@@ -112,9 +112,9 @@ export default function ModalAddAtlet({
       return;
     }
 
-    // 4. Validasi Wajib Upload Berkas KK / KIA / Akta
+    // 4. Validasi Wajib Upload Berkas KK  / Akta
     if (!form.kkUrl || !form.kkUrl.trim()) {
-      setErrorMsg('Berkas Kartu Keluarga (KK) / KIA / Akta Kelahiran atlet wajib diunggah sebelum data dapat disimpan.');
+      setErrorMsg('Berkas Kartu Keluarga (KK)  / Akta Kelahiran atlet wajib diunggah sebelum data dapat disimpan.');
       return;
     }
 
@@ -168,7 +168,7 @@ export default function ModalAddAtlet({
               <input
                 type="text"
                 required
-                placeholder="Nama atlet sesuai KK/KTP/KIA"
+                placeholder="Nama atlet sesuai KK/KTP"
                 value={form.nama}
                 onChange={(e) => setForm({ ...form, nama: e.target.value })}
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:border-[#00b4d8] font-semibold text-slate-900"
@@ -192,7 +192,7 @@ export default function ModalAddAtlet({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-slate-700 font-bold mb-1">
-                NIK KK / KTP / KIA <span className="text-rose-500">*</span>
+                NIK KK / KTP <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
@@ -373,7 +373,7 @@ export default function ModalAddAtlet({
           <div className="p-3.5 bg-slate-50 border-2 border-slate-300 rounded-2xl space-y-3">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <span className="text-[11px] font-black text-slate-800 uppercase tracking-wider block">
-                DOKUMEN WAJIB ATLET (FOTO &amp; KK / KIA / AKTA)
+                DOKUMEN WAJIB ATLET (FOTO &amp; KK  / AKTA)
               </span>
               {!isDocumentsComplete ? (
                 <span className="text-[10px] font-black text-rose-700 bg-rose-100 border border-rose-300 px-2.5 py-0.5 rounded-full">
@@ -389,11 +389,10 @@ export default function ModalAddAtlet({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* 1. Upload Pas Foto */}
               <div
-                className={`p-3 rounded-xl border-2 transition-all ${
-                  form.fotoUrl
+                className={`p-3 rounded-xl border-2 transition-all ${form.fotoUrl
                     ? 'bg-emerald-50/60 border-emerald-400'
                     : 'bg-white border-amber-300 shadow-sm'
-                }`}
+                  }`}
               >
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-slate-800 font-bold text-[11px]">
@@ -447,17 +446,16 @@ export default function ModalAddAtlet({
                 )}
               </div>
 
-              {/* 2. Upload KK / KIA */}
+              {/* 2. Upload KK  */}
               <div
-                className={`p-3 rounded-xl border-2 transition-all ${
-                  form.kkUrl
+                className={`p-3 rounded-xl border-2 transition-all ${form.kkUrl
                     ? 'bg-emerald-50/60 border-emerald-400'
                     : 'bg-white border-amber-300 shadow-sm'
-                }`}
+                  }`}
               >
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-slate-800 font-bold text-[11px]">
-                    BERKAS KK / KIA / AKTA <span className="text-rose-600">*</span>
+                    BERKAS KK / AKTA <span className="text-rose-600">*</span>
                   </label>
                   {form.kkUrl ? (
                     <span className="text-[9px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
@@ -531,11 +529,10 @@ export default function ModalAddAtlet({
             <button
               type="submit"
               disabled={uploadingFoto || uploadingKk}
-              className={`py-2.5 px-6 text-white font-extrabold rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5 ${
-                !isDocumentsComplete || uploadingFoto || uploadingKk
+              className={`py-2.5 px-6 text-white font-extrabold rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5 ${!isDocumentsComplete || uploadingFoto || uploadingKk
                   ? 'bg-slate-400 hover:bg-slate-500 opacity-90'
                   : 'bg-gradient-to-r from-[#ff007f] to-[#d6006c] hover:from-[#ff1a8c] hover:to-[#e60074] shadow-pink-500/25 active:scale-95'
-              }`}
+                }`}
             >
               <span>{isEdit ? 'Perbarui Data Atlet' : 'Simpan Data Atlet'}</span>
             </button>

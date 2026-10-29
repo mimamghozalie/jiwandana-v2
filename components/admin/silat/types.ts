@@ -6,6 +6,8 @@ export interface SilatKontingenRow {
   pic_name?: string;
   pic_phone?: string;
   pic_email?: string;
+  account_email?: string | null;
+  account_last_login?: string | null;
   status: 'pending' | 'paid' | 'verified';
   created_at: string;
   total_atlets?: number;
@@ -15,6 +17,8 @@ export interface SilatKontingenRow {
 export interface SilatOfficialRow {
   id: string;
   kontingen_id?: string;
+  kontingen_name?: string;
+  account_email?: string | null;
   order_id?: string;
   nama: string;
   jabatan: string;
@@ -52,6 +56,7 @@ export interface SilatAtletRow {
   status: 'pending' | 'paid' | 'confirmed';
   created_at: string;
   kontingen_name?: string;
+  account_email?: string | null;
   payment?: SilatPaymentRow;
 }
 

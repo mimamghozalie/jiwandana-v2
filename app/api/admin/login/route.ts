@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkAdminCredentials, createSessionHash, ADMIN_COOKIE_NAME } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    let body: any = {};
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { error: 'Body permintaan harus berupa JSON yang valid.' },
+        { status: 400 }
+      );
+    }
     const { username, password } = body;
 
     if (!username || !password) {

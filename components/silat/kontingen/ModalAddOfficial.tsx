@@ -120,7 +120,7 @@ export default function ModalAddOfficial({
               </select>
             </div>
             <div>
-              <label className="block text-slate-700 font-bold mb-1">NIK KK / KTP / KIA *</label>
+              <label className="block text-slate-700 font-bold mb-1">NIK KK / KTP *</label>
               <input
                 type="text"
                 required
