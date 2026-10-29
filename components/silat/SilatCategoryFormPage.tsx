@@ -1,12 +1,24 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import type { AtletItem } from '@/components/silat/types';
 import SilatDualBackground from '@/components/silat/SilatDualBackground';
 import SilatSponsorPillar from '@/components/silat/SilatSponsorPillar';
 import AtletTable from '@/components/silat/kontingen/AtletTable';
 import ModalAddAtlet from '@/components/silat/kontingen/ModalAddAtlet';
+import { useSilatAuth } from '@/components/silat/auth/useSilatAuth';
+import ModalAuthKontingen from '@/components/silat/auth/ModalAuthKontingen';
+import {
+  User,
+  ShieldCheck,
+  ChevronDown,
+  LogOut,
+  CreditCard,
+  Cloud,
+  CloudCheck,
+  Loader2,
+} from 'lucide-react';
 
 interface SilatCategoryFormPageProps {
   type: 'tanding' | 'jurus';
@@ -19,10 +31,38 @@ export default function SilatCategoryFormPage({
   title,
   athleteImage,
 }: SilatCategoryFormPageProps) {
+  // Auth Hook
+  const {
+    user,
+    isAuthenticated,
+    isLoading: isAuthLoading,
+    isAuthModalOpen,
+    authModalMode,
+    openAuthModal,
+    closeAuthModal,
+    logout,
+  } = useSilatAuth();
+
   const [atlets, setAtlets] = useState<AtletItem[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAtlet, setEditingAtlet] = useState<AtletItem | null>(null);
+
+  // Profile Dropdown
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close profile dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsProfileDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Kategori yang dihandle halaman ini (Dikelompokkan sesuai 11 Kategori Resmi)
   const allowedCategories =
@@ -40,64 +80,121 @@ export default function SilatCategoryFormPage({
       ];
   const defaultCategory = allowedCategories[0];
 
-  // Load data atlet dari localStorage
-  useEffect(() => {
+  // Fetch Cloud Data saat User Login
+  const fetchCloudData = useCallback(async () => {
+    setIsSyncing(true);
     try {
-      const atletsRaw = localStorage.getItem('silat_atlets');
-      if (atletsRaw) {
-        setAtlets(JSON.parse(atletsRaw));
+      const res = await fetch('/api/silat/kontingen/data', { cache: 'no-store' });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setAtlets(data.atlets || []);
+        localStorage.setItem('silat_atlets', JSON.stringify(data.atlets || []));
       }
-    } catch (e) {
-      console.error('Error loading silat_atlets from localStorage:', e);
+    } catch (err) {
+      console.error('Failed to fetch cloud silat data:', err);
     } finally {
+      setIsSyncing(false);
       setIsLoaded(true);
     }
   }, []);
 
-  // Simpan kembali ke localStorage jika ada penambahan atau penghapusan atlet
   useEffect(() => {
-    if (!isLoaded) return;
-    try {
-      localStorage.setItem('silat_atlets', JSON.stringify(atlets));
-    } catch (e) {
-      console.error('Error saving silat_atlets to localStorage:', e);
+    if (isAuthenticated) {
+      fetchCloudData();
+    } else {
+      setAtlets([]);
+      try {
+        localStorage.removeItem('silat_atlets');
+      } catch {}
+      setIsLoaded(true);
     }
-  }, [atlets, isLoaded]);
+  }, [isAuthenticated, fetchCloudData]);
 
   // Handler Tambah/Edit Atlet
   const handleOpenAddAtlet = () => {
+    if (!isAuthenticated) {
+      openAuthModal('login');
+      return;
+    }
     setEditingAtlet(null);
     setIsModalOpen(true);
   };
 
   const handleOpenEditAtlet = (item: AtletItem) => {
+    if (!isAuthenticated) {
+      openAuthModal('login');
+      return;
+    }
     setEditingAtlet(item);
     setIsModalOpen(true);
   };
 
-  const handleSaveAtlet = (data: Omit<AtletItem, 'id'>, id?: string) => {
-    if (id) {
-      // Mode Edit
-      setAtlets((prev) =>
-        prev.map((item) => (item.id === id ? { ...data, id } : item))
-      );
-    } else {
-      // Mode Tambah Baru
-      const newAtlet: AtletItem = {
-        id: `ATL-${Date.now()}-${String(atlets.length + 1).padStart(2, '0')}`,
-        ...data,
-      };
-      setAtlets((prev) => [...prev, newAtlet]);
-    }
+  const handleSaveAtlet = async (data: Omit<AtletItem, 'id'>, id?: string) => {
     setIsModalOpen(false);
     setEditingAtlet(null);
+
+    if (isAuthenticated) {
+      setIsSyncing(true);
+      try {
+        if (id && !id.startsWith('ATL-')) {
+          const res = await fetch('/api/silat/kontingen/atlet', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, ...data }),
+          });
+          const resData = await res.json();
+          if (res.ok && resData.atlet) {
+            setAtlets((prev) =>
+              prev.map((item) => (item.id === id ? resData.atlet : item))
+            );
+          }
+        } else {
+          const res = await fetch('/api/silat/kontingen/atlet', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+          });
+          const resData = await res.json();
+          if (res.ok && resData.atlet) {
+            setAtlets((prev) => [...prev, resData.atlet]);
+          }
+        }
+      } catch (e) {
+        console.error('Error saving atlet to cloud:', e);
+      } finally {
+        setIsSyncing(false);
+      }
+    } else {
+      if (id) {
+        setAtlets((prev) =>
+          prev.map((item) => (item.id === id ? { ...data, id } : item))
+        );
+      } else {
+        const newAtlet: AtletItem = {
+          id: `ATL-${Date.now()}-${String(atlets.length + 1).padStart(2, '0')}`,
+          ...data,
+        };
+        setAtlets((prev) => [...prev, newAtlet]);
+      }
+    }
   };
 
   // Handler Hapus Atlet
-  const handleDeleteAtlet = (id: string) => {
-    if (confirm('Apakah Anda yakin ingin menghapus atlet ini?')) {
-      setAtlets((prev) => prev.filter((item) => item.id !== id));
+  const handleDeleteAtlet = async (id: string) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus atlet ini?')) return;
+
+    if (isAuthenticated && !id.startsWith('ATL-')) {
+      setIsSyncing(true);
+      try {
+        await fetch(`/api/silat/kontingen/atlet?id=${id}`, { method: 'DELETE' });
+      } catch (e) {
+        console.error('Error deleting atlet from cloud:', e);
+      } finally {
+        setIsSyncing(false);
+      }
     }
+
+    setAtlets((prev) => prev.filter((item) => item.id !== id));
   };
 
   return (
@@ -136,6 +233,53 @@ export default function SilatCategoryFormPage({
               </div>
             </div>
 
+            {/* STATUS CLOUD / BANNER AUTH */}
+            {!isAuthenticated ? (
+              <div className="w-full relative z-10 p-4 rounded-2xl bg-slate-950/80 border-2 border-cyan-400/40 shadow-xl backdrop-blur-md flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-cyan-500/20 text-cyan-300 flex items-center justify-center shrink-0 border border-cyan-400/40">
+                    <Cloud className="w-5 h-5 text-cyan-400" />
+                  </div>
+                  <div>
+                    <h4 className="text-white font-black text-xs sm:text-sm">
+                      Masuk dengan Akun Kontingen Anda
+                    </h4>
+                    <p className="text-[11px] text-slate-300">
+                      Simpan data atlet langsung ke Database Cloud.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => openAuthModal('login')}
+                  className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-extrabold text-xs tracking-wider uppercase rounded-xl shadow-md transition-all cursor-pointer shrink-0"
+                >
+                  MASUK / DAFTAR
+                </button>
+              </div>
+            ) : (
+              <div className="w-full relative z-10 px-4 py-2.5 rounded-2xl bg-slate-950/75 border border-emerald-400/40 shadow-md backdrop-blur-md flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 text-xs text-white">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="text-slate-300">Kontingen:</span>
+                  <strong className="text-cyan-300 font-bold">{user?.namaKontingen}</strong>
+                </div>
+                <div className="flex items-center gap-1.5 text-[11px] text-emerald-300 font-semibold">
+                  {isSyncing ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-400" />
+                      <span>Sinkronisasi...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CloudCheck className="w-4 h-4 text-emerald-400" />
+                      <span className="hidden sm:inline">Tersimpan di Cloud</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* TABEL DATA ATLET KATEGORI SPESIFIK */}
             <AtletTable
               atlets={atlets}
@@ -146,6 +290,7 @@ export default function SilatCategoryFormPage({
               onOpenModal={handleOpenAddAtlet}
               onEdit={handleOpenEditAtlet}
               onDelete={handleDeleteAtlet}
+              isLoading={isAuthLoading || (isAuthenticated && !isLoaded) || isSyncing}
             />
           </div>
 
@@ -198,6 +343,17 @@ export default function SilatCategoryFormPage({
           setEditingAtlet(null);
         }}
         onSave={handleSaveAtlet}
+      />
+
+      {/* MODAL AUTH LOGIN / REGISTER */}
+      <ModalAuthKontingen
+        isOpen={isAuthModalOpen}
+        initialMode={authModalMode}
+        onClose={closeAuthModal}
+        onSuccess={() => {
+          closeAuthModal();
+          fetchCloudData();
+        }}
       />
     </div>
   );

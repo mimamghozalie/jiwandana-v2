@@ -81,6 +81,7 @@ export default function PembayaranSilatClient() {
   const {
     user,
     isAuthenticated,
+    isLoading: isAuthLoading,
     isAuthModalOpen,
     authModalMode,
     openAuthModal,
@@ -90,6 +91,7 @@ export default function PembayaranSilatClient() {
   const [atlets, setAtlets] = useState<AtletItem[]>([]);
   const [officials, setOfficials] = useState<OfficialItem[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isFetchingData, setIsFetchingData] = useState(false);
 
   // Form Payment State
   const [kontingenName, setKontingenName] = useState('');
@@ -117,6 +119,7 @@ export default function PembayaranSilatClient() {
   // Fetch Cloud data if authenticated
   useEffect(() => {
     if (isAuthenticated) {
+      setIsFetchingData(true);
       fetch('/api/silat/kontingen/data', { cache: 'no-store' })
         .then((res) => res.json())
         .then((data) => {
@@ -130,7 +133,10 @@ export default function PembayaranSilatClient() {
           }
         })
         .catch((e) => console.warn('Could not fetch cloud silat data for checkout:', e))
-        .finally(() => setIsLoaded(true));
+        .finally(() => {
+          setIsFetchingData(false);
+          setIsLoaded(true);
+        });
     } else {
       setAtlets([]);
       setOfficials([]);
@@ -507,7 +513,12 @@ export default function PembayaranSilatClient() {
                     <span className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider block mb-2">
                       Rincian Biaya per Kategori ({atlets.length} Atlet):
                     </span>
-                    {atlets.length === 0 ? (
+                    {isAuthLoading || (isAuthenticated && !isLoaded) || isFetchingData ? (
+                      <div className="p-6 bg-slate-50 border border-slate-200 rounded-xl text-center text-xs text-slate-500 flex flex-col items-center justify-center gap-2">
+                        <div className="w-5 h-5 border-2 border-[#00b4d8] border-t-transparent rounded-full animate-spin" />
+                        <span>Memuat data atlet & tagihan dari cloud...</span>
+                      </div>
+                    ) : atlets.length === 0 ? (
                       <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-center text-xs text-amber-800">
                         Belum ada atlet yang terdaftar di sistem. Silakan isi data kontingen terlebih dahulu.
                       </div>
