@@ -11,6 +11,7 @@ interface AtletTableProps {
   defaultCategory?: string;
   hideCategoryFilter?: boolean;
   allowedCategories?: string[];
+  isLoading?: boolean;
 }
 
 export default function AtletTable({
@@ -22,6 +23,7 @@ export default function AtletTable({
   defaultCategory = 'Semua',
   hideCategoryFilter = false,
   allowedCategories,
+  isLoading = false,
 }: AtletTableProps) {
   const [filterKategori, setFilterKategori] = useState(defaultCategory);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -107,7 +109,18 @@ export default function AtletTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">
-            {filteredAtlets.length === 0 ? (
+            {isLoading ? (
+              <tr>
+                <td colSpan={9} className="py-10 text-center text-slate-500">
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <div className="w-6 h-6 border-2 border-[#00b4d8] border-t-transparent rounded-full animate-spin" />
+                    <span className="text-xs font-semibold text-slate-600">
+                      Memuat data atlet dari cloud...
+                    </span>
+                  </div>
+                </td>
+              </tr>
+            ) : filteredAtlets.length === 0 ? (
               <tr>
                 <td colSpan={9} className="py-6 text-center text-slate-400 italic">
                   Belum ada data atlet. Klik tombol{' '}

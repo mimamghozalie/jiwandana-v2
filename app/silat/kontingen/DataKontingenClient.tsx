@@ -27,6 +27,7 @@ export default function DataKontingenClient() {
   const {
     user,
     isAuthenticated,
+    isLoading: isAuthLoading,
     isAuthModalOpen,
     authModalMode,
     openAuthModal,
@@ -440,6 +441,7 @@ export default function DataKontingenClient() {
               onOpenModal={handleOpenAddOfficial}
               onEdit={handleOpenEditOfficial}
               onDelete={handleDeleteOfficial}
+              isLoading={isAuthLoading || (isAuthenticated && !isLoaded) || isSyncing}
             />
 
             {/* TABEL 2: DATA ATLET */}
@@ -448,6 +450,7 @@ export default function DataKontingenClient() {
               onOpenModal={handleOpenAddAtlet}
               onEdit={handleOpenEditAtlet}
               onDelete={handleDeleteAtlet}
+              isLoading={isAuthLoading || (isAuthenticated && !isLoaded) || isSyncing}
             />
 
             {/* BOTTOM SECTION: TOMBOL LINK KE PAGE PEMBAYARAN */}

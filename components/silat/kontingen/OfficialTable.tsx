@@ -7,6 +7,7 @@ interface OfficialTableProps {
   onOpenModal: () => void;
   onEdit: (item: OfficialItem) => void;
   onDelete: (id: string) => void;
+  isLoading?: boolean;
 }
 
 export default function OfficialTable({
@@ -14,6 +15,7 @@ export default function OfficialTable({
   onOpenModal,
   onEdit,
   onDelete,
+  isLoading = false,
 }: OfficialTableProps) {
   const [filterJabatan, setFilterJabatan] = useState('Semua');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -88,7 +90,18 @@ export default function OfficialTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">
-            {filteredOfficials.length === 0 ? (
+            {isLoading ? (
+              <tr>
+                <td colSpan={7} className="py-10 text-center text-slate-500">
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <div className="w-6 h-6 border-2 border-[#00b4d8] border-t-transparent rounded-full animate-spin" />
+                    <span className="text-xs font-semibold text-slate-600">
+                      Memuat data official dari cloud...
+                    </span>
+                  </div>
+                </td>
+              </tr>
+            ) : filteredOfficials.length === 0 ? (
               <tr>
                 <td colSpan={7} className="py-6 text-center text-slate-400 italic">
                   Belum ada data official. Klik tombol{' '}
