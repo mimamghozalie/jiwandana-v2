@@ -34,8 +34,8 @@ export interface AtletItem {
   kkUrl?: string;
 }
 
-// Daftar Pilihan Kategori Kelas / Seni sesuai standar kejuaraan
-export const KELAS_SENI_OPTIONS = [
+// Opsi Kelas Tanding (Pemasalan & Prestasi)
+export const KELAS_TANDING_OPTIONS = [
   'A',
   'B',
   'C',
@@ -60,15 +60,63 @@ export const KELAS_SENI_OPTIONS = [
   'OPEN 2',
   'UNDER',
   'UNDER A',
-  'UNDER B',
-  'UNDER C',
-  '>39',
-  'SOLO KREATIF',
-  'TUNGGAL TANGAN KOSONG',
-  'TUNGGAL BERSENJATA',
-  'TUNGGAL IPSI',
-  'Festival',
 ];
+
+// Pemetaan Opsi Kelas / Nomor Seni per Kategori Lomba
+export const KELAS_SENI_BY_KATEGORI: Record<string, string[]> = {
+  'Tanding - Pemasalan': KELAS_TANDING_OPTIONS,
+  'Tanding - Prestasi': KELAS_TANDING_OPTIONS,
+  'Jurus Baku Tunggal - Pemasalan': [
+    'TUNGGAL TANGAN KOSONG',
+    'TUNGGAL BERSENJATA',
+    'TUNGGAL IPSI',
+  ],
+  'Jurus Baku Tunggal - Prestasi': [
+    'TUNGGAL IPSI',
+  ],
+  'Jurus Bebas - Pemasalan': [
+    'Tangan Kosong',
+    'Bersenjata',
+    'Tangan Kosong dan Senjata',
+  ],
+  'Jurus Bebas - Prestasi': [
+    'Tangan Kosong',
+    'Bersenjata',
+    'Tangan Kosong dan Senjata',
+  ],
+  'Silat Festival - Perorangan': [
+    'Perorangan',
+  ],
+  'Silat Festival - Berpasangan': [
+    'Berpasangan',
+  ],
+  'Silat Festival - Berkelompok 3': [
+    'Berkelompok 3',
+  ],
+  'Silat Festival - Berkelompok 5': [
+    'Berkelompok 5',
+  ],
+  'Silat Bebas': [
+    'Bebas',
+    // ...KELAS_TANDING_OPTIONS,
+  ],
+};
+
+/**
+ * Mendapatkan daftar opsi Kelas / Nomor Seni berdasarkan Kategori Lomba
+ */
+export function getKelasSeniOptions(kategoriLomba: string): string[] {
+  if (KELAS_SENI_BY_KATEGORI[kategoriLomba]) {
+    return KELAS_SENI_BY_KATEGORI[kategoriLomba];
+  }
+  // Default fallback
+  return KELAS_TANDING_OPTIONS;
+}
+
+// Daftar Gabungan Seluruh Pilihan Kategori Kelas / Seni
+export const KELAS_SENI_OPTIONS = Array.from(
+  new Set(Object.values(KELAS_SENI_BY_KATEGORI).flat())
+);
 
 // Opsi Pilihan Jabatan Official
 export const JABATAN_OFFICIAL_OPTIONS = [

@@ -7,6 +7,7 @@ import {
   calculateAgeFromBirthDate,
   getSilatCategoryPrice,
   formatRupiah,
+  getKelasSeniOptions,
 } from '../types';
 import { uploadSilatDocument } from '@/lib/silatStorage';
 
@@ -27,24 +28,27 @@ export default function ModalAddAtlet({
   initialData,
   allowedCategories,
 }: ModalAddAtletProps) {
-  const getInitialState = (): Omit<AtletItem, 'id'> => ({
-    nama: '',
-    asalSekolah: '',
-    nik: '',
-    tanggalLahir: '',
-    umur: '',
-    tinggi: '',
-    berat: '',
-    kota: 'Mojokerto',
-    jenisKelamin: 'Laki-Laki',
-    tingkatPendidikan: 'Remaja / SMA',
-    kategoriLomba: defaultCategory,
-    kategoriKelasSeni: KELAS_SENI_OPTIONS[0],
-    noHp: '',
-    email: '',
-    fotoUrl: '',
-    kkUrl: '',
-  });
+  const getInitialState = (): Omit<AtletItem, 'id'> => {
+    const defaultKelas = getKelasSeniOptions(defaultCategory)[0] || 'A';
+    return {
+      nama: '',
+      asalSekolah: '',
+      nik: '',
+      tanggalLahir: '',
+      umur: '',
+      tinggi: '',
+      berat: '',
+      kota: 'Mojokerto',
+      jenisKelamin: 'Laki-Laki',
+      tingkatPendidikan: 'Remaja / SMA',
+      kategoriLomba: defaultCategory,
+      kategoriKelasSeni: defaultKelas,
+      noHp: '',
+      email: '',
+      fotoUrl: '',
+      kkUrl: '',
+    };
+  };
 
   const [form, setForm] = useState<Omit<AtletItem, 'id'>>(getInitialState());
   const [uploadingFoto, setUploadingFoto] = useState(false);
@@ -54,6 +58,13 @@ export default function ModalAddAtlet({
   useEffect(() => {
     setErrorMsg('');
     if (initialData) {
+      const currentCategory = initialData.kategoriLomba || defaultCategory;
+      const validKelasOptions = getKelasSeniOptions(currentCategory);
+      const currentKelas =
+        initialData.kategoriKelasSeni && validKelasOptions.includes(initialData.kategoriKelasSeni)
+          ? initialData.kategoriKelasSeni
+          : validKelasOptions[0] || 'A';
+
       setForm({
         nama: initialData.nama || '',
         asalSekolah: initialData.asalSekolah || '',
@@ -65,8 +76,8 @@ export default function ModalAddAtlet({
         kota: initialData.kota || 'Mojokerto',
         jenisKelamin: initialData.jenisKelamin || 'Laki-Laki',
         tingkatPendidikan: initialData.tingkatPendidikan || 'Remaja / SMA',
-        kategoriLomba: initialData.kategoriLomba || defaultCategory,
-        kategoriKelasSeni: initialData.kategoriKelasSeni || KELAS_SENI_OPTIONS[0],
+        kategoriLomba: currentCategory,
+        kategoriKelasSeni: currentKelas,
         noHp: initialData.noHp || '',
         email: initialData.email || '',
         fotoUrl: initialData.fotoUrl || '',
@@ -293,7 +304,18 @@ export default function ModalAddAtlet({
               </div>
               <select
                 value={form.kategoriLomba}
-                onChange={(e) => setForm({ ...form, kategoriLomba: e.target.value })}
+                onChange={(e) => {
+                  const newCategory = e.target.value;
+                  const availableOptions = getKelasSeniOptions(newCategory);
+                  const autoSelectedKelas = availableOptions.includes(form.kategoriKelasSeni)
+                    ? form.kategoriKelasSeni
+                    : availableOptions[0] || '';
+                  setForm({
+                    ...form,
+                    kategoriLomba: newCategory,
+                    kategoriKelasSeni: autoSelectedKelas,
+                  });
+                }}
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:border-[#00b4d8] font-semibold text-slate-900"
               >
                 {(allowedCategories || KATEGORI_LOMBA_OPTIONS).map((kat) => (
@@ -310,7 +332,7 @@ export default function ModalAddAtlet({
                 onChange={(e) => setForm({ ...form, kategoriKelasSeni: e.target.value })}
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:border-[#00b4d8] font-semibold text-slate-900"
               >
-                {KELAS_SENI_OPTIONS.map((opt) => (
+                {getKelasSeniOptions(form.kategoriLomba).map((opt) => (
                   <option key={opt} value={opt}>
                     {opt}
                   </option>
