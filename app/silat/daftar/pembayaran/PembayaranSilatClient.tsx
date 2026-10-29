@@ -6,6 +6,9 @@ import type { AtletItem, OfficialItem } from '@/components/silat/types';
 import { getSilatCategoryPrice, formatRupiah } from '@/components/silat/types';
 import SilatDualBackground from '@/components/silat/SilatDualBackground';
 import SilatSponsorPillar from '@/components/silat/SilatSponsorPillar';
+import { useSilatAuth } from '@/components/silat/auth/useSilatAuth';
+import ModalAuthKontingen from '@/components/silat/auth/ModalAuthKontingen';
+import { ShieldCheck, User } from 'lucide-react';
 
 interface PakasirPaymentResult {
   txn_id: string;
@@ -75,6 +78,15 @@ const PAYMENT_METHODS = [
 ];
 
 export default function PembayaranSilatClient() {
+  const {
+    user,
+    isAuthenticated,
+    isAuthModalOpen,
+    authModalMode,
+    openAuthModal,
+    closeAuthModal,
+  } = useSilatAuth();
+
   const [atlets, setAtlets] = useState<AtletItem[]>([]);
   const [officials, setOfficials] = useState<OfficialItem[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -93,26 +105,42 @@ export default function PembayaranSilatClient() {
   const [checkingStatus, setCheckingStatus] = useState(false);
   const [copiedVa, setCopiedVa] = useState(false);
 
-  // 1. Load Data dari localStorage
+  // Auto-fill profil kontingen saat user login
   useEffect(() => {
-    try {
-      const atletsRaw = localStorage.getItem('silat_atlets');
-      const officialsRaw = localStorage.getItem('silat_officials');
-      if (atletsRaw) setAtlets(JSON.parse(atletsRaw));
-      if (officialsRaw) {
-        const parsedOfficials = JSON.parse(officialsRaw);
-        setOfficials(parsedOfficials);
-        if (parsedOfficials.length > 0) {
-          setPicName(parsedOfficials[0].nama || '');
-          setPicPhone(parsedOfficials[0].noHp || '');
-        }
-      }
-    } catch (e) {
-      console.error('Error loading silat data:', e);
-    } finally {
+    if (user) {
+      if (user.namaKontingen) setKontingenName(user.namaKontingen);
+      if (user.picName) setPicName(user.picName);
+      if (user.picPhone) setPicPhone(user.picPhone);
+    }
+  }, [user]);
+
+  // Fetch Cloud data if authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetch('/api/silat/kontingen/data', { cache: 'no-store' })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            setAtlets(data.atlets || []);
+            setOfficials(data.officials || []);
+            if (!picName && data.officials && data.officials[0]?.nama) {
+              setPicName(data.officials[0].nama);
+              setPicPhone(data.officials[0].noHp || '');
+            }
+          }
+        })
+        .catch((e) => console.warn('Could not fetch cloud silat data for checkout:', e))
+        .finally(() => setIsLoaded(true));
+    } else {
+      setAtlets([]);
+      setOfficials([]);
+      try {
+        localStorage.removeItem('silat_atlets');
+        localStorage.removeItem('silat_officials');
+      } catch {}
       setIsLoaded(true);
     }
-  }, []);
+  }, [isAuthenticated]);
 
   // 2. Hitung subtotal & rincian biaya 11 kategori
   const { subtotal, breakdownByCategory } = useMemo(() => {
@@ -154,10 +182,11 @@ export default function PembayaranSilatClient() {
         body: JSON.stringify({
           atlets,
           officials,
-          kontingen_name: kontingenName || 'Kontingen Pencak Silat DSC',
+          kontingen_name: kontingenName || user?.namaKontingen || 'Kontingen Pencak Silat DSC',
           pic_name: picName,
           pic_phone: picPhone,
           payment_method: selectedMethod,
+          kontingen_id: user?.kontingenId,
         }),
       });
 
@@ -405,7 +434,7 @@ export default function PembayaranSilatClient() {
 
                 {/* 1. RINGKASAN DATA KONTINGEN & DAFTAR ATLET */}
                 <div className="p-4 sm:p-6 bg-white/95 backdrop-blur-md rounded-3xl border-2 border-slate-300 shadow-xl space-y-4">
-                  <div className="flex items-center justify-between border-b pb-3">
+                  <div className="flex items-center justify-between border-b pb-3 flex-wrap gap-2">
                     <div className="flex items-center gap-2">
                       <span className="w-8 h-8 rounded-xl bg-cyan-100 text-[#0099ff] flex items-center justify-center font-bold">
                         <span className="material-symbols-outlined text-lg">groups</span>
@@ -414,12 +443,29 @@ export default function PembayaranSilatClient() {
                         Data Kontingen &amp; Atlet Terdaftar
                       </h3>
                     </div>
-                    <Link
-                      href="/silat/kontingen"
-                      className="text-xs font-bold text-[#ff007f] hover:underline"
-                    >
-                      + Tambah/Edit Atlet
-                    </Link>
+                    <div className="flex items-center gap-3">
+                      {isAuthenticated ? (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold">
+                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>Akun: {user?.namaKontingen}</span>
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => openAuthModal('login')}
+                          className="text-xs font-bold text-cyan-600 hover:text-cyan-800 hover:underline cursor-pointer flex items-center gap-1"
+                        >
+                          <User className="w-3.5 h-3.5" />
+                          <span>Masuk Akun</span>
+                        </button>
+                      )}
+                      <Link
+                        href="/silat/kontingen"
+                        className="text-xs font-bold text-[#ff007f] hover:underline"
+                      >
+                        + Tambah/Edit Atlet
+                      </Link>
+                    </div>
                   </div>
 
                   {/* Input Nama Kontingen & PIC */}
@@ -578,6 +624,13 @@ export default function PembayaranSilatClient() {
         </div>
 
       </main>
+
+      {/* MODAL AUTENTIKASI KONTINGEN */}
+      <ModalAuthKontingen
+        isOpen={isAuthModalOpen}
+        onClose={closeAuthModal}
+        initialMode={authModalMode}
+      />
     </div>
   );
 }
