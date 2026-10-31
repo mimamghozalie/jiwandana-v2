@@ -5,6 +5,7 @@ import Link from 'next/link';
 import type { OfficialItem, AtletItem } from '@/components/silat/types';
 import SilatDualBackground from '@/components/silat/SilatDualBackground';
 import SilatSponsorPillar from '@/components/silat/SilatSponsorPillar';
+import SilatMobileSponsorBanner from '@/components/silat/SilatMobileSponsorBanner';
 import OfficialTable from '@/components/silat/kontingen/OfficialTable';
 import AtletTable from '@/components/silat/kontingen/AtletTable';
 import ModalAddOfficial from '@/components/silat/kontingen/ModalAddOfficial';
@@ -470,6 +471,9 @@ export default function DataKontingenClient() {
           {/* PILAR KANAN: SPONSORSHIP CYAN/TOSCA PASTEL */}
           <SilatSponsorPillar variant="tosca" />
         </div>
+
+        {/* MOBILE VIEW: SPONSORSHIP & MEDIA PARTNER DI BAGIAN BAWAH CONTENT */}
+        <SilatMobileSponsorBanner />
       </main>
 
       {/* 3. MODALS FORM TAMBAH / EDIT DATA */}

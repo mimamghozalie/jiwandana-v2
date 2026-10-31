@@ -5,6 +5,7 @@ import Link from 'next/link';
 import type { AtletItem } from '@/components/silat/types';
 import SilatDualBackground from '@/components/silat/SilatDualBackground';
 import SilatSponsorPillar from '@/components/silat/SilatSponsorPillar';
+import SilatMobileSponsorBanner from '@/components/silat/SilatMobileSponsorBanner';
 import AtletTable from '@/components/silat/kontingen/AtletTable';
 import ModalAddAtlet from '@/components/silat/kontingen/ModalAddAtlet';
 import { useSilatAuth } from '@/components/silat/auth/useSilatAuth';
@@ -329,6 +330,9 @@ export default function SilatCategoryFormPage({
             </Link>
           </div>
         </div>
+
+        {/* MOBILE VIEW: SPONSORSHIP & MEDIA PARTNER DI BAGIAN BAWAH CONTENT */}
+        <SilatMobileSponsorBanner />
 
       </main>
 

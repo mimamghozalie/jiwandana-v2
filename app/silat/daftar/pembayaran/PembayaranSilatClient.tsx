@@ -6,6 +6,7 @@ import type { AtletItem, OfficialItem } from '@/components/silat/types';
 import { getSilatCategoryPrice, formatRupiah } from '@/components/silat/types';
 import SilatDualBackground from '@/components/silat/SilatDualBackground';
 import SilatSponsorPillar from '@/components/silat/SilatSponsorPillar';
+import SilatMobileSponsorBanner from '@/components/silat/SilatMobileSponsorBanner';
 import { useSilatAuth } from '@/components/silat/auth/useSilatAuth';
 import ModalAuthKontingen from '@/components/silat/auth/ModalAuthKontingen';
 import { ShieldCheck, User } from 'lucide-react';
@@ -633,6 +634,9 @@ export default function PembayaranSilatClient() {
             <span>Kembali ke Hub Pendaftaran Silat</span>
           </Link>
         </div>
+
+        {/* MOBILE VIEW: SPONSORSHIP & MEDIA PARTNER DI BAGIAN BAWAH CONTENT */}
+        <SilatMobileSponsorBanner />
 
       </main>
 

@@ -3,6 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import SilatMobileSponsorBanner from '@/components/silat/SilatMobileSponsorBanner';
 
 export default function DaftarSilatHubClient() {
   return (
@@ -172,6 +173,9 @@ export default function DaftarSilatHubClient() {
             </Link>
           </div>
         </div>
+
+        {/* MOBILE VIEW: SPONSORSHIP & MEDIA PARTNER DI BAGIAN BAWAH CONTENT */}
+        <SilatMobileSponsorBanner />
 
       </main>
     </div>
