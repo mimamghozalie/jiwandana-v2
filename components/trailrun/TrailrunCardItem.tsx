@@ -377,9 +377,9 @@ export default function TrailrunCardItem({
 
               {/* Flash Sale Banner if Active */}
               {isFlashActive && !isFlashSaleSoldOut && (
-                <div className="mt-2 p-2 rounded-lg bg-gradient-to-r from-rose-500/10 via-amber-500/10 to-rose-500/10 border border-rose-300 text-center animate-pulse">
-                  <div className="flex items-center justify-center gap-1 text-[11px] font-black text-rose-600 uppercase tracking-wider">
-                    <span className="material-symbols-outlined text-[14px]">bolt</span>
+                <div className="mt-2.5 p-2.5 rounded-xl bg-gradient-to-r from-rose-500/10 via-amber-500/10 to-rose-500/10 border border-rose-300 text-center animate-pulse">
+                  <div className="flex items-center justify-center gap-1.5 text-xs font-black text-rose-600 uppercase tracking-wider">
+                    <span className="material-symbols-outlined text-sm leading-none">bolt</span>
                     <span>Flash Sale Aktif! (Reguler Ditangguhkan)</span>
                   </div>
                   <div className="text-xs font-bold text-slate-900 mt-0.5">
@@ -390,14 +390,33 @@ export default function TrailrunCardItem({
 
               {/* Flash Sale Teaser when Scheduled & Not Yet Active */}
               {catKey !== '3k' && !isCategorySoldOut && !isFlashActive && (
-                <div className="mt-2 px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-rose-500/10 border border-orange-200/80 flex items-center justify-between text-[10px]">
-                  <span className="font-bold text-orange-950 flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[13px] text-orange-600">bolt</span>
-                    <span>Flash Sale: {pricingInfo?.tiersConfig?.flashsale?.dateDisplay || '07 Nov (17:00-17:30 WIB)'}</span>
-                  </span>
-                  <span className="font-extrabold text-orange-600 font-mono">
-                    Rp {flashDisplay}
-                  </span>
+                <div className="mt-2.5 px-3 py-2 rounded-xl bg-orange-50/90 border border-orange-200/90 flex items-center justify-between gap-2.5 text-xs">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-7 h-7 rounded-lg bg-orange-500/15 border border-orange-500/30 flex items-center justify-center shrink-0 text-orange-600">
+                      <span className="material-symbols-outlined text-base leading-none">bolt</span>
+                    </div>
+                    <div className="min-w-0 leading-tight">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-extrabold text-orange-950 text-[11px] uppercase tracking-wide">
+                          Flash Sale
+                        </span>
+                        <span className="text-[10px] font-semibold text-orange-800">
+                          07 Nov &bull; 17:00–17:30 WIB
+                        </span>
+                      </div>
+                      <span className="text-[9px] text-orange-700/80 font-medium block mt-0.5">
+                        Kuota terbatas 10 slot / kategori
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="text-[9px] text-orange-700/70 uppercase font-semibold block leading-none">
+                      Tarif
+                    </span>
+                    <span className="font-black text-orange-600 font-mono text-sm leading-tight block whitespace-nowrap mt-0.5">
+                      Rp {flashDisplay}
+                    </span>
+                  </div>
                 </div>
               )}
             </div>

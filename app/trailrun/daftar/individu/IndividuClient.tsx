@@ -38,9 +38,26 @@ export default function IndividuClient() {
   const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<'idle' | 'pending' | 'completed' | 'expired' | 'error'>('idle');
   const [showSuccess, setShowSuccess] = useState(false);
-  const [showTimeLimitModal, setShowTimeLimitModal] = useState(true);
+  const [showTimeLimitModal, setShowTimeLimitModal] = useState(false);
   const [pricingInfoMap, setPricingInfoMap] = useState<Record<string, any>>({});
   const [checkingStatus, setCheckingStatus] = useState(false);
+
+  // Cek agar modal batas waktu pembayaran hanya muncul 1x dan tidak berulang saat refresh
+  useEffect(() => {
+    try {
+      const hasSeen = localStorage.getItem('has_seen_trailrun_payment_limit_modal');
+      if (!hasSeen) {
+        setShowTimeLimitModal(true);
+      }
+    } catch (_) {}
+  }, []);
+
+  const handleCloseTimeLimitModal = () => {
+    setShowTimeLimitModal(false);
+    try {
+      localStorage.setItem('has_seen_trailrun_payment_limit_modal', 'true');
+    } catch (_) {}
+  };
 
   // BIB validation states
   const [bibStatus, setBibStatus] = useState<BibStatus>('idle');
@@ -774,7 +791,7 @@ export default function IndividuClient() {
       {/* ===== PAYMENT TIME LIMIT ALERT MODAL (1 JAM AUTO-HAPUS) ===== */}
       <PaymentTimeLimitModal
         isOpen={showTimeLimitModal}
-        onClose={() => setShowTimeLimitModal(false)}
+        onClose={handleCloseTimeLimitModal}
       />
     </main>
   );
