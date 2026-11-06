@@ -98,15 +98,23 @@ export default function StepKategoriLomba({
                         <span className="px-1.5 sm:px-2 py-0.5 rounded-full bg-slate-100 text-[9px] sm:text-[10px] font-semibold text-slate-600 border border-black/5 whitespace-nowrap">
                           {cat.badge}
                         </span>
+                        {info?.tierId === 'flashsale' && !isSoldOut && (
+                          <span className="px-1.5 sm:px-2 py-0.5 rounded-full bg-rose-600 text-white text-[9px] sm:text-[10px] font-bold inline-flex items-center gap-1 animate-pulse shadow-sm">
+                            <span className="material-symbols-outlined text-[12px]">bolt</span>
+                            Flash Sale {typeof info?.quotaRemaining === 'number' ? `(${info.quotaRemaining} Slot)` : ''}
+                          </span>
+                        )}
                       </div>
                       <p className="text-[11px] sm:text-xs text-slate-500 mt-1 line-clamp-1">{cat.description}</p>
                     </div>
 
                     {/* Mobile Price: Diposisikan di kanan atas agar tidak menabrak stat pills */}
                     <div className="sm:hidden text-right shrink-0 pl-1">
-                      <span className="text-[9px] text-slate-400 font-semibold uppercase block leading-none">Mulai</span>
-                      <span className={`text-xs font-bold font-mono ${isSelected ? 'text-[#C9A227]' : 'text-slate-900'}`}>
-                        {startingPrice}
+                      <span className="text-[9px] text-slate-400 font-semibold uppercase block leading-none">
+                        {isSoldOut ? 'Status' : 'Mulai'}
+                      </span>
+                      <span className={`text-xs font-bold font-mono ${isSoldOut ? 'text-rose-600' : isSelected ? 'text-[#C9A227]' : 'text-slate-900'}`}>
+                        {isSoldOut ? 'SOLD OUT' : startingPrice}
                       </span>
                     </div>
                   </div>
@@ -141,9 +149,11 @@ export default function StepKategoriLomba({
 
                 {/* Desktop Price */}
                 <div className="hidden sm:block text-right shrink-0 pl-2">
-                  <span className="text-[10px] text-slate-400 font-semibold uppercase block">Mulai</span>
-                  <span className={`text-base font-bold font-mono ${isSelected ? 'text-[#C9A227]' : 'text-slate-900'}`}>
-                    {startingPrice}
+                  <span className="text-[10px] text-slate-400 font-semibold uppercase block">
+                    {isSoldOut ? 'Status' : 'Mulai'}
+                  </span>
+                  <span className={`text-base font-bold font-mono ${isSoldOut ? 'text-rose-600' : isSelected ? 'text-[#C9A227]' : 'text-slate-900'}`}>
+                    {isSoldOut ? 'SOLD OUT' : startingPrice}
                   </span>
                 </div>
               </div>

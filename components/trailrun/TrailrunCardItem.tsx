@@ -22,13 +22,17 @@ export default function TrailrunCardItem({
 }: TrailrunCardItemProps) {
   // Fallback to computed active tier so badges and session states are never missing
   const pricingInfo = propPricingInfo || getActivePricingTier(item.id, 0);
+  const catKey = (item.id || '').toLowerCase();
   const configPrices = getCategoryPricesFromConfig(item.id);
   const earlyDisplay = pricingInfo?.prices?.early?.display || configPrices.early;
   const presaleDisplay = pricingInfo?.prices?.presale?.display || configPrices.presale;
   const regularDisplay = pricingInfo?.prices?.regular?.display || configPrices.regular;
+  const flashDisplay =
+    pricingInfo?.prices?.flashsale?.display ||
+    (catKey === '7k' ? '300k' : catKey === '12k' ? '350k' : '-');
+  const isFlashActive = pricingInfo?.tierId === 'flashsale';
 
   // Visual marketing offset for Early Bird quota display (7K minus 14, 12K minus 16)
-  const catKey = (item.id || '').toLowerCase();
   const earlyVisualOffset = catKey === '7k' ? 19 : catKey === '12k' ? 16 : 0;
   const baseEarlyQuota = 50;
   const realEarlyRemaining = typeof pricingInfo?.quotaRemaining === 'number'
@@ -59,7 +63,13 @@ export default function TrailrunCardItem({
     (item as any)?.prices?.regular?.soldOut
   );
 
+  const isFlashSaleSoldOut = Boolean(
+    pricingInfo?.isFlashSaleSoldOut ||
+    (pricingInfo?.tiersConfig?.flashsale as any)?.isSoldOut
+  );
+
   const isCategorySoldOut = Boolean(
+    catKey === '3k' ||
     pricingInfo?.isCategorySoldOut ||
     pricingInfo?.isSoldOut ||
     (item as any)?.isSoldOut ||
@@ -69,6 +79,7 @@ export default function TrailrunCardItem({
 
   const isCurrentActiveSoldOut =
     isCategorySoldOut ||
+    (pricingInfo?.tierId === 'flashsale' && isFlashSaleSoldOut) ||
     (pricingInfo?.tierId === 'early' && isEarlySoldOut) ||
     (pricingInfo?.tierId === 'presale' && isPresaleSoldOut) ||
     (pricingInfo?.tierId === 'regular' && isRegularSoldOut);
@@ -86,16 +97,18 @@ export default function TrailrunCardItem({
           className={`backface-hidden w-full h-full bg-white border border-black/10 rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-sm hover:shadow-xl transition-all duration-300 hover:border-[#C9A227]/50 group font-sans relative overflow-hidden ${isFlipped ? 'pointer-events-none' : 'pointer-events-auto'
             }`}
         >
-          {/* 45-Degree Corner Ribbon Badge in Top-Right of Card: "SOLD" if sold out, "OPEN" if active */}
-          {(pricingInfo?.tierId === 'early' || pricingInfo?.tierId === 'presale' || pricingInfo?.tierId === 'regular' || isCurrentActiveSoldOut) && (
+          {/* 45-Degree Corner Ribbon Badge in Top-Right of Card: "SOLD" if sold out, "FLASH SALE" if flash sale, "OPEN" if active */}
+          {(pricingInfo?.tierId === 'early' || pricingInfo?.tierId === 'presale' || pricingInfo?.tierId === 'regular' || pricingInfo?.tierId === 'flashsale' || isCurrentActiveSoldOut) && (
             <div className="absolute top-0 right-0 w-24 h-24 overflow-hidden pointer-events-none z-30">
               <div
                 className={`absolute transform rotate-45 text-white font-black text-[9px] py-1 right-[-34px] top-[18px] w-[120px] text-center shadow-md uppercase tracking-wider ${isCurrentActiveSoldOut
                   ? 'bg-rose-600 shadow-rose-950/40'
-                  : 'bg-emerald-500 shadow-emerald-950/40'
+                  : pricingInfo?.tierId === 'flashsale'
+                    ? 'bg-gradient-to-r from-amber-500 to-rose-600 shadow-rose-950/40 animate-pulse'
+                    : 'bg-emerald-500 shadow-emerald-950/40'
                   }`}
               >
-                {isCurrentActiveSoldOut ? 'SOLD' : 'OPEN'}
+                {isCurrentActiveSoldOut ? 'SOLD' : pricingInfo?.tierId === 'flashsale' ? 'FLASH SALE' : 'OPEN'}
               </div>
             </div>
           )}
@@ -270,49 +283,123 @@ export default function TrailrunCardItem({
                   </span>
                 </div>
 
-                {/* Regular */}
-                <div
-                  className={`relative overflow-hidden px-1 space-y-0.5 rounded-lg transition-colors ${isRegularSoldOut
-                    ? 'bg-slate-50/60 py-1'
-                    : pricingInfo?.tierId === 'regular'
-                      ? 'bg-slate-100/90 py-1 ring-1 ring-slate-400/80'
-                      : ''
+                {/* 3rd Column: When Flash Sale is Active, Regular is HIDDEN and replaced by Flash Sale */}
+                {isFlashActive ? (
+                  <div
+                    className={`relative overflow-hidden px-1 space-y-0.5 rounded-lg transition-colors ${
+                      isFlashSaleSoldOut
+                        ? 'bg-slate-50/60 py-1'
+                        : 'bg-rose-50/90 py-1 ring-2 ring-rose-500 shadow-sm'
                     }`}
-                >
-                  {isRegularSoldOut ? (
-                    <div className="absolute top-0 right-0 w-8 h-8 overflow-hidden pointer-events-none z-10">
-                      <div className="absolute transform rotate-45 bg-rose-600 text-white font-black text-[6.5px] py-[1.5px] right-[-12px] top-[4px] w-[40px] text-center shadow-xs uppercase tracking-tight">
-                        SOLD
+                  >
+                    {isFlashSaleSoldOut ? (
+                      <div className="absolute top-0 right-0 w-8 h-8 overflow-hidden pointer-events-none z-10">
+                        <div className="absolute transform rotate-45 bg-rose-600 text-white font-black text-[6.5px] py-[1.5px] right-[-12px] top-[4px] w-[40px] text-center shadow-xs uppercase tracking-tight">
+                          SOLD
+                        </div>
                       </div>
-                    </div>
-                  ) : pricingInfo?.tierId === 'regular' ? (
-                    <div className="absolute top-0 right-0 w-8 h-8 overflow-hidden pointer-events-none z-10">
-                      <div className="absolute transform rotate-45 bg-emerald-500 text-white font-black text-[6.5px] py-[1.5px] right-[-12px] top-[4px] w-[40px] text-center shadow-xs uppercase tracking-tight">
-                        OPEN
+                    ) : (
+                      <div className="absolute top-0 right-0 w-8 h-8 overflow-hidden pointer-events-none z-10">
+                        <div className="absolute transform rotate-45 bg-rose-600 text-white font-black text-[6.5px] py-[1.5px] right-[-12px] top-[4px] w-[40px] text-center shadow-xs uppercase tracking-tight animate-pulse">
+                          FLASH
+                        </div>
                       </div>
-                    </div>
-                  ) : null}
-                  <span className="text-[10px] text-slate-600 uppercase block font-bold">
-                    Regular
-                  </span>
-                  <span className="text-[9px] text-slate-400 block font-medium">22 Okt–08 Nov</span>
-                  <span
-                    className={`text-sm font-bold block ${isRegularSoldOut ? 'line-through text-slate-400' : 'text-slate-700'
+                    )}
+                    <span className="text-[10px] text-rose-600 uppercase block font-black flex items-center justify-center gap-0.5">
+                      <span className="material-symbols-outlined text-[11px]">bolt</span>
+                      Flash Sale
+                    </span>
+                    <span className="text-[9px] text-rose-600/90 block font-semibold">
+                      {pricingInfo?.tiersConfig?.flashsale?.dateDisplay || '07 Nov (17:00-17:30)'}
+                    </span>
+                    <span
+                      className={`text-sm font-bold block ${
+                        isFlashSaleSoldOut ? 'line-through text-slate-400' : 'text-rose-600 font-mono'
+                      }`}
+                    >
+                      {flashDisplay}
+                    </span>
+                    <span className="text-[8px] block">
+                      {isFlashSaleSoldOut ? (
+                        <span className="text-rose-600 bg-rose-100 px-1 py-0.5 rounded font-bold">Sold Out</span>
+                      ) : (
+                        <span className="text-rose-700 font-extrabold animate-pulse">
+                          Sisa {pricingInfo.quotaRemaining ?? 10} Slot
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                ) : (
+                  /* Regular Column (Displayed when Flash Sale is NOT active) */
+                  <div
+                    className={`relative overflow-hidden px-1 space-y-0.5 rounded-lg transition-colors ${isRegularSoldOut
+                      ? 'bg-slate-50/60 py-1'
+                      : pricingInfo?.tierId === 'regular'
+                        ? 'bg-slate-100/90 py-1 ring-1 ring-slate-400/80'
+                        : ''
                       }`}
                   >
-                    {regularDisplay}
-                  </span>
-                  <span className="text-[8px] text-slate-400 block">
                     {isRegularSoldOut ? (
-                      <span className="text-rose-600 bg-rose-100 px-1 py-0.5 rounded font-bold">Sold Out</span>
+                      <div className="absolute top-0 right-0 w-8 h-8 overflow-hidden pointer-events-none z-10">
+                        <div className="absolute transform rotate-45 bg-rose-600 text-white font-black text-[6.5px] py-[1.5px] right-[-12px] top-[4px] w-[40px] text-center shadow-xs uppercase tracking-tight">
+                          SOLD
+                        </div>
+                      </div>
                     ) : pricingInfo?.tierId === 'regular' ? (
-                      <span className="text-slate-800 font-bold">Sedang Aktif</span>
-                    ) : (
-                      'Penutupan'
-                    )}
+                      <div className="absolute top-0 right-0 w-8 h-8 overflow-hidden pointer-events-none z-10">
+                        <div className="absolute transform rotate-45 bg-emerald-500 text-white font-black text-[6.5px] py-[1.5px] right-[-12px] top-[4px] w-[40px] text-center shadow-xs uppercase tracking-tight">
+                          OPEN
+                        </div>
+                      </div>
+                    ) : null}
+                    <span className="text-[10px] text-slate-600 uppercase block font-bold">
+                      Regular
+                    </span>
+                    <span className="text-[9px] text-slate-400 block font-medium">22 Okt–08 Nov</span>
+                    <span
+                      className={`text-sm font-bold block ${isRegularSoldOut ? 'line-through text-slate-400' : 'text-slate-700'
+                        }`}
+                    >
+                      {regularDisplay}
+                    </span>
+                    <span className="text-[8px] text-slate-400 block">
+                      {isRegularSoldOut ? (
+                        <span className="text-rose-600 bg-rose-100 px-1 py-0.5 rounded font-bold">Sold Out</span>
+                      ) : pricingInfo?.tierId === 'regular' ? (
+                        <span className="text-slate-800 font-bold">Sedang Aktif</span>
+                      ) : (
+                        'Penutupan'
+                      )}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Flash Sale Banner if Active */}
+              {isFlashActive && !isFlashSaleSoldOut && (
+                <div className="mt-2 p-2 rounded-lg bg-gradient-to-r from-rose-500/10 via-amber-500/10 to-rose-500/10 border border-rose-300 text-center animate-pulse">
+                  <div className="flex items-center justify-center gap-1 text-[11px] font-black text-rose-600 uppercase tracking-wider">
+                    <span className="material-symbols-outlined text-[14px]">bolt</span>
+                    <span>Flash Sale Aktif! (Reguler Ditangguhkan)</span>
+                  </div>
+                  <div className="text-xs font-bold text-slate-900 mt-0.5">
+                    Hanya Rp {pricingInfo.display} &bull; Kuota Terbatas {pricingInfo.quotaRemaining ?? 10} Slot
+                  </div>
+                </div>
+              )}
+
+              {/* Flash Sale Teaser when Scheduled & Not Yet Active */}
+              {catKey !== '3k' && !isCategorySoldOut && !isFlashActive && (
+                <div className="mt-2 px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-rose-500/10 border border-orange-200/80 flex items-center justify-between text-[10px]">
+                  <span className="font-bold text-orange-950 flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[13px] text-orange-600">bolt</span>
+                    <span>Flash Sale: {pricingInfo?.tiersConfig?.flashsale?.dateDisplay || '07 Nov (17:00-17:30 WIB)'}</span>
+                  </span>
+                  <span className="font-extrabold text-orange-600 font-mono">
+                    Rp {flashDisplay}
                   </span>
                 </div>
-              </div>
+              )}
             </div>
           </div>
 
@@ -332,11 +419,17 @@ export default function TrailrunCardItem({
               </span>
             ) : (
               <Link
-                href={`/trailrun/daftar?dist=${item.id}`}
-                className="flex-1 bg-[#C9A227] hover:bg-[#b08d20] text-[#0d1c32] font-bold py-3.5 px-3 rounded-xl transition-all transform active:scale-95 shadow-md hover:shadow-lg flex items-center justify-center gap-1.5 text-xs uppercase tracking-wider text-center cursor-pointer"
+                href={`/trailrun/daftar/individu?dist=${item.id}`}
+                className={`flex-1 font-bold py-3.5 px-3 rounded-xl transition-all transform active:scale-95 shadow-md flex items-center justify-center gap-1.5 text-xs uppercase tracking-wider text-center cursor-pointer ${
+                  pricingInfo?.tierId === 'flashsale'
+                    ? 'bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white animate-pulse'
+                    : 'bg-[#C9A227] hover:bg-[#b08d1f] text-slate-950'
+                }`}
               >
-                <span>Daftar</span>
-                <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                <span>{pricingInfo?.tierId === 'flashsale' ? 'Flash Sale' : 'Daftar Sekarang'}</span>
+                <span className="material-symbols-outlined text-sm">
+                  {pricingInfo?.tierId === 'flashsale' ? 'bolt' : 'arrow_forward'}
+                </span>
               </Link>
             )}
           </div>

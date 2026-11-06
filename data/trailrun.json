@@ -10,10 +10,15 @@
       "cutOffTime": "3 Jam",
       "waterStations": "1 Pos WS",
       "bannerImage": "/assets/trailrun/3k.png",
+      "isSoldOut": true,
+      "soldOut": true,
+      "status": "sold_out",
+      "statusNote": "Pendaftaran Kategori 3K Resmi Ditutup",
       "prices": {
         "early": "250k",
         "presale": "280k",
-        "regular": "340k"
+        "regular": "340k",
+        "flashsale": "300k"
       },
       "description": "Kategori ramah pemula dan keluarga yang menyuguhkan pemandangan asri pedesaan Trowulan serta melintasi situs megah Candi Bajang Ratu.",
       "facilities": [
@@ -52,7 +57,8 @@
       "prices": {
         "early": "240k",
         "presale": "270k",
-        "regular": "330k"
+        "regular": "330k",
+        "flashsale": "300k"
       },
       "description": "Kategori tantangan sejati dengan kombinasi jalan setapak bebatuan candi, perbukitan hijau, dan rute single track yang menantang stamina.",
       "facilities": [
@@ -92,7 +98,8 @@
       "prices": {
         "early": "290k",
         "presale": "320k",
-        "regular": "380k"
+        "regular": "380k",
+        "flashsale": "350k"
       },
       "description": "Jalur lintas alam puncak tertinggi melintasi cagar purbakala Majapahit, single track hutan pinus berkabut, dan jalur terjal Pawitra.",
       "facilities": [

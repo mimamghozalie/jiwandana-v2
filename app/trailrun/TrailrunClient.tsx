@@ -11,6 +11,7 @@ import TrailrunCardItem from '@/components/trailrun/TrailrunCardItem';
 import TrailrunFacilityModal from '@/components/trailrun/TrailrunFacilityModal';
 import TrailrunRouteSection from '@/components/trailrun/TrailrunRouteSection';
 import TrailrunSponsors from '@/components/trailrun/TrailrunSponsors';
+import TrailrunPricingTimeline from '@/components/trailrun/TrailrunPricingTimeline';
 
 export default function TrailrunClient() {
   const [selectedCategory, setSelectedCategory] = useState<TrailrunCard | null>(null);

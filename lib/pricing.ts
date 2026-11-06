@@ -1,6 +1,6 @@
 import pricingConfig from '@/data/trailrun-pricing.json';
 
-export type PricingTierId = 'early' | 'presale' | 'regular';
+export type PricingTierId = 'early' | 'presale' | 'regular' | 'flashsale';
 
 export interface TierInfo {
   id: PricingTierId;
@@ -32,6 +32,7 @@ export interface ActiveTierResult {
   isEarlyBirdSoldOut: boolean;
   isPresaleSoldOut: boolean;
   isRegularSoldOut: boolean;
+  isFlashSaleSoldOut: boolean;
   isCategorySoldOut: boolean;
   isCurrentTierSoldOut: boolean;
   isSoldOut: boolean;
@@ -40,8 +41,9 @@ export interface ActiveTierResult {
     early: CategoryPrice;
     presale: CategoryPrice;
     regular: CategoryPrice;
+    flashsale?: CategoryPrice;
   };
-  tiersConfig: typeof pricingConfig.tiers;
+  tiersConfig: any;
 }
 
 export type ActivePricingResult = ActiveTierResult;
@@ -59,16 +61,53 @@ export function normalizeCategoryKey(category: string): '3k' | '7k' | '12k' {
 /**
  * Evaluates the active pricing tier for a category based on:
  * 1. Current Date (session start & end date)
- * 2. Quota count (specifically for Early Bird limit of 50 per category)
+ * 2. Flash Sale period & quota (10 slot / kategori)
+ * 3. 3K closure status
  */
 export function getActivePricingTier(
   categoryInput: string,
   registeredCount: number = 0,
-  currentDate: Date = new Date()
+  currentDate: Date = new Date(),
+  flashSaleCount: number = 0,
+  customDbConfig?: { tiers?: any[]; categoryPricing?: any[] }
 ): ActiveTierResult {
   const catKey = normalizeCategoryKey(categoryInput);
-  const catData = pricingConfig.categories[catKey];
-  const { tiers } = pricingConfig;
+
+  // If custom DB config is passed, construct dynamically or merge with JSON fallback
+  let tiers: Record<string, any> = { ...pricingConfig.tiers };
+  let catData: any = { ...pricingConfig.categories[catKey] };
+
+  if (customDbConfig?.tiers && customDbConfig.tiers.length > 0) {
+    customDbConfig.tiers.forEach((t: any) => {
+      tiers[t.id] = {
+        id: t.id,
+        name: t.name,
+        badge: t.badge || '',
+        dateDisplay: t.date_display || (pricingConfig.tiers as any)[t.id]?.dateDisplay || '',
+        startDate: t.start_date,
+        endDate: t.end_date,
+        quotaPerCategory: t.quota_limit ?? (pricingConfig.tiers as any)[t.id]?.quotaPerCategory ?? 10,
+        description: t.description || '',
+        isActive: t.is_active ?? true,
+      };
+    });
+  }
+
+  if (customDbConfig?.categoryPricing && customDbConfig.categoryPricing.length > 0) {
+    const cpForCat = customDbConfig.categoryPricing.filter((cp: any) => cp.category_key === catKey);
+    if (!catData.prices) catData.prices = {};
+    cpForCat.forEach((cp: any) => {
+      catData.prices[cp.tier_id] = {
+        amount: Number(cp.amount),
+        display: cp.display || formatAmountToDisplay(Number(cp.amount)),
+        isSoldOut: Boolean(cp.is_sold_out),
+        quotaLimit: cp.quota_limit,
+      };
+      if (cp.category_closed) {
+        catData.isSoldOut = true;
+      }
+    });
+  }
 
   const now = currentDate.getTime();
   const earlyStart = new Date(tiers.early.startDate).getTime();
@@ -76,59 +115,81 @@ export function getActivePricingTier(
   const presaleEnd = new Date(tiers.presale.endDate).getTime();
   const regularEnd = new Date(tiers.regular.endDate).getTime();
 
-  const isEarlyConfigSoldOut = Boolean(
-    (tiers.early as any).isSoldOut ||
-    (tiers.early as any).soldOut ||
-    (catData as any)?.prices?.early?.isSoldOut ||
-    (catData as any)?.prices?.early?.soldOut
+  // Flash Sale Dates & Quota
+  const flashTier = tiers.flashsale;
+  const flashStart = flashTier ? new Date(flashTier.startDate).getTime() : 0;
+  const flashEnd = flashTier ? new Date(flashTier.endDate).getTime() : 0;
+  const isFlashDateActive = Boolean(
+    flashTier &&
+    (flashTier.isActive ?? true) &&
+    now >= flashStart &&
+    now <= flashEnd
   );
-  const isPresaleConfigSoldOut = Boolean(
-    (tiers.presale as any).isSoldOut ||
-    (tiers.presale as any).soldOut ||
-    (catData as any)?.prices?.presale?.isSoldOut ||
-    (catData as any)?.prices?.presale?.soldOut
-  );
-  const isRegularConfigSoldOut = Boolean(
-    (tiers.regular as any).isSoldOut ||
-    (tiers.regular as any).soldOut ||
-    (catData as any)?.prices?.regular?.isSoldOut ||
-    (catData as any)?.prices?.regular?.soldOut
-  );
+  const flashQuota = catData.prices?.flashsale?.quotaLimit ?? flashTier?.quotaPerCategory ?? 10;
+  const isFlashQuotaFull = flashSaleCount >= flashQuota;
+  const isFlashSaleSoldOut = (flashEnd > 0 && now > flashEnd) || isFlashQuotaFull || Boolean(catData.prices?.flashsale?.isSoldOut);
+
+  // 1. Kategori 3K Ditutup Total
   const isCategoryConfigSoldOut = Boolean(
-    (catData as any).isSoldOut ||
-    (catData as any).soldOut
+    catKey === '3k' ||
+    catData.isSoldOut ||
+    catData.soldOut ||
+    catData.category_closed
   );
 
   const earlyQuota = tiers.early.quotaPerCategory || 50;
   const isEarlyQuotaFull = registeredCount >= earlyQuota;
-  const isEarlyDateActive = now >= earlyStart && now <= earlyEnd;
   const isEarlyDatePassed = now > earlyEnd;
 
   const presaleQuota = tiers.presale.quotaPerCategory || 150;
   const isPresaleQuotaFull = registeredCount >= earlyQuota + presaleQuota;
-  const isPresaleDatePassed = now > presaleEnd;
+
+  const isEarlyConfigSoldOut = Boolean(
+    tiers.early.isSoldOut ||
+    catData?.prices?.early?.isSoldOut
+  );
+  const isPresaleConfigSoldOut = Boolean(
+    tiers.presale.isSoldOut ||
+    catData?.prices?.presale?.isSoldOut
+  );
+  const isRegularConfigSoldOut = Boolean(
+    tiers.regular.isSoldOut ||
+    catData?.prices?.regular?.isSoldOut
+  );
 
   let activeTierId: PricingTierId = 'regular';
   let isEarlyBirdSoldOut = isEarlyQuotaFull || isEarlyDatePassed || isEarlyConfigSoldOut;
-  let isPresaleSoldOut = isPresaleQuotaFull || isPresaleDatePassed || isPresaleConfigSoldOut;
-  let isRegularSoldOut = isRegularConfigSoldOut || now > regularEnd;
+  let isPresaleSoldOut = isPresaleQuotaFull || (now > presaleEnd) || isPresaleConfigSoldOut;
+  let isRegularSoldOut = isRegularConfigSoldOut || (now > regularEnd);
   let statusNote = '';
 
-  // 1. Check if eligible for Early Bird
-  if (!isEarlyDatePassed && !isEarlyQuotaFull && !isEarlyConfigSoldOut) {
+  // EVALUATION PRIORITY:
+  // Jika 3K ditutup
+  if (isCategoryConfigSoldOut) {
+    activeTierId = 'regular';
+    statusNote = 'Pendaftaran Kategori 3K Hallo Pawitra Resmi Ditutup (Sold Out).';
+  }
+  // Cek apakah masuk Sesi Flash Sale (7 Nov, 17:00 - 17:30 WIB & kuota < 10)
+  else if (isFlashDateActive && !isFlashQuotaFull && !catData.prices?.flashsale?.isSoldOut) {
+    activeTierId = 'flashsale';
+    const remaining = Math.max(0, flashQuota - flashSaleCount);
+    statusNote = `Sesi Flash Sale aktif hingga 17:30 WIB! Tersisa ${remaining} dari ${flashQuota} slot.`;
+  }
+  // Early Bird
+  else if (!isEarlyDatePassed && !isEarlyQuotaFull && !isEarlyConfigSoldOut) {
     activeTierId = 'early';
     const remaining = Math.max(0, earlyQuota - registeredCount);
     statusNote = `Sesi Early Bird aktif (Tersisa ${remaining} dari ${earlyQuota} kuota)`;
-  } 
-  // 2. Early Bird Sold Out or Date Expired -> Presale
+  }
+  // Presale
   else if (now <= presaleEnd && !isPresaleQuotaFull && !isPresaleConfigSoldOut) {
     activeTierId = 'presale';
     isEarlyBirdSoldOut = true;
     statusNote = isEarlyQuotaFull || isEarlyConfigSoldOut
       ? 'Kuota Early Bird telah penuh! Masuk sesi Presale.'
       : 'Sesi Early Bird telah berakhir. Sesi Presale aktif.';
-  } 
-  // 3. Past Presale or Presale Sold Out -> Regular
+  }
+  // Regular
   else {
     activeTierId = 'regular';
     isEarlyBirdSoldOut = true;
@@ -140,20 +201,21 @@ export function getActivePricingTier(
 
   const isCurrentTierSoldOut =
     isCategoryConfigSoldOut ||
+    (activeTierId === 'flashsale' && isFlashSaleSoldOut) ||
     (activeTierId === 'early' && isEarlyBirdSoldOut) ||
     (activeTierId === 'presale' && isPresaleSoldOut) ||
     (activeTierId === 'regular' && isRegularSoldOut);
 
-  const activeTierConfig = tiers[activeTierId];
-  const rawActivePrice = catData.prices[activeTierId] as { amount: number; display?: string };
+  const activeTierConfig = tiers[activeTierId] || tiers.regular;
+  const rawActivePrice = (catData.prices?.[activeTierId] || catData.prices?.regular) as { amount: number; display?: string };
   const amount = rawActivePrice?.amount ?? 0;
   const display = rawActivePrice?.display || formatAmountToDisplay(amount);
 
   const getTierPriceObj = (tier: PricingTierId): CategoryPrice => {
-    const p = catData.prices[tier] as { amount: number; display?: string };
+    const p = (catData.prices?.[tier] || catData.prices?.regular) as { amount: number; display?: string };
     return {
-      amount: p.amount,
-      display: p.display || formatAmountToDisplay(p.amount),
+      amount: p?.amount ?? 0,
+      display: p?.display || formatAmountToDisplay(p?.amount ?? 0),
     };
   };
 
@@ -166,14 +228,21 @@ export function getActivePricingTier(
     amount,
     display,
     badge: activeTierConfig.badge,
-    quotaLimit: activeTierConfig.quotaPerCategory,
+    quotaLimit: activeTierId === 'flashsale'
+      ? flashQuota
+      : activeTierId === 'early'
+      ? earlyQuota
+      : activeTierConfig.quotaPerCategory,
     quotaRemaining:
-      activeTierId === 'early' && !isEarlyBirdSoldOut
+      activeTierId === 'flashsale' && !isFlashQuotaFull
+        ? Math.max(0, flashQuota - flashSaleCount)
+        : activeTierId === 'early' && !isEarlyBirdSoldOut
         ? Math.max(0, earlyQuota - registeredCount)
         : null,
     isEarlyBirdSoldOut,
     isPresaleSoldOut,
     isRegularSoldOut,
+    isFlashSaleSoldOut,
     isCategorySoldOut: isCategoryConfigSoldOut,
     isCurrentTierSoldOut,
     isSoldOut: isCurrentTierSoldOut || isCategoryConfigSoldOut,
@@ -182,6 +251,7 @@ export function getActivePricingTier(
       early: getTierPriceObj('early'),
       presale: getTierPriceObj('presale'),
       regular: getTierPriceObj('regular'),
+      flashsale: getTierPriceObj('flashsale'),
     },
     tiersConfig: tiers,
   };
@@ -189,104 +259,53 @@ export function getActivePricingTier(
 
 /**
  * Converts a numeric price amount to a short display string (e.g. 240000 -> "240k", 320000 -> "320k", 1500000 -> "1.5M").
- * Menghilangkan keharusan input ganda antara "amount" dan "display".
  */
 export function formatAmountToDisplay(amount: number): string {
   if (!amount || isNaN(amount)) return '0';
   let val = amount;
-  // Fallback pengaman jika tidak sengaja terinput angka dalam skala ratusan/ribuan (misal 2400):
   if (val >= 100 && val < 1000) {
     val = val * 1000;
   } else if (val >= 1000 && val < 10000 && val % 100 === 0) {
     val = val * 100;
   }
-
   if (val >= 1000000) {
     const m = val / 1000000;
-    return `${Number.isInteger(m) ? m : m.toFixed(1).replace(/\.0$/, '')}M`;
+    return `${m % 1 === 0 ? m : m.toFixed(1)}M`;
   }
   if (val >= 1000) {
     const k = val / 1000;
-    return `${Number.isInteger(k) ? k : k.toFixed(1).replace(/\.0$/, '')}k`;
+    return `${k % 1 === 0 ? k : k.toFixed(0)}k`;
   }
-  return String(val);
+  return val.toString();
 }
 
 /**
- * Alias fungsi untuk konversi amount ke display (contoh: 240000 -> "240k")
+ * Helper to get category prices from config for static/fallback renders
  */
-export const convertAmountToDisplay = formatAmountToDisplay;
-
-/**
- * Mengambil harga awal (Mulai / Starting price) untuk kategori dari data/trailrun-pricing.json
- * Mengonversi amount (misal 240000) ke format ringkas (misal "240k").
- */
-export function getCategoryStartingPrice(categoryInput: string, pricingInfo?: any): string {
-  // Jika ada data sesi aktif dari pricingInfoMap
-  if (pricingInfo?.display) {
-    return pricingInfo.display;
-  }
-  if (pricingInfo?.amount) {
-    return formatAmountToDisplay(pricingInfo.amount);
-  }
-
+export function getCategoryPricesFromConfig(categoryInput: string) {
   const catKey = normalizeCategoryKey(categoryInput);
   const catData = pricingConfig.categories[catKey];
-  if (!catData?.prices) return '240k';
-
-  // Mengambil harga early bird sebagai acuan harga mulai
-  const earlyAmount = (catData.prices.early as any)?.amount;
-  if (earlyAmount) {
-    return formatAmountToDisplay(earlyAmount);
-  }
-
-  return '240k';
-}
-
-/**
- * Mengambil seluruh tier prices untuk kategori langsung dari data/trailrun-pricing.json
- * Output: { early: "240k", presale: "270k", regular: "330k" }
- */
-export function getCategoryPricesFromConfig(categoryInput: string): {
-  early: string;
-  presale: string;
-  regular: string;
-} {
-  const catKey = normalizeCategoryKey(categoryInput);
-  const catData = pricingConfig.categories[catKey];
-  if (!catData?.prices) {
-    return { early: '240k', presale: '270k', regular: '330k' };
-  }
-
+  const p = catData.prices as Record<string, { amount: number; display?: string }>;
   return {
-    early: formatAmountToDisplay((catData.prices.early as any)?.amount ?? 0),
-    presale: formatAmountToDisplay((catData.prices.presale as any)?.amount ?? 0),
-    regular: formatAmountToDisplay((catData.prices.regular as any)?.amount ?? 0),
+    early: p.early?.display || formatAmountToDisplay(p.early.amount),
+    presale: p.presale?.display || formatAmountToDisplay(p.presale.amount),
+    regular: p.regular?.display || formatAmountToDisplay(p.regular.amount),
+    flashsale: p.flashsale?.display || formatAmountToDisplay(p.flashsale?.amount || 0),
   };
 }
 
 /**
- * Formats a numeric price amount into standard Rupiah currency (e.g. 320000 -> "Rp 320.000")
+ * Returns formatted starting/active price for a category in category selection steps
  */
-export function formatRupiah(amount: number): string {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
-
-/**
- * Returns CategoryPrice with guaranteed display (auto-computed from amount if display is missing)
- */
-export function getCategoryTierPrice(categoryInput: string, tierId: PricingTierId): CategoryPrice {
-  const catKey = normalizeCategoryKey(categoryInput);
-  const catData = pricingConfig.categories[catKey];
-  const priceObj = catData?.prices?.[tierId] as { amount: number; display?: string } | undefined;
-  const amount = priceObj?.amount ?? 0;
-  const display = priceObj?.display || formatAmountToDisplay(amount);
-  return { amount, display };
+export function getCategoryStartingPrice(
+  categoryId: string,
+  pricingResult?: ActiveTierResult | null
+): string {
+  if (pricingResult?.display) {
+    return `Rp ${pricingResult.display}`;
+  }
+  const configPrices = getCategoryPricesFromConfig(categoryId);
+  return `Rp ${configPrices.early}`;
 }
 
 /**
@@ -334,4 +353,3 @@ export function getJerseyExtraFee(size?: string, customText?: string): number {
 
   return 0;
 }
-

@@ -28,26 +28,66 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 1. Count paid registrations for this category to enforce early quota (only paid counts!)
-    let paidCount = 0;
+    // 0. Block registration for closed categories (Khusus 3K)
+    if (kategori.toLowerCase().includes('3k') || category.isSoldOut) {
+      return NextResponse.json(
+        { error: 'Pendaftaran untuk kategori 3K Hallo Pawitra telah resmi ditutup (Sold Out).' },
+        { status: 400 }
+      );
+    }
+
+    // 1. Fetch Supabase pricing tiers & category pricing with fallback
+    let dbTiers: any[] = [];
+    let dbCategoryPricing: any[] = [];
     try {
-      const { count } = await supabase
-        .from('trailrun_registrations')
-        .select('*', { count: 'exact', head: true })
-        .ilike('kategori', `%${kategori}%`)
-        .eq('status', 'paid');
-      paidCount = count || 0;
+      const [tiersRes, pricingRes] = await Promise.all([
+        supabase.from('trailrun_pricing_tiers').select('*').order('created_at'),
+        supabase.from('trailrun_category_pricing').select('*'),
+      ]);
+      if (!tiersRes.error && tiersRes.data) dbTiers = tiersRes.data;
+      if (!pricingRes.error && pricingRes.data) dbCategoryPricing = pricingRes.data;
+    } catch (_) {}
+
+    const flashTier = dbTiers.find((t) => t.id === 'flashsale');
+    const flashStart = flashTier?.start_date || '2026-11-07T17:00:00+07:00';
+    const flashEnd = flashTier?.end_date || '2026-11-07T17:30:00+07:00';
+
+    // 2. Count paid registrations for this category & flash sale registrations
+    let paidCount = 0;
+    let flashCount = 0;
+    try {
+      const [regRes, flashRes] = await Promise.all([
+        supabase
+          .from('trailrun_registrations')
+          .select('*', { count: 'exact', head: true })
+          .ilike('kategori', `%${kategori}%`)
+          .eq('status', 'paid'),
+        supabase
+          .from('trailrun_registrations')
+          .select('*', { count: 'exact', head: true })
+          .ilike('kategori', `%${kategori}%`)
+          .eq('status', 'paid')
+          .gte('created_at', flashStart)
+          .lte('created_at', flashEnd),
+      ]);
+      paidCount = regRes.count || 0;
+      flashCount = flashRes.count || 0;
     } catch (countErr) {
       console.warn('Could not count registrations, defaulting to 0:', countErr);
     }
 
-    // 2. Evaluate active pricing tier (Early Bird limit 50, Presale, Regular)
-    const tierEvaluation = getActivePricingTier(kategori, paidCount);
+    // 3. Evaluate active pricing tier (Flash Sale, Early Bird, Presale, Regular)
+    const dbConfig = dbTiers.length > 0 ? { tiers: dbTiers, categoryPricing: dbCategoryPricing } : undefined;
+    const tierEvaluation = getActivePricingTier(kategori, paidCount, new Date(), flashCount, dbConfig);
     let baseAmount = tierEvaluation.amount;
 
-    // Sinkronisasi dengan sesi aktif yang dilihat pendaftar (contoh: Presale 320.000)
+    // Sinkronisasi dengan sesi aktif yang dilihat pendaftar jika bukan Flash Sale
     if (expected_amount && typeof expected_amount === 'number' && expected_amount > 0) {
-      baseAmount = Math.max(baseAmount, expected_amount);
+      if (tierEvaluation.tierId === 'flashsale') {
+        baseAmount = tierEvaluation.amount;
+      } else {
+        baseAmount = Math.max(baseAmount, expected_amount);
+      }
     }
 
     if (baseAmount <= 0) {

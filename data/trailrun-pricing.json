@@ -30,21 +30,41 @@
       "endDate": "2026-11-08T23:59:59+07:00",
       "quotaPerCategory": null,
       "description": "Periode pendaftaran reguler hingga penutupan registrasi"
+    },
+    "flashsale": {
+      "id": "flashsale",
+      "name": "Flash Sale",
+      "badge": "Promo 10 Slot (30 Menit)",
+      "dateDisplay": "07 November 2026 (17:00 - 17:30 WIB)",
+      "startDate": "2026-11-07T17:00:00+07:00",
+      "endDate": "2026-11-07T17:30:00+07:00",
+      "quotaPerCategory": 10,
+      "description": "Flash Sale Kilat 30 Menit Terbatas 10 Slot"
     }
   },
   "categories": {
     "3k": {
       "categoryCode": "3K",
       "categoryName": "3K Hallo Pawitra",
+      "isSoldOut": true,
+      "soldOut": true,
+      "statusNote": "Pendaftaran Kategori 3K Resmi Ditutup",
       "prices": {
         "early": {
-          "amount": 250000
+          "amount": 250000,
+          "isSoldOut": true
         },
         "presale": {
-          "amount": 280000
+          "amount": 280000,
+          "isSoldOut": true
         },
         "regular": {
-          "amount": 340000
+          "amount": 340000,
+          "isSoldOut": true
+        },
+        "flashsale": {
+          "amount": 300000,
+          "isSoldOut": true
         }
       }
     },
@@ -60,6 +80,10 @@
         },
         "regular": {
           "amount": 330000
+        },
+        "flashsale": {
+          "amount": 300000,
+          "display": "300k"
         }
       }
     },
@@ -75,6 +99,10 @@
         },
         "regular": {
           "amount": 380000
+        },
+        "flashsale": {
+          "amount": 350000,
+          "display": "350k"
         }
       }
     }

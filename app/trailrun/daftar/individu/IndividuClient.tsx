@@ -76,7 +76,7 @@ export default function IndividuClient() {
     golongan_darah: '',
     riwayat_medis: '',
     kontak_darurat: '',
-    kategori: distParam,
+    kategori: distParam.toLowerCase().includes('3k') ? '' : distParam,
   });
 
   const selectedCategory = categories.find((c) => c.id === formData.kategori);
@@ -224,6 +224,10 @@ export default function IndividuClient() {
   }, [currentStep, formData.jenis_kelamin]);
 
   const handleSelectCategory = (catId: string) => {
+    if (catId.toLowerCase().includes('3k')) {
+      setErrorMsg('Pendaftaran untuk kategori 3K telah ditutup (Sold Out). Silakan pilih kategori 7K atau 12K.');
+      return;
+    }
     setFormData((prev) => ({
       ...prev,
       kategori: catId,
@@ -240,6 +244,13 @@ export default function IndividuClient() {
     switch (step) {
       case 1:
         if (!formData.kategori) return fail('Kategori lomba wajib dipilih.');
+        if (formData.kategori.toLowerCase().includes('3k')) {
+          return fail('Pendaftaran untuk kategori 3K telah ditutup (Sold Out). Silakan pilih kategori 7K atau 12K.');
+        }
+        const selectedCatInfo = pricingInfoMap?.[formData.kategori.toLowerCase()] || pricingInfoMap?.[formData.kategori];
+        if (selectedCatInfo?.isSoldOut) {
+          return fail('Kategori yang dipilih sudah habis terjual (Sold Out). Silakan pilih kategori lainnya.');
+        }
         return true;
       case 2:
         if (!formData.nama.trim()) return fail('Nama lengkap wajib diisi.');
