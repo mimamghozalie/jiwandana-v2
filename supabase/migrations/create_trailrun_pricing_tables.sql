@@ -11,9 +11,14 @@ CREATE TABLE IF NOT EXISTS public.trailrun_pricing_tiers (
     quota_limit INT DEFAULT NULL,
     is_active BOOLEAN DEFAULT true,
     description TEXT,
+    access_password VARCHAR(100) DEFAULT NULL, -- Password dinamis untuk akses flash sale
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Tambah kolom access_password jika tabel sudah terbentuk sebelumnya
+ALTER TABLE public.trailrun_pricing_tiers 
+ADD COLUMN IF NOT EXISTS access_password VARCHAR(100) DEFAULT NULL;
 
 -- 2. Tabel Harga per Kategori & Tier
 CREATE TABLE IF NOT EXISTS public.trailrun_category_pricing (
@@ -52,19 +57,20 @@ BEGIN
 END $$;
 
 -- 3. Data Awal (Seed Data)
-INSERT INTO public.trailrun_pricing_tiers (id, name, badge, start_date, end_date, is_active, description)
+INSERT INTO public.trailrun_pricing_tiers (id, name, badge, start_date, end_date, is_active, description, access_password)
 VALUES 
-  ('early', 'Early Bird', 'Terbatas 50 Slot', '2026-10-04T10:00:00+07:00', '2026-10-10T23:59:59+07:00', true, 'Periode Early Bird'),
-  ('presale', 'Pre-Sale', 'Harga Spesial', '2026-10-11T00:00:00+07:00', '2026-10-21T23:59:59+07:00', true, 'Periode Pre-Sale'),
-  ('regular', 'Regular', 'Harga Normal', '2026-10-22T00:00:00+07:00', '2026-11-08T23:59:59+07:00', true, 'Periode Reguler'),
-  ('flashsale', 'Flash Sale', 'Promo Terbatas 30 Menit', '2026-11-07T17:00:00+07:00', '2026-11-07T17:30:00+07:00', true, 'Flash Sale Kilat 10 Slot')
+  ('early', 'Early Bird', 'Terbatas 50 Slot', '2026-10-04T10:00:00+07:00', '2026-10-10T23:59:59+07:00', true, 'Periode Early Bird', NULL),
+  ('presale', 'Pre-Sale', 'Harga Spesial', '2026-10-11T00:00:00+07:00', '2026-10-21T23:59:59+07:00', true, 'Periode Pre-Sale', NULL),
+  ('regular', 'Regular', 'Harga Normal', '2026-10-22T00:00:00+07:00', '2026-11-08T23:59:59+07:00', true, 'Periode Reguler', NULL),
+  ('flashsale', 'Flash Sale', 'Promo Terbatas 30 Menit', '2026-11-07T17:00:00+07:00', '2026-11-07T17:30:00+07:00', true, 'Flash Sale Kilat 10 Slot', 'FLASHSALE2026')
 ON CONFLICT (id) DO UPDATE SET 
   name = EXCLUDED.name,
   badge = EXCLUDED.badge,
   start_date = EXCLUDED.start_date, 
   end_date = EXCLUDED.end_date, 
   is_active = EXCLUDED.is_active,
-  description = EXCLUDED.description;
+  description = EXCLUDED.description,
+  access_password = COALESCE(trailrun_pricing_tiers.access_password, EXCLUDED.access_password);
 
 -- Harga Sesi Flash Sale & Reguler (3K Tutup Total, 7K Flash = 300k, 12K Flash = 350k)
 INSERT INTO public.trailrun_category_pricing (category_key, tier_id, amount, display, quota_limit, category_closed)

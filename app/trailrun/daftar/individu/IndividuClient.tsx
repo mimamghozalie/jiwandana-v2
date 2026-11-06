@@ -25,6 +25,7 @@ import StepAlamatMedis from '@/components/trailrun/registration/StepAlamatMedis'
 import StepPembayaran from '@/components/trailrun/registration/StepPembayaran';
 import RegistrationSuccessModal from '@/components/trailrun/registration/RegistrationSuccessModal';
 import PaymentTimeLimitModal from '@/components/trailrun/registration/PaymentTimeLimitModal';
+import FlashSalePasswordModal from '@/components/trailrun/registration/FlashSalePasswordModal';
 
 const categories = trailrunData.categories as TrailrunCard[];
 
@@ -43,6 +44,34 @@ export default function IndividuClient() {
   const [showTimeLimitModal, setShowTimeLimitModal] = useState(false);
   const [pricingInfoMap, setPricingInfoMap] = useState<Record<string, any>>({});
   const [checkingStatus, setCheckingStatus] = useState(false);
+
+  // Flash Sale Password Confirmation Modal states (hanya in-memory, reset saat refresh)
+  const [isFlashSaleVerified, setIsFlashSaleVerified] = useState(false);
+  const [showFlashSaleModal, setShowFlashSaleModal] = useState(false);
+  const [pendingCategory, setPendingCategory] = useState<string>('');
+  const [flashSalePassword, setFlashSalePassword] = useState<string>('');
+
+  // Pastikan saat refresh, status verifikasi selalu reset sehingga wajib input password lagi
+  useEffect(() => {
+    try {
+      sessionStorage.removeItem('flashsale_verified');
+    } catch (_) {}
+  }, []);
+
+  const handleFlashSaleSuccess = () => {
+    setIsFlashSaleVerified(true);
+    setShowFlashSaleModal(false);
+    if (pendingCategory) {
+      setFormData((prev) => ({ ...prev, kategori: pendingCategory }));
+      setPendingCategory('');
+    }
+    if (errorMsg) setErrorMsg('');
+  };
+
+  const handleFlashSaleCancel = () => {
+    setShowFlashSaleModal(false);
+    setPendingCategory('');
+  };
 
   // Cek agar modal batas waktu pembayaran hanya muncul 1x dan tidak berulang saat refresh
   useEffect(() => {
@@ -78,8 +107,11 @@ export default function IndividuClient() {
       const dbTiers = tiersRes.data || [];
       const dbCategoryPricing = pricingRes.data || [];
 
-      // Waktu flash sale
+      // Waktu flash sale & password dinamis dari tabel
       const flashTier = dbTiers.find((t: any) => t.id === 'flashsale');
+      if (flashTier?.access_password || flashTier?.password) {
+        setFlashSalePassword(flashTier.access_password || flashTier.password);
+      }
       const flashStart = flashTier?.start_date || '2026-11-07T17:00:00+07:00';
       const flashEnd = flashTier?.end_date || '2026-11-07T17:30:00+07:00';
 
@@ -299,6 +331,17 @@ export default function IndividuClient() {
       setErrorMsg('Pendaftaran untuk kategori 3K telah ditutup (Sold Out). Silakan pilih kategori 7K atau 12K.');
       return;
     }
+
+    const catInfo = pricingInfoMap?.[catId.toLowerCase()] || pricingInfoMap?.[catId];
+    const isFlashSale = catInfo?.tierId === 'flashsale';
+
+    // Jika sesi Flash Sale aktif dan belum terverifikasi password, munculkan modal konfirmasi
+    if (isFlashSale && !isFlashSaleVerified) {
+      setPendingCategory(catId);
+      setShowFlashSaleModal(true);
+      return;
+    }
+
     setFormData((prev) => ({
       ...prev,
       kategori: catId,
@@ -321,6 +364,11 @@ export default function IndividuClient() {
         const selectedCatInfo = pricingInfoMap?.[formData.kategori.toLowerCase()] || pricingInfoMap?.[formData.kategori];
         if (selectedCatInfo?.isSoldOut) {
           return fail('Kategori yang dipilih sudah habis terjual (Sold Out). Silakan pilih kategori lainnya.');
+        }
+        if (selectedCatInfo?.tierId === 'flashsale' && !isFlashSaleVerified) {
+          setPendingCategory(formData.kategori);
+          setShowFlashSaleModal(true);
+          return fail('Silakan masukkan password untuk konfirmasi akses sesi Flash Sale.');
         }
         return true;
       case 2:
@@ -846,6 +894,21 @@ export default function IndividuClient() {
       <PaymentTimeLimitModal
         isOpen={showTimeLimitModal}
         onClose={handleCloseTimeLimitModal}
+      />
+
+      {/* ===== FLASH SALE DYNAMIC PASSWORD CONFIRMATION MODAL ===== */}
+      <FlashSalePasswordModal
+        isOpen={showFlashSaleModal}
+        categoryName={
+          categories.find((c) => c.id === (pendingCategory || formData.kategori))?.categoryName ||
+          (pendingCategory || formData.kategori)
+        }
+        promoPrice={
+          pricingInfoMap?.[(pendingCategory || formData.kategori)?.toLowerCase()]?.display
+        }
+        targetPassword={flashSalePassword}
+        onSuccess={handleFlashSaleSuccess}
+        onCancel={handleFlashSaleCancel}
       />
     </main>
   );
