@@ -6,6 +6,8 @@ import { useSearchParams } from 'next/navigation';
 import trailrunData from '@/data/trailrun.json';
 import { TrailrunCard } from '@/lib/types';
 import { submitTrailrunRegistration, checkBibAvailability, generateAutoBib } from '@/lib/api';
+import { supabase } from '@/lib/supabaseClient';
+import { getActivePricingTier } from '@/lib/pricing';
 import RegistrationModeTabs from '@/components/trailrun/registration/RegistrationModeTabs';
 
 import {
@@ -65,14 +67,66 @@ export default function IndividuClient() {
   const [checkingBib, setCheckingBib] = useState(false);
   const [generatingBib, setGeneratingBib] = useState(false);
 
-  useEffect(() => {
-    fetch('/api/trailrun/pricing')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data) setPricingInfoMap(data);
-      })
-      .catch((err) => console.warn('Could not fetch pricing in register page:', err));
+  // Fetch harga sesi dan kategori langsung dari Supabase
+  const loadPricingDirectFromSupabase = useCallback(async () => {
+    try {
+      const [tiersRes, pricingRes] = await Promise.all([
+        supabase.from('trailrun_pricing_tiers').select('*').order('created_at'),
+        supabase.from('trailrun_category_pricing').select('*'),
+      ]);
+
+      const dbTiers = tiersRes.data || [];
+      const dbCategoryPricing = pricingRes.data || [];
+
+      // Waktu flash sale
+      const flashTier = dbTiers.find((t: any) => t.id === 'flashsale');
+      const flashStart = flashTier?.start_date || '2026-11-07T17:00:00+07:00';
+      const flashEnd = flashTier?.end_date || '2026-11-07T17:30:00+07:00';
+
+      // Hitung jumlah pendaftar paid untuk evaluasi kuota limit
+      const [res3k, res7k, res12k, flashRes7k, flashRes12k] = await Promise.all([
+        supabase.from('trailrun_registrations').select('*', { count: 'exact', head: true }).ilike('kategori', '%3k%').eq('status', 'paid'),
+        supabase.from('trailrun_registrations').select('*', { count: 'exact', head: true }).ilike('kategori', '%7k%').eq('status', 'paid'),
+        supabase.from('trailrun_registrations').select('*', { count: 'exact', head: true }).ilike('kategori', '%12k%').eq('status', 'paid'),
+        supabase.from('trailrun_registrations').select('*', { count: 'exact', head: true }).ilike('kategori', '%7k%').eq('status', 'paid').gte('created_at', flashStart).lte('created_at', flashEnd),
+        supabase.from('trailrun_registrations').select('*', { count: 'exact', head: true }).ilike('kategori', '%12k%').eq('status', 'paid').gte('created_at', flashStart).lte('created_at', flashEnd),
+      ]);
+
+      const count3k = res3k.count || 0;
+      const count7k = res7k.count || 0;
+      const count12k = res12k.count || 0;
+      const countFlash7k = flashRes7k.count || 0;
+      const countFlash12k = flashRes12k.count || 0;
+
+      const dbConfig = dbTiers.length > 0 ? { tiers: dbTiers, categoryPricing: dbCategoryPricing } : undefined;
+
+      const tier3k = getActivePricingTier('3k', count3k, new Date(), 0, dbConfig);
+      const tier7k = getActivePricingTier('7k', count7k, new Date(), countFlash7k, dbConfig);
+      const tier12k = getActivePricingTier('12k', count12k, new Date(), countFlash12k, dbConfig);
+
+      setPricingInfoMap({
+        '3k': tier3k,
+        '7k': tier7k,
+        '12k': tier12k,
+        '3K': tier3k,
+        '7K': tier7k,
+        '12K': tier12k,
+        tiersConfig: tier7k.tiersConfig,
+      });
+    } catch (err) {
+      console.warn('Could not fetch pricing directly from Supabase, falling back to API:', err);
+      fetch(`/api/trailrun/pricing?_t=${Date.now()}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data) setPricingInfoMap(data);
+        })
+        .catch(() => {});
+    }
   }, []);
+
+  useEffect(() => {
+    loadPricingDirectFromSupabase();
+  }, [loadPricingDirectFromSupabase]);
 
   const [formData, setFormData] = useState<TrailrunFormData>({
     nama: '',
