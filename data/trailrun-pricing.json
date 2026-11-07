@@ -35,7 +35,7 @@
       "id": "flashsale",
       "name": "Flash Sale",
       "badge": "Promo 10 Slot (30 Menit)",
-      "dateDisplay": "07 November 2026 (17:00 - 17:30 WIB)",
+      "dateDisplay": "07 November 2026",
       "startDate": "2026-11-07T17:00:00+07:00",
       "endDate": "2026-11-07T17:30:00+07:00",
       "quotaPerCategory": 10,
