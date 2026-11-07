@@ -11,6 +11,7 @@ import {
   EditHasilLariModal,
   TrailrunSubNav,
   KelompokBatchTable,
+  AdminFlashSaleModal,
 } from '@/components/admin/trailrun';
 import { GroupRegistrationBatch } from '@/components/admin/trailrun/trailrunExport';
 
@@ -35,6 +36,9 @@ export default function PesertaKelompokPage() {
   // Hasil Lari edit modal
   const [editingHasilLariRow, setEditingHasilLariRow] = useState<TrailrunRow | null>(null);
   const [isSavingHasilLari, setIsSavingHasilLari] = useState(false);
+
+  // Flash Sale modal
+  const [showFlashSaleModal, setShowFlashSaleModal] = useState(false);
 
   // Pisahkan data transaksi kelompok per batch / per pendaftaran PIC
   const { batches, individuCount, totalKelompokPeserta } = useMemo(() => {
@@ -262,6 +266,7 @@ export default function PesertaKelompokPage() {
         isRefreshing={isRefreshing}
         onCleanup={handleCleanupUnpaid}
         isCleaningUp={isCleaningUp}
+        onOpenFlashSale={() => setShowFlashSaleModal(true)}
       />
 
       {/* 3. Tabel Transaksi Pendaftaran Kelompok */}
@@ -290,6 +295,13 @@ export default function PesertaKelompokPage() {
         onClose={() => setEditingHasilLariRow(null)}
         onSave={onSaveHasil}
         isSaving={isSavingHasilLari}
+      />
+
+      {/* 6. Admin Flash Sale Configuration Modal */}
+      <AdminFlashSaleModal
+        isOpen={showFlashSaleModal}
+        onClose={() => setShowFlashSaleModal(false)}
+        onSaved={fetchData}
       />
     </div>
   );

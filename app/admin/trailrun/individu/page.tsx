@@ -18,6 +18,7 @@ import {
   TrailrunDetailModal,
   EditHasilLariModal,
   TrailrunSubNav,
+  AdminFlashSaleModal,
 } from '@/components/admin/trailrun';
 
 export default function PesertaIndividuPage() {
@@ -53,6 +54,9 @@ export default function PesertaIndividuPage() {
   // Hasil Lari edit modal
   const [editingHasilLariRow, setEditingHasilLariRow] = useState<TrailrunRow | null>(null);
   const [isSavingHasilLari, setIsSavingHasilLari] = useState(false);
+
+  // Flash Sale configuration modal
+  const [showFlashSaleModal, setShowFlashSaleModal] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -326,6 +330,7 @@ export default function PesertaIndividuPage() {
         isRefreshing={isRefreshing}
         onCleanup={handleCleanupUnpaid}
         isCleaningUp={isCleaningUp}
+        onOpenFlashSale={() => setShowFlashSaleModal(true)}
       />
 
       {/* 3. Metrics Cards (Individu) */}
@@ -393,6 +398,13 @@ export default function PesertaIndividuPage() {
         onClose={() => setEditingHasilLariRow(null)}
         onSave={onSaveHasil}
         isSaving={isSavingHasilLari}
+      />
+
+      {/* 8. Admin Flash Sale Configuration Modal */}
+      <AdminFlashSaleModal
+        isOpen={showFlashSaleModal}
+        onClose={() => setShowFlashSaleModal(false)}
+        onSaved={fetchData}
       />
     </div>
   );

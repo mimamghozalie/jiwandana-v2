@@ -9,5 +9,6 @@ export { default as EditHasilLariModal } from './EditHasilLariModal';
 export { default as CommunityDiscountTable } from './CommunityDiscountTable';
 export { default as KelompokBatchTable } from './KelompokBatchTable';
 export { default as TrailrunSubNav } from './TrailrunSubNav';
+export { default as AdminFlashSaleModal } from './AdminFlashSaleModal';
 
 

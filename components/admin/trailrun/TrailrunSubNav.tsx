@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { User, Users, RefreshCw, Trash2, Printer } from 'lucide-react';
+import { User, Users, RefreshCw, Trash2, Printer, Zap } from 'lucide-react';
 
 interface TrailrunSubNavProps {
   individuCount: number;
@@ -13,6 +13,7 @@ interface TrailrunSubNavProps {
   isRefreshing?: boolean;
   onCleanup?: () => void;
   isCleaningUp?: boolean;
+  onOpenFlashSale?: () => void;
 }
 
 export default function TrailrunSubNav({
@@ -23,6 +24,7 @@ export default function TrailrunSubNav({
   isRefreshing,
   onCleanup,
   isCleaningUp,
+  onOpenFlashSale,
 }: TrailrunSubNavProps) {
   const pathname = usePathname();
   const isIndividu = pathname.includes('/trailrun/individu') || pathname === '/admin/trailrun';
@@ -34,18 +36,16 @@ export default function TrailrunSubNav({
       <div className="flex items-center gap-2 p-1 rounded-2xl bg-black/40 border border-white/10">
         <Link
           href="/admin/trailrun/individu"
-          className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
-            isIndividu
+          className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${isIndividu
               ? 'bg-[#C9A227] text-[#0d1c32] shadow-md'
               : 'text-slate-400 hover:text-white hover:bg-white/5'
-          }`}
+            }`}
         >
           <User className="w-4 h-4" />
           <span>Peserta Pribadi</span>
           <span
-            className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
-              isIndividu ? 'bg-black/20 text-[#0d1c32]' : 'bg-white/10 text-slate-300'
-            }`}
+            className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${isIndividu ? 'bg-black/20 text-[#0d1c32]' : 'bg-white/10 text-slate-300'
+              }`}
           >
             {individuCount}
           </span>
@@ -53,18 +53,16 @@ export default function TrailrunSubNav({
 
         <Link
           href="/admin/trailrun/kelompok"
-          className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
-            isKelompok
+          className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${isKelompok
               ? 'bg-sky-500 text-white shadow-md'
               : 'text-slate-400 hover:text-white hover:bg-white/5'
-          }`}
+            }`}
         >
           <Users className="w-4 h-4" />
           <span>Peserta Kelompok</span>
           <span
-            className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
-              isKelompok ? 'bg-black/20 text-white' : 'bg-white/10 text-slate-300'
-            }`}
+            className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${isKelompok ? 'bg-black/20 text-white' : 'bg-white/10 text-slate-300'
+              }`}
           >
             {kelompokBatchCount} Transaksi ({totalKelompokPeserta} Org)
           </span>
@@ -99,14 +97,17 @@ export default function TrailrunSubNav({
           </button>
         )}
 
-        <Link
-          href="/trailrun/bib-generator"
-          className="px-4 py-2.5 bg-[#C9A227] hover:bg-[#b08d20] text-[#0d1c32] rounded-xl text-xs font-bold flex items-center gap-2 shadow-md transition-all cursor-pointer"
-          title="Buka Halaman Generator & Download Kartu BIB"
-        >
-          <Printer className="w-4 h-4 text-[#0d1c32]" />
-          <span>Generator BIB</span>
-        </Link>
+        {onOpenFlashSale && (
+          <button
+            type="button"
+            onClick={onOpenFlashSale}
+            className="px-3.5 py-2.5 bg-gradient-to-r from-orange-500/15 via-amber-500/15 to-rose-500/15 hover:from-orange-500/25 hover:to-rose-500/25 text-orange-300 rounded-xl border border-orange-500/30 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95"
+            title="Kelola status, jadwal waktu, kuota slot, dan password Flash Sale"
+          >
+            <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+            <span>Kelola Flash Sale</span>
+          </button>
+        )}
       </div>
     </div>
   );
