@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { User, Users, RefreshCw, Trash2, Printer, Zap } from 'lucide-react';
+import { User, Users, RefreshCw, Trash2, Printer, Zap, BarChart3 } from 'lucide-react';
 
 interface TrailrunSubNavProps {
   individuCount: number;
@@ -29,11 +29,12 @@ export default function TrailrunSubNav({
   const pathname = usePathname();
   const isIndividu = pathname.includes('/trailrun/individu') || pathname === '/admin/trailrun';
   const isKelompok = pathname.includes('/trailrun/kelompok');
+  const isStats = pathname.includes('/trailrun/stats');
 
   return (
     <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
-      {/* Tab Switcher: Individu vs Kelompok */}
-      <div className="flex items-center gap-2 p-1 rounded-2xl bg-black/40 border border-white/10">
+      {/* Tab Switcher: Individu vs Kelompok vs Statistik Fee Tiket */}
+      <div className="flex items-center gap-2 p-1 rounded-2xl bg-black/40 border border-white/10 flex-wrap">
         <Link
           href="/admin/trailrun/individu"
           className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${isIndividu
@@ -65,6 +66,23 @@ export default function TrailrunSubNav({
               }`}
           >
             {kelompokBatchCount} Transaksi ({totalKelompokPeserta} Org)
+          </span>
+        </Link>
+
+        <Link
+          href="/admin/trailrun/stats"
+          className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${isStats
+              ? 'bg-emerald-500 text-white shadow-md'
+              : 'text-slate-400 hover:text-white hover:bg-white/5'
+            }`}
+        >
+          <BarChart3 className="w-4 h-4" />
+          <span>Statistik Fee Tiket</span>
+          <span
+            className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${isStats ? 'bg-black/20 text-white' : 'bg-white/10 text-emerald-400'
+              }`}
+          >
+            Semua ({individuCount + totalKelompokPeserta})
           </span>
         </Link>
       </div>

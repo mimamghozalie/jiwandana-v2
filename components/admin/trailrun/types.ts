@@ -89,6 +89,19 @@ export const formatCurrency = (num: number): string => {
  * - baseAmount: Harga tiket dasar (totalPayment - adminFee)
  */
 export const getRowFinancials = (row: TrailrunRow) => {
+  // Jika peserta merupakan anggota kelompok/bulk, pembayaran row.payment menyimpan data satu rombongan (batch).
+  // Untuk rincian finansial per anggota perorangan, gunakan tarif standar kategorinya agar tidak menduplikasi nominal batch.
+  if (row.registration_type === 'bulk') {
+    const is12k = (row.kategori || '').toLowerCase().includes('12');
+    const is7k = (row.kategori || '').toLowerCase().includes('7');
+    const baseAmount = is12k ? 320000 : (is7k ? 270000 : 280000);
+    const adminFee = 3000;
+    const totalPayment = baseAmount + adminFee;
+    const gatewayFee = Math.round(totalPayment * 0.007 + 300);
+    const adminProfit = Math.max(0, adminFee - gatewayFee);
+    return { totalPayment, adminFee, gatewayFee, adminProfit, baseAmount };
+  }
+
   const adminFee = row.payment?.admin_fee ?? (row.payment?.fee ?? 5000);
   
   let baseAmount = row.payment?.amount || 0;

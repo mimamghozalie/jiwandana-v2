@@ -327,3 +327,207 @@ export const exportToCSV = (data: TrailrunRow[], visibleColumns: string[], allCo
   link.click();
   document.body.removeChild(link);
 };
+
+/**
+ * Export Ringkasan Statistik Finansial & Rincian Fee Tiket Semua Peserta ke Excel (.xlsx)
+ */
+export const exportStatsToExcel = (
+  allRows: TrailrunRow[],
+  statsSummary: {
+    totalParticipants: number;
+    paidParticipants: number;
+    pendingParticipants: number;
+    totalTicketRevenue: number;
+    totalGrossRevenue: number;
+    totalAdminFee: number;
+    totalGatewayFee: number;
+    totalAdminProfit: number;
+    categoryBreakdown: Record<string, { count: number; ticketRevenue: number }>;
+    sessionBreakdown: Record<string, { count: number; ticketRevenue: number }>;
+    typeBreakdown: Record<string, { count: number; ticketRevenue: number }>;
+    groupBatches?: GroupRegistrationBatch[];
+  },
+  fileNamePrefix = 'laporan-fee-tiket-trailrun'
+) => {
+  if (allRows.length === 0) return;
+
+  const wb = XLSX.utils.book_new();
+
+  // SHEET 1: RINGKASAN FINANSIAL
+  const summaryAoa: any[][] = [
+    ['LAPORAN REKAPITULASI KEUANGAN & STATISTIK TIKET TRAIL RUN PAWITRA'],
+    [`Tanggal Unduh: ${new Date().toLocaleString('id-ID')}`],
+    [],
+    ['RINGKASAN UTAMA', 'NILAI / JUMLAH'],
+    ['Total Seluruh Pendaftar', statsSummary.totalParticipants],
+    ['Peserta Lunas (Paid)', statsSummary.paidParticipants],
+    ['Peserta Menunggu Bayar (Pending)', statsSummary.pendingParticipants],
+    ['Total Pendapatan Tiket (Net Ticket Fee)', statsSummary.totalTicketRevenue],
+    ['Total Masuk Payment Gateway (Gross Revenue)', statsSummary.totalGrossRevenue],
+    ['Total Biaya Admin Masuk', statsSummary.totalAdminFee],
+    ['Total Biaya Potongan Gateway (MDR)', statsSummary.totalGatewayFee],
+    ['Total Profit Bersih Biaya Admin', statsSummary.totalAdminProfit],
+    [],
+    ['BREAKDOWN PER KATEGORI LOMBA', 'PESERTA', 'TOTAL FEE TIKET (RP)'],
+    ...Object.entries(statsSummary.categoryBreakdown).map(([cat, data]) => [
+      `Kategori ${cat}`,
+      data.count,
+      data.ticketRevenue,
+    ]),
+    [],
+    ['BREAKDOWN PER SESI PENDAFTARAN', 'PESERTA', 'TOTAL FEE TIKET (RP)'],
+    ...Object.entries(statsSummary.sessionBreakdown).map(([session, data]) => [
+      `Sesi ${session}`,
+      data.count,
+      data.ticketRevenue,
+    ]),
+    [],
+    ['BREAKDOWN PER TIPE REGISTRASI', 'PESERTA', 'TOTAL FEE TIKET (RP)'],
+    ...Object.entries(statsSummary.typeBreakdown).map(([type, data]) => [
+      `Pendaftaran ${type}`,
+      data.count,
+      data.ticketRevenue,
+    ]),
+  ];
+
+  const wsSummary = XLSX.utils.aoa_to_sheet(summaryAoa);
+  wsSummary['!cols'] = [{ wch: 45 }, { wch: 18 }, { wch: 26 }];
+  XLSX.utils.book_append_sheet(wb, wsSummary, 'Ringkasan Keuangan');
+
+  // SHEET 2: REKAP KELOMPOK PER PIC (JIKA ADA TRANSAKSI KELOMPOK)
+  if (statsSummary.groupBatches && statsSummary.groupBatches.length > 0) {
+    const groupHeaders = [
+      'No',
+      'Order ID',
+      'Nama PIC',
+      'Komunitas / Klub',
+      'Jumlah Peserta',
+      'Peserta Lunas',
+      'Subtotal Tiket Normal (Rp)',
+      'Diskon Promo Rombongan (Rp)',
+      'Total Fee Tiket Bersih (Rp)',
+      'Biaya Admin (Rp)',
+      'Total Bayar (Rp)',
+      'Metode Bayar',
+      'Status Bayar',
+      'No. WhatsApp PIC',
+      'Email PIC',
+      'Waktu Transaksi',
+    ];
+
+    const groupRows = statsSummary.groupBatches.map((b, idx) => [
+      idx + 1,
+      b.orderId,
+      b.picName,
+      b.namaKomunitas,
+      b.totalParticipants,
+      b.paidParticipants,
+      b.rawTicketTotal,
+      b.discountAmount,
+      b.finalTicketTotal,
+      b.adminFeeTotal,
+      b.totalPayment,
+      b.paymentMethod,
+      b.paymentStatus === 'paid' ? 'Lunas (Paid)' : 'Pending',
+      b.picPhone,
+      b.picEmail,
+      b.createdAt ? new Date(b.createdAt).toLocaleString('id-ID') : '-',
+    ]);
+
+    const wsGroup = XLSX.utils.aoa_to_sheet([groupHeaders, ...groupRows]);
+    wsGroup['!cols'] = [
+      { wch: 6 },
+      { wch: 24 },
+      { wch: 22 },
+      { wch: 24 },
+      { wch: 16 },
+      { wch: 14 },
+      { wch: 24 },
+      { wch: 26 },
+      { wch: 24 },
+      { wch: 18 },
+      { wch: 20 },
+      { wch: 14 },
+      { wch: 14 },
+      { wch: 18 },
+      { wch: 26 },
+      { wch: 22 },
+    ];
+    XLSX.utils.book_append_sheet(wb, wsGroup, 'Rekap Kelompok PIC');
+  }
+
+  // SHEET 3: RINCIAN TIKET SEMUA PESERTA (DETAIL PER ANGGOTA)
+  const detailHeaders = [
+    'No',
+    'No. BIB',
+    'Nama Peserta / PIC',
+    'Kategori',
+    'Tipe Pendaftaran',
+    'Status Bayar',
+    'Fee Tiket Dasar (Rp)',
+    'Biaya Admin (Rp)',
+    'Biaya Gateway (Rp)',
+    'Profit Admin (Rp)',
+    'Total Bayar Peserta (Rp)',
+    'Metode Bayar',
+    'Ukuran Jersey',
+    'Email',
+    'WhatsApp / HP',
+    'Komunitas / Klub',
+    'Order ID',
+    'ID Transaksi',
+    'Waktu Pendaftaran',
+  ];
+
+  const detailRows = allRows.map((r, idx) => {
+    const fin = getRowFinancials(r);
+    return [
+      idx + 1,
+      r.no_bib || '-',
+      r.nama || '-',
+      r.kategori || '-',
+      r.registration_type === 'bulk' ? 'Kelompok / Rombongan' : 'Individu',
+      r.status === 'paid' ? 'Lunas (Paid)' : r.status === 'confirmed' ? 'Dikonfirmasi' : 'Pending',
+      fin.baseAmount,
+      fin.adminFee,
+      fin.gatewayFee,
+      fin.adminProfit,
+      fin.totalPayment,
+      r.payment?.payment_method?.toUpperCase() || '-',
+      r.ukuran_jersey || '-',
+      r.email || '-',
+      r.no_hp || '-',
+      r.nama_komunitas || '-',
+      r.payment?.order_id || r.order_id || '-',
+      r.payment?.txn_id || '-',
+      r.created_at ? new Date(r.created_at).toLocaleString('id-ID') : '-',
+    ];
+  });
+
+  const wsDetails = XLSX.utils.aoa_to_sheet([detailHeaders, ...detailRows]);
+  wsDetails['!cols'] = [
+    { wch: 6 },
+    { wch: 14 },
+    { wch: 28 },
+    { wch: 12 },
+    { wch: 22 },
+    { wch: 16 },
+    { wch: 20 },
+    { wch: 16 },
+    { wch: 18 },
+    { wch: 16 },
+    { wch: 22 },
+    { wch: 14 },
+    { wch: 14 },
+    { wch: 28 },
+    { wch: 18 },
+    { wch: 22 },
+    { wch: 26 },
+    { wch: 18 },
+    { wch: 22 },
+  ];
+  XLSX.utils.book_append_sheet(wb, wsDetails, 'Rincian Tiket Peserta');
+
+  const dateStr = new Date().toISOString().slice(0, 10);
+  XLSX.writeFile(wb, `${fileNamePrefix}-${dateStr}.xlsx`);
+};
