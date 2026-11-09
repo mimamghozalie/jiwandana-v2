@@ -302,8 +302,8 @@ export default function TrailrunCardItem({
                 {isFlashActive ? (
                   <div
                     className={`relative overflow-hidden px-1 space-y-0.5 rounded-lg transition-colors ${isFlashSaleSoldOut
-                        ? 'bg-slate-50/60 py-1'
-                        : 'bg-rose-50/90 py-1 ring-2 ring-rose-500 shadow-sm'
+                      ? 'bg-slate-50/60 py-1'
+                      : 'bg-rose-50/90 py-1 ring-2 ring-rose-500 shadow-sm'
                       }`}
                   >
                     {isFlashSaleSoldOut ? (
@@ -337,7 +337,8 @@ export default function TrailrunCardItem({
                         <span className="text-rose-600 bg-rose-100 px-1 py-0.5 rounded font-bold">Sold Out</span>
                       ) : (
                         <span className="text-rose-700 font-extrabold animate-pulse">
-                          Sisa {pricingInfo.quotaRemaining ?? 10} Slot
+                          {/* Sisa {pricingInfo.quotaRemaining ?? 10} Slot */}
+                          kuota terbatas.
                         </span>
                       )}
                     </span>
@@ -396,7 +397,7 @@ export default function TrailrunCardItem({
                     <span>Flash Sale Aktif! (Reguler Ditangguhkan)</span>
                   </div>
                   <div className="text-xs font-bold text-slate-900 mt-0.5">
-                    Hanya Rp {pricingInfo.display} &bull; Kuota Terbatas {pricingInfo.quotaRemaining ?? 10} Slot
+                    Hanya Rp {pricingInfo.display} &bull; Kuota Terbatas
                   </div>
                 </div>
               )}
@@ -453,8 +454,8 @@ export default function TrailrunCardItem({
               <Link
                 href={`/trailrun/daftar/individu?dist=${item.id}`}
                 className={`flex-1 font-bold py-3.5 px-3 rounded-xl transition-all transform active:scale-95 shadow-md flex items-center justify-center gap-1.5 text-xs uppercase tracking-wider text-center cursor-pointer ${pricingInfo?.tierId === 'flashsale'
-                    ? 'bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white animate-pulse'
-                    : 'bg-[#C9A227] hover:bg-[#b08d1f] text-slate-950'
+                  ? 'bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white animate-pulse'
+                  : 'bg-[#C9A227] hover:bg-[#b08d1f] text-slate-950'
                   }`}
               >
                 <span>{pricingInfo?.tierId === 'flashsale' ? 'Flash Sale' : 'Daftar Sekarang'}</span>
