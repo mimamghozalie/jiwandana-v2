@@ -405,6 +405,7 @@ export default function PesertaIndividuPage() {
         isOpen={showFlashSaleModal}
         onClose={() => setShowFlashSaleModal(false)}
         onSaved={fetchData}
+        hideQuota={true}
       />
     </div>
   );

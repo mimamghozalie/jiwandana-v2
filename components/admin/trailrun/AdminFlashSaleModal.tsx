@@ -18,6 +18,7 @@ interface AdminFlashSaleModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSaved?: () => void;
+  hideQuota?: boolean;
 }
 
 interface FlashSaleData {
@@ -58,6 +59,7 @@ export default function AdminFlashSaleModal({
   isOpen,
   onClose,
   onSaved,
+  hideQuota = true,
 }: AdminFlashSaleModalProps) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -284,72 +286,74 @@ export default function AdminFlashSaleModal({
             </div>
 
             {/* 4. Kuota Kategori 7K & 12K */}
-            <div className="space-y-2.5 pt-1 border-t border-white/10">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#C9A227] flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5" />
-                <span>Kuota Slot Flash Sale (7K & 12K)</span>
-              </span>
+            {!hideQuota && (
+              <div className="space-y-2.5 pt-1 border-t border-white/10">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#C9A227] flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5" />
+                  <span>Kuota Slot Flash Sale (7K & 12K)</span>
+                </span>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                {/* Kuota 7K */}
-                <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-white text-xs">Kategori 7K</span>
-                    <span className="px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 font-mono text-[10px] font-bold">
-                      Rp 300.000
-                    </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  {/* Kuota 7K */}
+                  <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-white text-xs">Kategori 7K</span>
+                      <span className="px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 font-mono text-[10px] font-bold">
+                        Rp 300.000
+                      </span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-semibold text-slate-400">
+                        Batas Kuota Slot
+                      </label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={999}
+                        value={quota7k}
+                        onChange={(e) => setQuota7k(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                        className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-white text-xs font-mono font-bold focus:outline-none focus:border-[#C9A227]"
+                      />
+                    </div>
+
+                    <div className="pt-1 flex items-center justify-between text-[10px] text-slate-400 border-t border-white/5">
+                      <span>Terpakai: <strong className="text-white">{used7k}</strong></span>
+                      <span>Sisa: <strong className={remaining7k > 0 ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>{remaining7k} Slot</strong></span>
+                    </div>
                   </div>
 
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-semibold text-slate-400">
-                      Batas Kuota Slot
-                    </label>
-                    <input
-                      type="number"
-                      min={1}
-                      max={999}
-                      value={quota7k}
-                      onChange={(e) => setQuota7k(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                      className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-white text-xs font-mono font-bold focus:outline-none focus:border-[#C9A227]"
-                    />
-                  </div>
+                  {/* Kuota 12K */}
+                  <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-white text-xs">Kategori 12K</span>
+                      <span className="px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 font-mono text-[10px] font-bold">
+                        Rp 350.000
+                      </span>
+                    </div>
 
-                  <div className="pt-1 flex items-center justify-between text-[10px] text-slate-400 border-t border-white/5">
-                    <span>Terpakai: <strong className="text-white">{used7k}</strong></span>
-                    <span>Sisa: <strong className={remaining7k > 0 ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>{remaining7k} Slot</strong></span>
-                  </div>
-                </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-semibold text-slate-400">
+                        Batas Kuota Slot
+                      </label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={999}
+                        value={quota12k}
+                        onChange={(e) => setQuota12k(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                        className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-white text-xs font-mono font-bold focus:outline-none focus:border-[#C9A227]"
+                      />
+                    </div>
 
-                {/* Kuota 12K */}
-                <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-white text-xs">Kategori 12K</span>
-                    <span className="px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 font-mono text-[10px] font-bold">
-                      Rp 350.000
-                    </span>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-semibold text-slate-400">
-                      Batas Kuota Slot
-                    </label>
-                    <input
-                      type="number"
-                      min={1}
-                      max={999}
-                      value={quota12k}
-                      onChange={(e) => setQuota12k(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                      className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-white text-xs font-mono font-bold focus:outline-none focus:border-[#C9A227]"
-                    />
-                  </div>
-
-                  <div className="pt-1 flex items-center justify-between text-[10px] text-slate-400 border-t border-white/5">
-                    <span>Terpakai: <strong className="text-white">{used12k}</strong></span>
-                    <span>Sisa: <strong className={remaining12k > 0 ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>{remaining12k} Slot</strong></span>
+                    <div className="pt-1 flex items-center justify-between text-[10px] text-slate-400 border-t border-white/5">
+                      <span>Terpakai: <strong className="text-white">{used12k}</strong></span>
+                      <span>Sisa: <strong className={remaining12k > 0 ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>{remaining12k} Slot</strong></span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Actions */}
             <div className="pt-2 flex items-center gap-3 border-t border-white/10">

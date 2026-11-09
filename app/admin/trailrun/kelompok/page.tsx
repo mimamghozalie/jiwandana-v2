@@ -302,6 +302,7 @@ export default function PesertaKelompokPage() {
         isOpen={showFlashSaleModal}
         onClose={() => setShowFlashSaleModal(false)}
         onSaved={fetchData}
+        hideQuota={true}
       />
     </div>
   );
