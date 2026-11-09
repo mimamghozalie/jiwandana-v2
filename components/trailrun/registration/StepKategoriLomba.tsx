@@ -104,6 +104,12 @@ export default function StepKategoriLomba({
                             Flash Sale {typeof info?.quotaRemaining === 'number' ? `(${info.quotaRemaining} Slot)` : ''}
                           </span>
                         )}
+                        {info?.tierId === 'lastcall' && !isSoldOut && (
+                          <span className="px-1.5 sm:px-2 py-0.5 rounded-full bg-amber-600 text-white text-[9px] sm:text-[10px] font-bold inline-flex items-center gap-1 shadow-sm">
+                            <span className="material-symbols-outlined text-[12px]">schedule</span>
+                            Last Call
+                          </span>
+                        )}
                       </div>
                       <p className="text-[11px] sm:text-xs text-slate-500 mt-1 line-clamp-1">{cat.description}</p>
                     </div>

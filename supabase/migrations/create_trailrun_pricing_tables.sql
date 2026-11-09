@@ -61,8 +61,9 @@ INSERT INTO public.trailrun_pricing_tiers (id, name, badge, start_date, end_date
 VALUES 
   ('early', 'Early Bird', 'Terbatas 50 Slot', '2026-10-04T10:00:00+07:00', '2026-10-10T23:59:59+07:00', true, 'Periode Early Bird', NULL),
   ('presale', 'Pre-Sale', 'Harga Spesial', '2026-10-11T00:00:00+07:00', '2026-10-21T23:59:59+07:00', true, 'Periode Pre-Sale', NULL),
-  ('regular', 'Regular', 'Harga Normal', '2026-10-22T00:00:00+07:00', '2026-11-08T23:59:59+07:00', true, 'Periode Reguler', NULL),
-  ('flashsale', 'Flash Sale', 'Promo Terbatas 30 Menit', '2026-11-07T17:00:00+07:00', '2026-11-07T17:30:00+07:00', true, 'Flash Sale Kilat 10 Slot', 'FLASHSALE2026')
+  ('regular', 'Regular', 'Harga Normal', '2026-10-22T00:00:00+07:00', '2026-11-09T23:59:59+07:00', true, 'Periode Reguler', NULL),
+  ('flashsale', 'Flash Sale', 'Promo Terbatas 30 Menit', '2026-11-07T17:00:00+07:00', '2026-11-07T17:30:00+07:00', true, 'Flash Sale Kilat 10 Slot', 'FLASHSALE2026'),
+  ('lastcall', 'Last Call', 'Pendaftaran Terakhir', '2026-11-10T00:00:00+07:00', '2026-11-15T23:59:59+07:00', true, 'Sesi pendaftaran terakhir', NULL)
 ON CONFLICT (id) DO UPDATE SET 
   name = EXCLUDED.name,
   badge = EXCLUDED.badge,
@@ -80,18 +81,21 @@ VALUES
   ('3k', 'presale', 280000, '280k', NULL, true),
   ('3k', 'regular', 340000, '340k', NULL, true),
   ('3k', 'flashsale', 300000, '300k', 0, true),
+  ('3k', 'lastcall', 360000, '360k', NULL, true),
   
-  -- 7K (Flash Sale = 300.000, kuota 10)
+  -- 7K (Flash Sale = 300.000, kuota 10, Last Call = 350.000)
   ('7k', 'early', 240000, '240k', 50, false),
   ('7k', 'presale', 270000, '270k', 150, false),
   ('7k', 'regular', 330000, '330k', NULL, false),
   ('7k', 'flashsale', 300000, '300k', 10, false),
+  ('7k', 'lastcall', 350000, '350k', NULL, false),
 
-  -- 12K (Flash Sale = 350.000, kuota 10)
+  -- 12K (Flash Sale = 350.000, kuota 10, Last Call = 400.000)
   ('12k', 'early', 290000, '290k', 50, false),
   ('12k', 'presale', 320000, '320k', 150, false),
   ('12k', 'regular', 380000, '380k', NULL, false),
-  ('12k', 'flashsale', 350000, '350k', 10, false)
+  ('12k', 'flashsale', 350000, '350k', 10, false),
+  ('12k', 'lastcall', 400000, '400k', NULL, false)
 ON CONFLICT (category_key, tier_id) DO UPDATE SET 
   amount = EXCLUDED.amount, 
   display = EXCLUDED.display, 

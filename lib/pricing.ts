@@ -1,6 +1,6 @@
 import pricingConfig from '@/data/trailrun-pricing.json';
 
-export type PricingTierId = 'early' | 'presale' | 'regular' | 'flashsale';
+export type PricingTierId = 'early' | 'presale' | 'regular' | 'flashsale' | 'lastcall';
 
 export interface TierInfo {
   id: PricingTierId;
@@ -42,6 +42,7 @@ export interface ActiveTierResult {
     presale: CategoryPrice;
     regular: CategoryPrice;
     flashsale?: CategoryPrice;
+    lastcall?: CategoryPrice;
   };
   tiersConfig: any;
 }
@@ -115,6 +116,18 @@ export function getActivePricingTier(
   const presaleEnd = new Date(tiers.presale.endDate).getTime();
   const regularEnd = new Date(tiers.regular.endDate).getTime();
 
+  // Last Call Dates (10 Nov 00:00 s.d. 15 Nov 23:59:59 WIB)
+  const lastcallTier = tiers.lastcall;
+  const lastcallStart = lastcallTier ? new Date(lastcallTier.startDate || lastcallTier.start_date).getTime() : new Date('2026-11-10T00:00:00+07:00').getTime();
+  const lastcallEnd = lastcallTier ? new Date(lastcallTier.endDate || lastcallTier.end_date).getTime() : new Date('2026-11-15T23:59:59+07:00').getTime();
+  const isLastcallActive = Boolean(
+    lastcallTier &&
+    (lastcallTier.isActive ?? true) &&
+    now >= lastcallStart &&
+    now <= lastcallEnd
+  );
+  const isLastcallSoldOut = (now > lastcallEnd) || Boolean(catData.prices?.lastcall?.isSoldOut);
+
   // Flash Sale Dates & Quota
   const flashTier = tiers.flashsale;
   const flashStart = flashTier ? new Date(flashTier.startDate).getTime() : 0;
@@ -160,13 +173,13 @@ export function getActivePricingTier(
   let activeTierId: PricingTierId = 'regular';
   let isEarlyBirdSoldOut = isEarlyQuotaFull || isEarlyDatePassed || isEarlyConfigSoldOut;
   let isPresaleSoldOut = isPresaleQuotaFull || (now > presaleEnd) || isPresaleConfigSoldOut;
-  let isRegularSoldOut = isRegularConfigSoldOut || (now > regularEnd);
+  let isRegularSoldOut = isRegularConfigSoldOut || (now > regularEnd) || isLastcallActive || (now >= lastcallStart);
   let statusNote = '';
 
   // EVALUATION PRIORITY:
   // Jika 3K ditutup
   if (isCategoryConfigSoldOut) {
-    activeTierId = 'regular';
+    activeTierId = isLastcallActive ? 'lastcall' : 'regular';
     statusNote = 'Pendaftaran Kategori 3K Hallo Pawitra Resmi Ditutup (Sold Out).';
   }
   // Cek apakah masuk Sesi Flash Sale (7 Nov, 17:00 - 17:30 WIB & kuota < 10)
@@ -174,6 +187,14 @@ export function getActivePricingTier(
     activeTierId = 'flashsale';
     const remaining = Math.max(0, flashQuota - flashSaleCount);
     statusNote = `Sesi Flash Sale aktif hingga 17:30 WIB! Tersisa ${remaining} dari ${flashQuota} slot.`;
+  }
+  // Sesi Last Call (10 Nov 00:00 s.d. 15 Nov 23:59:59 WIB)
+  else if (isLastcallActive && !catData.prices?.lastcall?.isSoldOut) {
+    activeTierId = 'lastcall';
+    isEarlyBirdSoldOut = true;
+    isPresaleSoldOut = true;
+    isRegularSoldOut = true;
+    statusNote = 'Sesi Last Call aktif hingga 15 November 2026 23:59 WIB.';
   }
   // Early Bird
   else if (!isEarlyDatePassed && !isEarlyQuotaFull && !isEarlyConfigSoldOut) {
@@ -195,13 +216,14 @@ export function getActivePricingTier(
     isEarlyBirdSoldOut = true;
     isPresaleSoldOut = true;
     statusNote = isRegularSoldOut
-      ? 'Pendaftaran telah ditutup (Sold Out).'
+      ? (now > lastcallEnd ? 'Pendaftaran telah resmi ditutup (Sold Out).' : 'Sesi Reguler berakhir. Menuju Last Call.')
       : 'Sesi Reguler aktif hingga pendaftaran ditutup.';
   }
 
   const isCurrentTierSoldOut =
     isCategoryConfigSoldOut ||
     (activeTierId === 'flashsale' && isFlashSaleSoldOut) ||
+    (activeTierId === 'lastcall' && isLastcallSoldOut) ||
     (activeTierId === 'early' && isEarlyBirdSoldOut) ||
     (activeTierId === 'presale' && isPresaleSoldOut) ||
     (activeTierId === 'regular' && isRegularSoldOut);
@@ -252,6 +274,7 @@ export function getActivePricingTier(
       presale: getTierPriceObj('presale'),
       regular: getTierPriceObj('regular'),
       flashsale: getTierPriceObj('flashsale'),
+      lastcall: getTierPriceObj('lastcall'),
     },
     tiersConfig: tiers,
   };
@@ -291,6 +314,7 @@ export function getCategoryPricesFromConfig(categoryInput: string) {
     presale: p.presale?.display || formatAmountToDisplay(p.presale.amount),
     regular: p.regular?.display || formatAmountToDisplay(p.regular.amount),
     flashsale: p.flashsale?.display || formatAmountToDisplay(p.flashsale?.amount || 0),
+    lastcall: p.lastcall?.display || formatAmountToDisplay(p.lastcall?.amount || 0),
   };
 }
 

@@ -18,11 +18,16 @@ export default function TrailrunPricingTimeline() {
   const tiers = realtimeData?.tiersConfig || pricingConfig.tiers;
   const now = new Date().getTime();
 
-  const getPriceDisplay = (cat: '3k' | '7k' | '12k', tier: 'early' | 'presale' | 'regular' | 'flashsale') => {
+  const getPriceDisplay = (cat: '3k' | '7k' | '12k', tier: 'early' | 'presale' | 'regular' | 'flashsale' | 'lastcall') => {
     if (tier === 'flashsale') {
       if (cat === '3k') return 'Tutup';
       if (cat === '7k') return '300k';
       if (cat === '12k') return '350k';
+    }
+    if (tier === 'lastcall') {
+      if (cat === '3k') return 'Tutup';
+      if (cat === '7k') return '350k';
+      if (cat === '12k') return '400k';
     }
     const catData = pricingConfig.categories[cat];
     const p = (catData.prices as any)[tier] as { amount: number; display?: string } | undefined;
@@ -85,6 +90,17 @@ export default function TrailrunPricingTimeline() {
     now >= new Date(tiers.regular.startDate || tiers.regular.start_date).getTime() &&
     now <= new Date(tiers.regular.endDate || tiers.regular.end_date).getTime();
 
+  // Last Call Status (10 Nov - 15 Nov 2026)
+  const lastcallStart = tiers.lastcall ? new Date(tiers.lastcall.startDate || tiers.lastcall.start_date).getTime() : new Date('2026-11-10T00:00:00+07:00').getTime();
+  const lastcallEnd = tiers.lastcall ? new Date(tiers.lastcall.endDate || tiers.lastcall.end_date).getTime() : new Date('2026-11-15T23:59:59+07:00').getTime();
+  const isLastcallActive = Boolean(
+    tiers.lastcall &&
+    (tiers.lastcall.isActive ?? true) &&
+    now >= lastcallStart &&
+    now <= lastcallEnd
+  );
+  const isLastcallSoldOut = now > lastcallEnd;
+
   return (
     <div className="w-full max-w-6xl mx-auto px-4 sm:px-6">
       <div className="text-center space-y-2 mb-8">
@@ -96,61 +112,12 @@ export default function TrailrunPricingTimeline() {
           Sesi Pendaftaran Peserta
         </h3>
         <p className="text-xs sm:text-sm text-slate-200 max-w-xl mx-auto drop-shadow-sm">
-          Pendaftaran resmi Trail Run Pawitra. Manfaatkan sesi Flash Sale khusus dengan kuota 10 slot per kategori!
+          Pendaftaran resmi Trail Run Pawitra. Sesi Last Call dibuka mulai 10 hingga 15 November 2026!
         </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* 1. EARLY BIRD CARD */}
-        <div className={`relative overflow-hidden rounded-2xl border transition-all duration-300 shadow-sm bg-white ${
-          isEarlyActive && !isEarlySoldOutLive
-            ? 'border-rose-500 ring-2 ring-rose-500/30 shadow-md shadow-rose-500/10'
-            : isEarlySoldOutLive
-            ? 'border-slate-200 opacity-80'
-            : 'border-slate-200 hover:border-rose-300'
-        }`}>
-          {isEarlySoldOutLive ? (
-            <div className="absolute top-0 right-0 w-24 h-24 overflow-hidden pointer-events-none z-20">
-              <div className="absolute transform rotate-45 bg-rose-600 text-white font-black text-[10px] py-1 right-[-32px] top-[18px] w-[120px] text-center shadow-md uppercase tracking-wider">
-                SOLD
-              </div>
-            </div>
-          ) : isEarlyActive ? (
-            <div className="absolute top-0 right-0 w-24 h-24 overflow-hidden pointer-events-none z-20">
-              <div className="absolute transform rotate-45 bg-emerald-500 text-white font-black text-[10px] py-1 right-[-32px] top-[18px] w-[120px] text-center shadow-md uppercase tracking-wider">
-                OPEN
-              </div>
-            </div>
-          ) : null}
-
-          <div className="bg-[#c22d2d] py-2.5 px-3 text-center relative">
-            <span className="text-white text-sm sm:text-base font-bold tracking-wide uppercase font-serif">
-              Early Bird
-            </span>
-          </div>
-
-          <div className="p-4 text-center space-y-2.5">
-            <div className="space-y-0.5">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-rose-600 block">
-                Periode Registrasi
-              </span>
-              <strong className="text-xs sm:text-sm font-bold text-slate-900 block">
-                {tiers.early.dateDisplay || '04 Okt - 10 Okt 2026'}
-              </strong>
-            </div>
-
-            <div className="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-[10px] font-bold">
-              <Flame className="w-3 h-3 text-rose-500 shrink-0" />
-              <span>*50 kuota / race</span>
-            </div>
-
-            <div className="pt-2 border-t border-slate-100 text-[10px] text-slate-500">
-              7K: <strong className="text-rose-600 font-bold">Rp {getPriceDisplay('7k', 'early')}</strong> • 12K: <strong className="text-rose-600 font-bold">Rp {getPriceDisplay('12k', 'early')}</strong>
-            </div>
-          </div>
-        </div>
-
-        {/* 2. PRE-SALE CARD */}
+        {/* 1. PRE-SALE CARD (Early Bird hidden to accommodate Last Call) */}
         <div className={`relative overflow-hidden rounded-2xl border transition-all duration-300 shadow-sm bg-white ${
           isPresaleActive && !isPresaleSoldOutLive
             ? 'border-[#C9A227] ring-2 ring-[#C9A227]/30 shadow-md shadow-[#C9A227]/10'
@@ -199,7 +166,7 @@ export default function TrailrunPricingTimeline() {
           </div>
         </div>
 
-        {/* 3. REGULAR CARD */}
+        {/* 2. REGULAR CARD */}
         <div className={`relative overflow-hidden rounded-2xl border transition-all duration-300 shadow-sm bg-white ${
           isRegularActive && !isRegularSoldOutLive
             ? 'border-slate-800 ring-2 ring-slate-800/30 shadow-md'
@@ -256,7 +223,7 @@ export default function TrailrunPricingTimeline() {
           </div>
         </div>
 
-        {/* 4. FLASH SALE CARD (NEW) */}
+        {/* 3. FLASH SALE CARD */}
         <div className={`relative overflow-hidden rounded-2xl border transition-all duration-300 shadow-sm bg-white ${
           isFlashActive && !isFlashSoldOut
             ? 'border-orange-500 ring-2 ring-orange-500/40 shadow-lg shadow-orange-500/20'
@@ -310,6 +277,64 @@ export default function TrailrunPricingTimeline() {
 
             <div className="pt-2 border-t border-slate-100 text-[10px] text-slate-700">
               7K: <strong className="text-orange-600 font-bold">Rp {getPriceDisplay('7k', 'flashsale')}</strong> • 12K: <strong className="text-orange-600 font-bold">Rp {getPriceDisplay('12k', 'flashsale')}</strong>
+            </div>
+          </div>
+        </div>
+
+        {/* 4. LAST CALL CARD (10 - 15 Nov) */}
+        <div className={`relative overflow-hidden rounded-2xl border transition-all duration-300 shadow-sm bg-white ${
+          isLastcallActive && !isLastcallSoldOut
+            ? 'border-[#C9A227] ring-2 ring-[#C9A227]/40 shadow-lg shadow-[#C9A227]/20'
+            : isLastcallSoldOut
+            ? 'border-slate-200 opacity-80'
+            : 'border-[#C9A227]/40 hover:border-[#C9A227]'
+        }`}>
+          {isLastcallSoldOut ? (
+            <div className="absolute top-0 right-0 w-24 h-24 overflow-hidden pointer-events-none z-20">
+              <div className="absolute transform rotate-45 bg-rose-600 text-white font-black text-[10px] py-1 right-[-32px] top-[18px] w-[120px] text-center shadow-md uppercase tracking-wider">
+                SOLD
+              </div>
+            </div>
+          ) : isLastcallActive ? (
+            <div className="absolute top-0 right-0 w-24 h-24 overflow-hidden pointer-events-none z-20">
+              <div className="absolute transform rotate-45 bg-emerald-500 text-white font-black text-[10px] py-1 right-[-32px] top-[18px] w-[120px] text-center shadow-md uppercase tracking-wider">
+                OPEN
+              </div>
+            </div>
+          ) : (
+            <div className="absolute top-0 right-0 w-24 h-24 overflow-hidden pointer-events-none z-20">
+              <div className="absolute transform rotate-45 bg-amber-500 text-white font-black text-[9px] py-1 right-[-32px] top-[18px] w-[120px] text-center shadow-md uppercase tracking-wider">
+                SOON
+              </div>
+            </div>
+          )}
+
+          <div className="bg-gradient-to-r from-amber-700 via-[#C9A227] to-amber-700 py-2.5 px-3 text-center relative">
+            <span className="text-white text-sm sm:text-base font-black tracking-wide uppercase font-serif flex items-center justify-center gap-1.5">
+              <Sparkles className="w-4 h-4 fill-amber-200 text-amber-200" />
+              <span>Last Call</span>
+            </span>
+          </div>
+
+          <div className="p-4 text-center space-y-2.5">
+            <div className="space-y-0.5">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-700 block">
+                Periode Registrasi
+              </span>
+              <strong className="text-xs sm:text-sm font-bold text-slate-900 block">
+                {tiers.lastcall?.dateDisplay || '10 Nov - 15 Nov 2026'}
+              </strong>
+            </div>
+
+            <div className="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-bold">
+              <Flame className="w-3 h-3 text-amber-600 shrink-0" />
+              <span>
+                {isLastcallActive ? 'Sesi Terakhir Sedang Buka!' : isLastcallSoldOut ? 'Pendaftaran Ditutup' : 'Buka 10 November 2026'}
+              </span>
+            </div>
+
+            <div className="pt-2 border-t border-slate-100 text-[10px] text-slate-500">
+              7K: <strong className="text-amber-700 font-bold">Rp {getPriceDisplay('7k', 'lastcall')}</strong> • 12K: <strong className="text-amber-700 font-bold">Rp {getPriceDisplay('12k', 'lastcall')}</strong>
             </div>
           </div>
         </div>
