@@ -102,17 +102,36 @@ export const getRowFinancials = (row: TrailrunRow) => {
     return { totalPayment, adminFee, gatewayFee, adminProfit, baseAmount };
   }
 
+  const hasPaymentRecord = Boolean(row.payment);
+  const rawAmount = row.payment?.amount != null ? Number(row.payment.amount) : null;
+  const rawTotalPayment = row.payment?.total_payment != null ? Number(row.payment.total_payment) : null;
+
+  // Jika data pembayaran eksplisit mencatat nominal 0 (misal tiket gratis / komplimen / voucher 100%),
+  // jangan timpa dengan tarif aktif (Last Call/Regular) — biarkan bernilai 0.
+  if (hasPaymentRecord && rawAmount === 0 && (rawTotalPayment === 0 || rawTotalPayment == null)) {
+    const adminFee = row.payment?.admin_fee ?? (row.payment?.fee ?? 0);
+    const gatewayFee = row.payment?.gateway_fee ?? 0;
+    const adminProfit = row.payment?.admin_profit ?? Math.max(0, adminFee - gatewayFee);
+    return {
+      totalPayment: 0,
+      adminFee,
+      gatewayFee,
+      adminProfit,
+      baseAmount: 0,
+    };
+  }
+
   const adminFee = row.payment?.admin_fee ?? (row.payment?.fee ?? 5000);
   
-  let baseAmount = row.payment?.amount || 0;
-  let totalPayment = row.payment?.total_payment || 0;
+  let baseAmount = rawAmount ?? 0;
+  let totalPayment = rawTotalPayment ?? 0;
 
   // Jika salah satu kosong, turunkan dari nilai yang ada
   if (baseAmount > 0 && totalPayment === 0) {
     totalPayment = baseAmount + adminFee;
-  } else if (totalPayment > 0 && baseAmount === 0) {
+  } else if (totalPayment > 0 && rawAmount == null) {
     baseAmount = Math.max(0, totalPayment - adminFee);
-  } else if (baseAmount === 0 && totalPayment === 0) {
+  } else if (!hasPaymentRecord || (rawAmount == null && rawTotalPayment == null)) {
     const tierResult = getActivePricingTier(row.kategori || '');
     const jerseyExtra = getJerseyExtraFee(row.ukuran_jersey);
     baseAmount = (tierResult?.amount || 0) + jerseyExtra;

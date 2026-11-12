@@ -190,9 +190,12 @@ export default function AdminTrailrunStatsPage() {
       });
 
       const calculatedTicketTotal = Math.max(0, rawTicketTotal - discountAmount);
-      const finalTicketTotal = first.payment?.amount || calculatedTicketTotal;
+      const finalTicketTotal = first.payment?.amount ?? calculatedTicketTotal;
       const adminFeeTotal = first.payment?.admin_fee ?? (first.payment?.fee ?? count * 3000);
-      const totalPayment = first.payment?.total_payment || (finalTicketTotal + adminFeeTotal);
+      const totalPayment =
+        first.payment?.total_payment != null && (first.payment.total_payment > 0 || finalTicketTotal === 0)
+          ? first.payment.total_payment
+          : finalTicketTotal + adminFeeTotal;
 
       const catParts: string[] = [];
       if (count12k > 0) catParts.push(`${count12k}x 12K`);
