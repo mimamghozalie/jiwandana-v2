@@ -51,6 +51,81 @@ const CATEGORIES_CONFIG: Record<BibCategoryType, CategoryConfig> = {
   },
 };
 
+const MAX_BIB_TEXT_WIDTH = 1760; // Area aman di kanan QR Code (x: 540..2300 sekitar x=1420)
+const MAX_NAME_TEXT_WIDTH = 1760;
+
+function fitTextHeuristic(
+  text: string,
+  baseFontSize: number,
+  maxWidth: number,
+  baseLetterSpacing: number,
+  minFontSize: number,
+  charWidthRatio = 0.78
+): { fontSize: number; letterSpacing: number } {
+  const len = text.length;
+  if (len === 0) return { fontSize: baseFontSize, letterSpacing: baseLetterSpacing };
+
+  const estimatedWidth = len * baseFontSize * charWidthRatio + Math.max(0, len - 1) * baseLetterSpacing;
+  if (estimatedWidth <= maxWidth) {
+    return { fontSize: baseFontSize, letterSpacing: baseLetterSpacing };
+  }
+
+  const fontSize = Math.max(minFontSize, Math.floor(baseFontSize * (maxWidth / estimatedWidth)));
+  const letterSpacing = Math.max(1, Math.round(baseLetterSpacing * (fontSize / baseFontSize)));
+  return { fontSize, letterSpacing };
+}
+
+function measureFittedText(
+  text: string,
+  baseFontSize: number,
+  maxWidth: number,
+  baseLetterSpacing: number,
+  minFontSize: number,
+  buildFont: (size: number) => string,
+  charWidthRatio = 0.78
+): { fontSize: number; letterSpacing: number } {
+  const clean = text.trim();
+  if (!clean) return { fontSize: baseFontSize, letterSpacing: baseLetterSpacing };
+
+  if (typeof document === 'undefined') {
+    return fitTextHeuristic(clean, baseFontSize, maxWidth, baseLetterSpacing, minFontSize, charWidthRatio);
+  }
+
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    return fitTextHeuristic(clean, baseFontSize, maxWidth, baseLetterSpacing, minFontSize, charWidthRatio);
+  }
+
+  const measureAt = (size: number, spacing: number) => {
+    ctx.font = buildFont(size);
+    const hasCanvasLetterSpacing = 'letterSpacing' in ctx;
+    if (hasCanvasLetterSpacing) {
+      (ctx as any).letterSpacing = `${spacing}px`;
+    }
+    const baseWidth = ctx.measureText(clean).width;
+    const fallbackExtra = hasCanvasLetterSpacing ? 0 : Math.max(0, clean.length - 1) * spacing;
+    return baseWidth + fallbackExtra;
+  };
+
+  let fontSize = baseFontSize;
+  let spacing = baseLetterSpacing;
+  const initialWidth = measureAt(fontSize, spacing);
+
+  if (initialWidth > maxWidth) {
+    const ratio = maxWidth / initialWidth;
+    fontSize = Math.max(minFontSize, Math.floor(baseFontSize * ratio * 0.96));
+    spacing = Math.max(1, Math.round(baseLetterSpacing * (fontSize / baseFontSize)));
+
+    while (fontSize > minFontSize && measureAt(fontSize, spacing) > maxWidth) {
+      fontSize -= 4;
+      spacing = Math.max(1, Math.round(baseLetterSpacing * (fontSize / baseFontSize)));
+    }
+  }
+
+  return { fontSize, letterSpacing: spacing };
+}
+
 export interface BibPreviewCardProps {
   bibNumber: string;
   runnerName: string;
@@ -128,12 +203,50 @@ export default function BibPreviewCard({
     setGpxQrUrl(`${origin}/api/trailrun/download-gpx?cat=${selectedCategory}`);
   }, [bibNumber, selectedCategory]);
 
-  // Name calculation for SVG preview & canvas (teks biasa / case-sensitive)
+  // Dynamic text sizing for BIB number & runner name so long text stays inside safe area
+  const cleanBib = bibNumber.trim().toUpperCase();
   const cleanName = runnerName.trim();
-  let actualNameSize = nameFontSize;
-  if (cleanName.length > 25) {
-    actualNameSize = Math.max(48, Math.floor(nameFontSize * (25 / cleanName.length)));
-  }
+
+  const [fittedBib, setFittedBib] = useState<{ fontSize: number; letterSpacing: number }>(() =>
+    fitTextHeuristic(cleanBib, bibFontSize, MAX_BIB_TEXT_WIDTH, letterSpacing, 90, 0.8)
+  );
+  const [fittedName, setFittedName] = useState<{ fontSize: number; letterSpacing: number }>(() =>
+    fitTextHeuristic(cleanName, nameFontSize, MAX_NAME_TEXT_WIDTH, 4, 40, 0.62)
+  );
+
+  useEffect(() => {
+    const italicPrefix = isItalic ? 'italic ' : '';
+    setFittedBib(
+      measureFittedText(
+        cleanBib,
+        bibFontSize,
+        MAX_BIB_TEXT_WIDTH,
+        letterSpacing,
+        90,
+        (size) => `${italicPrefix}900 ${size}px "Arial Black", "Impact", "Montserrat", sans-serif`,
+        0.8
+      )
+    );
+  }, [cleanBib, bibFontSize, letterSpacing, isItalic]);
+
+  useEffect(() => {
+    setFittedName(
+      measureFittedText(
+        cleanName,
+        nameFontSize,
+        MAX_NAME_TEXT_WIDTH,
+        4,
+        40,
+        (size) => `bold ${size}px "Arial", "Poppins", sans-serif`,
+        0.62
+      )
+    );
+  }, [cleanName, nameFontSize]);
+
+  const actualBibSize = fittedBib.fontSize;
+  const actualBibLetterSpacing = fittedBib.letterSpacing;
+  const actualNameSize = fittedName.fontSize;
+  const actualNameLetterSpacing = fittedName.letterSpacing;
 
   // Handler: Download High-Res PNG (Ukuran Cetak Asli 2483 x 1774 px, 300 DPI)
   const handleDownloadPng = async () => {
@@ -205,9 +318,9 @@ export default function BibPreviewCard({
       ctx.textBaseline = 'middle';
       ctx.fillStyle = currentConfig.textColor;
       const italicPrefix = isItalic ? 'italic ' : '';
-      ctx.font = `${italicPrefix}900 ${bibFontSize}px "Arial Black", "Impact", "Montserrat", sans-serif`;
-      ctx.letterSpacing = `${letterSpacing}px`;
-      ctx.fillText(bibNumber.trim().toUpperCase(), 1420, bibOffsetY);
+      ctx.font = `${italicPrefix}900 ${actualBibSize}px "Arial Black", "Impact", "Montserrat", sans-serif`;
+      ctx.letterSpacing = `${actualBibLetterSpacing}px`;
+      ctx.fillText(cleanBib, 1420, bibOffsetY);
       ctx.restore();
 
       // 5. Render Nama Pelari
@@ -216,7 +329,7 @@ export default function BibPreviewCard({
       ctx.textBaseline = 'middle';
       ctx.fillStyle = currentConfig.textColor;
       ctx.font = `bold ${actualNameSize}px "Arial", "Poppins", sans-serif`;
-      ctx.letterSpacing = '4px';
+      ctx.letterSpacing = `${actualNameLetterSpacing}px`;
       ctx.fillText(cleanName, 1420, nameOffsetY);
       ctx.restore();
 
@@ -296,12 +409,12 @@ export default function BibPreviewCard({
         }
 
   <!-- 4. Nomor BIB Dinamis -->
-  <text id="bib-number" x="1420" y="${bibOffsetY}" class="bib-num" font-size="${bibFontSize}" letter-spacing="${letterSpacing}">
-    ${bibNumber.trim().toUpperCase()}
+  <text id="bib-number" x="1420" y="${bibOffsetY}" class="bib-num" font-size="${actualBibSize}" letter-spacing="${actualBibLetterSpacing}">
+    ${cleanBib}
   </text>
 
   <!-- 5. Nama Pelari Dinamis -->
-  <text id="runner-name" x="1420" y="${nameOffsetY}" class="runner-name" font-size="${actualNameSize}" letter-spacing="4">
+  <text id="runner-name" x="1420" y="${nameOffsetY}" class="runner-name" font-size="${actualNameSize}" letter-spacing="${actualNameLetterSpacing}">
     ${cleanName}
   </text>
 </svg>`;
@@ -465,10 +578,10 @@ export default function BibPreviewCard({
                 x="1420"
                 y={bibOffsetY}
                 className="bib-text-num"
-                fontSize={bibFontSize}
-                letterSpacing={letterSpacing}
+                fontSize={actualBibSize}
+                letterSpacing={actualBibLetterSpacing}
               >
-                {bibNumber.trim().toUpperCase()}
+                {cleanBib}
               </text>
 
               {/* 5. Nama Pelari Dinamis */}
@@ -477,7 +590,7 @@ export default function BibPreviewCard({
                 y={nameOffsetY}
                 className="bib-text-name"
                 fontSize={actualNameSize}
-                letterSpacing={4}
+                letterSpacing={actualNameLetterSpacing}
               >
                 {cleanName}
               </text>
