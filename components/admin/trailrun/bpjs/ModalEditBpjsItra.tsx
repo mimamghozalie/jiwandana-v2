@@ -78,9 +78,9 @@ export default function ModalEditBpjsItra({
         nama: nama.trim() || participant.nama,
         nama_bib: namaBib.trim() || nama.trim() || participant.nama,
         no_bib: noBib.trim().toUpperCase() || participant.no_bib,
-        nik: cleanNik || '-',
-        kk: cleanKk || '-',
-        id_itra: idItra.trim() || '-',
+        nik: cleanNik || '',
+        kk: cleanKk || '',
+        id_itra: idItra.trim() || '',
       });
 
       if (res !== false) {

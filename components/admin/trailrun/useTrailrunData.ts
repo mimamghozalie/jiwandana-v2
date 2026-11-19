@@ -264,6 +264,7 @@ export function useTrailrunData() {
 
   return {
     data,
+    setData,
     loading,
     isRefreshing,
     isCleaningUp,

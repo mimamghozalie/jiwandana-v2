@@ -33,7 +33,7 @@ import {
 } from '@/components/admin/trailrun';
 
 function BpjsPageContent() {
-  const { data, loading, isRefreshing, fetchData, handleCleanupUnpaid, isCleaningUp } = useTrailrunData();
+  const { data, setData, loading, isRefreshing, fetchData, handleCleanupUnpaid, isCleaningUp } = useTrailrunData();
   const searchParams = useSearchParams();
 
   // Flash sale modal state for SubNav
@@ -222,8 +222,22 @@ function BpjsPageContent() {
         text: json.message || 'Data BPJS & ITRA berhasil diperbarui.',
       });
 
-      // Update state data lokal tanpa perlu reload keseluruhan
-      await fetchData();
+      // Update state data lokal secara instan (optimistic update)
+      setData((prev) =>
+        prev.map((r) =>
+          r.id === payload.id
+            ? {
+                ...r,
+                nama: payload.nama,
+                nama_bib: payload.nama_bib,
+                no_bib: payload.no_bib,
+                nik: payload.nik,
+                kk: payload.kk,
+                id_itra: payload.id_itra,
+              }
+            : r
+        )
+      );
 
       // Update match kartu quick lookup jika yang diedit adalah yang sedang ditampilkan
       if (selectedBibMatch && selectedBibMatch.id === payload.id) {
@@ -241,6 +255,9 @@ function BpjsPageContent() {
             : null
         );
       }
+
+      // Re-fetch untuk sinkronisasi menyeluruh dengan server
+      await fetchData();
 
       setTimeout(() => setToastMessage(null), 5000);
       return true;
@@ -764,11 +781,9 @@ function BpjsPageContent() {
                       <td className="py-3.5 px-4">
                         <div className="min-w-0">
                           <span className="font-bold text-white block truncate">{row.nama}</span>
-                          {row.nama_bib && row.nama_bib !== row.nama && (
-                            <span className="text-[10px] text-amber-300 font-semibold block truncate">
-                              BIB: {row.nama_bib}
-                            </span>
-                          )}
+                          <span className="text-[10px] text-amber-300/90 font-semibold block truncate">
+                            BIB: {row.nama_bib || row.nama}
+                          </span>
                           <span className="text-[10px] text-slate-400 block truncate">
                             {row.jenis_kelamin || '-'} • {row.no_hp || row.email}
                           </span>

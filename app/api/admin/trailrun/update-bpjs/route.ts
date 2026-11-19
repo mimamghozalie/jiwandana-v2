@@ -28,19 +28,23 @@ export async function POST(request: NextRequest) {
       updatePayload.nama = (nama || '').trim();
     }
     if (nama_bib !== undefined) {
-      updatePayload.nama_bib = (nama_bib || '').trim() || null;
+      const cleanNamaBib = (nama_bib || '').trim();
+      updatePayload.nama_bib = cleanNamaBib || updatePayload.nama || null;
     }
     if (no_bib !== undefined) {
       updatePayload.no_bib = (no_bib || '').trim().toUpperCase();
     }
     if (nik !== undefined) {
-      updatePayload.nik = (nik || '').trim() || null;
+      const cleanNik = (nik || '').trim();
+      updatePayload.nik = !cleanNik || cleanNik === '-' ? null : cleanNik;
     }
     if (kk !== undefined) {
-      updatePayload.kk = (kk || '').trim() || null;
+      const cleanKk = (kk || '').trim();
+      updatePayload.kk = !cleanKk || cleanKk === '-' ? null : cleanKk;
     }
     if (id_itra !== undefined) {
-      updatePayload.id_itra = (id_itra || '').trim() || null;
+      const cleanItra = (id_itra || '').trim();
+      updatePayload.id_itra = !cleanItra || cleanItra === '-' ? null : cleanItra;
     }
 
     // Lakukan update ke Supabase
@@ -51,12 +55,16 @@ export async function POST(request: NextRequest) {
       .select('id, nama, nama_bib, no_bib, nik, kk, id_itra, kategori, status')
       .maybeSingle();
 
-    // Jika terjadi error kolom id_itra atau nama_bib belum ada di tabel Supabase
-    if (error && (error.code === '42703' || error.message?.includes('id_itra') || error.message?.includes('nama_bib'))) {
-      console.warn('[Admin BPJS] Kolom id_itra/nama_bib belum ada di Supabase, mencoba update tanpa kolom tersebut...');
+    // Jika terjadi error kolom id_itra atau nama_bib belum ada di tabel Supabase (PostgreSQL 42703: undefined_column)
+    if (error && error.code === '42703') {
+      console.warn('[Admin BPJS] Kolom belum ada di Supabase, mencoba update fallback:', error.message);
       const fallbackPayload = { ...updatePayload };
-      delete fallbackPayload.id_itra;
-      delete fallbackPayload.nama_bib;
+      if (error.message?.includes('id_itra')) {
+        delete fallbackPayload.id_itra;
+      }
+      if (error.message?.includes('nama_bib')) {
+        delete fallbackPayload.nama_bib;
+      }
 
       const fallbackRes = await supabase
         .from('trailrun_registrations')
