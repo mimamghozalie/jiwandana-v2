@@ -148,6 +148,7 @@ export async function POST(request: NextRequest) {
     // NOTE: Data PIC (pic_name, pic_phone, pic_email) disimpan di tabel trailrun_payments
     const insertPayload = evaluatedParticipants.map((p) => ({
       nama: p.nama,
+      nama_bib: p.nama,
       nik: p.nik || null,
       kk: p.kk || null,
       email: p.email,
@@ -181,6 +182,9 @@ export async function POST(request: NextRequest) {
       let fallbackPayload = [...insertPayload];
       if (regError.message?.toLowerCase().includes('order_id')) {
         fallbackPayload = fallbackPayload.map(({ order_id, ...rest }: any) => rest);
+      }
+      if (regError.message?.toLowerCase().includes('nama_bib')) {
+        fallbackPayload = fallbackPayload.map(({ nama_bib, ...rest }: any) => rest);
       }
       if (regError.message?.toLowerCase().includes('registration_type')) {
         fallbackPayload = fallbackPayload.map(({ registration_type, ...rest }: any) => rest);

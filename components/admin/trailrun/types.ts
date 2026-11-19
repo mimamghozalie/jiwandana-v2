@@ -21,6 +21,7 @@ export interface TrailrunPayment {
 export interface TrailrunRow {
   id: string;
   nama: string;
+  nama_bib?: string;
   nik?: string;
   kk?: string;
   id_itra?: string | null;
@@ -160,6 +161,7 @@ export const getRowFinancials = (row: TrailrunRow) => {
 export const ALL_COLUMNS: ColumnConfig[] = [
   { key: 'no_bib', label: 'No. BIB', category: 'Utama', defaultVisible: true },
   { key: 'nama', label: 'Nama Peserta', category: 'Utama', defaultVisible: true },
+  { key: 'nama_bib', label: 'Nama di BIB', category: 'Utama', defaultVisible: false },
   { key: 'nik', label: 'NIK / No. Passport', category: 'Utama', defaultVisible: true },
   { key: 'kk', label: 'No. KK (Opsional)', category: 'Utama', defaultVisible: true },
   { key: 'id_itra', label: 'ID ITRA', category: 'Utama', defaultVisible: true },

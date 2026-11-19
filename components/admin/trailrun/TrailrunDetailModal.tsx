@@ -58,9 +58,16 @@ export function TrailrunDetailModal({
                 Jersey: {selectedRow.ukuran_jersey || '-'}
               </span>
             </div>
-            <h3 className="text-xl sm:text-2xl font-bold text-white">
-              {selectedRow.nama}
-            </h3>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-xl sm:text-2xl font-bold text-white">
+                {selectedRow.nama}
+              </h3>
+              {selectedRow.nama_bib && selectedRow.nama_bib !== selectedRow.nama && (
+                <span className="px-2 py-0.5 rounded-lg bg-amber-500/20 text-amber-300 font-mono font-bold text-xs border border-amber-500/30">
+                  BIB: {selectedRow.nama_bib}
+                </span>
+              )}
+            </div>
             <p className="text-xs text-slate-400">{selectedRow.kategori}</p>
           </div>
           <button
@@ -170,6 +177,10 @@ export function TrailrunDetailModal({
               Data Pribadi & Kontak
             </h4>
             <div className="space-y-1.5 text-slate-300">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Nama di BIB:</span>
+                <span className="text-amber-300 font-bold">{selectedRow.nama_bib || selectedRow.nama}</span>
+              </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Email:</span>
                 <span className="text-white">{selectedRow.email}</span>

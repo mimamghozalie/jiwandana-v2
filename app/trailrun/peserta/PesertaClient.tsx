@@ -32,6 +32,7 @@ import { BibPreviewCard } from '@/components/trailrun/bib';
 interface ParticipantData {
   id?: string;
   nama: string;
+  nama_bib?: string;
   email: string;
   no_bib: string;
   no_hp: string;
@@ -745,7 +746,7 @@ export default function PesertaClient() {
             {/* 1. THE OFFICIAL HIGH-RES E-BIB PASS (A5 300 DPI with Customizer) */}
             <BibPreviewCard
               bibNumber={participant.no_bib}
-              runnerName={participant.nama}
+              runnerName={participant.nama_bib || participant.nama}
               category={participant.kategori}
               gender={participant.jenis_kelamin}
               showCustomizer={true}

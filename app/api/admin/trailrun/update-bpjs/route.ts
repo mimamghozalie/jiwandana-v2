@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, nama, no_bib, nik, kk, id_itra } = body;
+    const { id, nama, nama_bib, no_bib, nik, kk, id_itra } = body;
 
     if (!id) {
       return NextResponse.json(
@@ -26,6 +26,9 @@ export async function POST(request: NextRequest) {
 
     if (nama !== undefined) {
       updatePayload.nama = (nama || '').trim();
+    }
+    if (nama_bib !== undefined) {
+      updatePayload.nama_bib = (nama_bib || '').trim() || null;
     }
     if (no_bib !== undefined) {
       updatePayload.no_bib = (no_bib || '').trim().toUpperCase();
@@ -45,14 +48,15 @@ export async function POST(request: NextRequest) {
       .from('trailrun_registrations')
       .update(updatePayload)
       .eq('id', id)
-      .select('id, nama, no_bib, nik, kk, id_itra, kategori, status')
+      .select('id, nama, nama_bib, no_bib, nik, kk, id_itra, kategori, status')
       .maybeSingle();
 
-    // Jika terjadi error kolom id_itra belum ada di tabel Supabase
-    if (error && (error.code === '42703' || error.message?.includes('id_itra'))) {
-      console.warn('[Admin BPJS] Kolom id_itra belum ada di Supabase, mencoba update tanpa id_itra...');
+    // Jika terjadi error kolom id_itra atau nama_bib belum ada di tabel Supabase
+    if (error && (error.code === '42703' || error.message?.includes('id_itra') || error.message?.includes('nama_bib'))) {
+      console.warn('[Admin BPJS] Kolom id_itra/nama_bib belum ada di Supabase, mencoba update tanpa kolom tersebut...');
       const fallbackPayload = { ...updatePayload };
       delete fallbackPayload.id_itra;
+      delete fallbackPayload.nama_bib;
 
       const fallbackRes = await supabase
         .from('trailrun_registrations')
@@ -74,7 +78,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         message:
-          'Data NIK & KK berhasil disimpan. (Catatan: Kolom "id_itra" belum dibuat di database. Jalankan SQL migration supabase/migrations/add_id_itra_to_trailrun_registrations.sql).',
+          'Data berhasil disimpan. (Catatan: Kolom "nama_bib" / "id_itra" belum dibuat di database. Jalankan SQL migration di folder supabase/migrations).',
         needMigration: true,
         data: fallbackRes.data,
       });

@@ -86,6 +86,7 @@ export function useTrailrunData() {
           return {
             id: r.id,
             nama: r.nama,
+            nama_bib: r.nama_bib || r.nama,
             nik: r.nik || '-',
             kk: r.kk || '-',
             id_itra: r.id_itra || '-',

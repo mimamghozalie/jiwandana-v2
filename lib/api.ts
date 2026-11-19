@@ -310,9 +310,10 @@ export async function submitTrailrunRegistration(
       status: 'pending',
     };
 
-    // Primary payload includes ukuran_jersey, nik, kk
+    // Primary payload includes ukuran_jersey, nik, kk, nama_bib
     const primaryPayload: Record<string, any> = {
       ...basePayload,
+      nama_bib: formData.nama,
       ukuran_jersey: formData.ukuran_jersey || 'M',
     };
     if (formData.nik) primaryPayload.nik = formData.nik;
@@ -323,14 +324,15 @@ export async function submitTrailrunRegistration(
       5000
     );
 
-    // If column nik, kk, or ukuran_jersey has not been migrated yet in Supabase, retry without them
+    // If column nik, kk, nama_bib, or ukuran_jersey has not been migrated yet in Supabase, retry without them
     if (
       error &&
       (error.message?.toLowerCase().includes('nik') ||
         error.message?.toLowerCase().includes('kk') ||
+        error.message?.toLowerCase().includes('nama_bib') ||
         error.message?.toLowerCase().includes('ukuran_jersey'))
     ) {
-      console.warn('Columns nik/kk/ukuran_jersey not found in Supabase, fallback to base insert:', error.message);
+      console.warn('Columns nik/kk/nama_bib/ukuran_jersey not found in Supabase, fallback to base insert:', error.message);
       const fallbackRes = await withTimeout(
         supabase.from('trailrun_registrations').insert([basePayload]).select('id').single(),
         5000

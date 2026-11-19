@@ -197,6 +197,7 @@ function BpjsPageContent() {
   const handleSaveBpjsItra = async (payload: {
     id: string;
     nama: string;
+    nama_bib: string;
     no_bib: string;
     nik: string;
     kk: string;
@@ -231,6 +232,7 @@ function BpjsPageContent() {
             ? {
                 ...prev,
                 nama: payload.nama,
+                nama_bib: payload.nama_bib,
                 no_bib: payload.no_bib,
                 nik: payload.nik,
                 kk: payload.kk,
@@ -397,12 +399,16 @@ function BpjsPageContent() {
                   <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/10 space-y-1">
                     <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold flex items-center gap-1">
                       <User className="w-3 h-3 text-slate-400" />
-                      Nama Lengkap
+                      Nama Lengkap &amp; Nama BIB
                     </span>
                     <div className="text-sm font-bold text-white truncate">
                       {selectedBibMatch.nama}
                     </div>
-                    <span className="text-[10px] text-slate-400 block">
+                    <div className="text-xs text-amber-300 font-semibold truncate flex items-center gap-1">
+                      <span className="text-[10px] text-slate-400 font-normal">Nama BIB:</span>
+                      <span>{selectedBibMatch.nama_bib || selectedBibMatch.nama}</span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 block mt-0.5">
                       Gender: {selectedBibMatch.jenis_kelamin || '-'}
                     </span>
                   </div>
@@ -754,10 +760,15 @@ function BpjsPageContent() {
                         </span>
                       </td>
 
-                      {/* Nama Lengkap */}
+                      {/* Nama Lengkap & Nama BIB */}
                       <td className="py-3.5 px-4">
                         <div className="min-w-0">
                           <span className="font-bold text-white block truncate">{row.nama}</span>
+                          {row.nama_bib && row.nama_bib !== row.nama && (
+                            <span className="text-[10px] text-amber-300 font-semibold block truncate">
+                              BIB: {row.nama_bib}
+                            </span>
+                          )}
                           <span className="text-[10px] text-slate-400 block truncate">
                             {row.jenis_kelamin || '-'} • {row.no_hp || row.email}
                           </span>

@@ -172,6 +172,13 @@ export default function TrailrunTable({
                       </td>
                     )}
 
+                    {/* Nama di BIB */}
+                    {visibleColumns.includes('nama_bib') && (
+                      <td className="py-3.5 px-4 text-slate-200 font-semibold whitespace-nowrap">
+                        <span className="text-amber-300 font-bold">{row.nama_bib || row.nama}</span>
+                      </td>
+                    )}
+
                     {/* NIK / No. Passport */}
                     {visibleColumns.includes('nik') && (
                       <td className="py-3.5 px-4 text-slate-300 font-mono text-[11px] whitespace-nowrap">

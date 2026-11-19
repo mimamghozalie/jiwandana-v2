@@ -11,6 +11,7 @@ interface ModalEditBpjsItraProps {
   onSave: (payload: {
     id: string;
     nama: string;
+    nama_bib: string;
     no_bib: string;
     nik: string;
     kk: string;
@@ -27,6 +28,7 @@ export default function ModalEditBpjsItra({
   isSaving = false,
 }: ModalEditBpjsItraProps) {
   const [nama, setNama] = useState('');
+  const [namaBib, setNamaBib] = useState('');
   const [noBib, setNoBib] = useState('');
   const [nik, setNik] = useState('');
   const [kk, setKk] = useState('');
@@ -36,6 +38,7 @@ export default function ModalEditBpjsItra({
   useEffect(() => {
     if (participant) {
       setNama(participant.nama || '');
+      setNamaBib(participant.nama_bib || participant.nama || '');
       setNoBib(participant.no_bib === '-' ? '' : (participant.no_bib || ''));
       setNik(participant.nik === '-' ? '' : (participant.nik || ''));
       setKk(participant.kk === '-' ? '' : (participant.kk || ''));
@@ -73,6 +76,7 @@ export default function ModalEditBpjsItra({
       const res = await onSave({
         id: participant.id,
         nama: nama.trim() || participant.nama,
+        nama_bib: namaBib.trim() || nama.trim() || participant.nama,
         no_bib: noBib.trim().toUpperCase() || participant.no_bib,
         nik: cleanNik || '-',
         kk: cleanKk || '-',
@@ -149,7 +153,7 @@ export default function ModalEditBpjsItra({
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
                 <User className="w-3.5 h-3.5 text-slate-400" />
-                <span>Nama Lengkap</span>
+                <span>Nama Lengkap (KTP)</span>
               </label>
               <input
                 type="text"
@@ -161,6 +165,23 @@ export default function ModalEditBpjsItra({
               />
             </div>
 
+            {/* Nama di BIB */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                <Hash className="w-3.5 h-3.5 text-amber-400" />
+                <span>Nama di BIB (Cetak Dada)</span>
+              </label>
+              <input
+                type="text"
+                value={namaBib}
+                onChange={(e) => setNamaBib(e.target.value)}
+                placeholder="Nama yang dicetak pada BIB"
+                className="w-full px-3.5 py-2.5 bg-white/5 border border-amber-400/30 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 rounded-xl text-white text-xs placeholder-slate-500 outline-none transition-all"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* No. BIB */}
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
@@ -174,6 +195,21 @@ export default function ModalEditBpjsItra({
                 placeholder="Contoh: M-00080"
                 required
                 className="w-full px-3.5 py-2.5 bg-white/5 border border-white/15 focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227] rounded-xl text-white text-xs font-mono font-bold uppercase placeholder-slate-500 outline-none transition-all"
+              />
+            </div>
+
+            {/* ID ITRA */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                <Award className="w-3.5 h-3.5 text-purple-400" />
+                <span>ID ITRA</span>
+              </label>
+              <input
+                type="text"
+                value={idItra}
+                onChange={(e) => setIdItra(e.target.value)}
+                placeholder="Contoh: 1829381 (Kosongkan jika belum)"
+                className="w-full px-3.5 py-2.5 bg-white/5 border border-white/15 focus:border-purple-400 focus:ring-1 focus:ring-purple-400 rounded-xl text-white text-xs font-mono placeholder-slate-500 outline-none transition-all"
               />
             </div>
           </div>
@@ -221,24 +257,6 @@ export default function ModalEditBpjsItra({
               maxLength={16}
               className="w-full px-3.5 py-2.5 bg-white/5 border border-white/15 focus:border-sky-400 focus:ring-1 focus:ring-sky-400 rounded-xl text-white text-xs font-mono tracking-wider placeholder-slate-500 outline-none transition-all"
             />
-          </div>
-
-          {/* ID ITRA */}
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-              <Award className="w-3.5 h-3.5 text-amber-400" />
-              <span>ID ITRA (International Trail Running Association)</span>
-            </label>
-            <input
-              type="text"
-              value={idItra}
-              onChange={(e) => setIdItra(e.target.value)}
-              placeholder="Contoh: 1829381 (Kosongkan jika belum punya)"
-              className="w-full px-3.5 py-2.5 bg-white/5 border border-white/15 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 rounded-xl text-white text-xs font-mono placeholder-slate-500 outline-none transition-all"
-            />
-            <p className="text-[10px] text-slate-400">
-              Opsional bagi pelari yang ingin mencatat index poin ITRA resmi lomba.
-            </p>
           </div>
 
           {/* Buttons */}
