@@ -93,7 +93,7 @@ export default function ModalEditBpjsItra({
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-lg bg-[#0a1424] rounded-3xl border border-white/20 shadow-2xl overflow-hidden animate-[scaleUp_0.25s_ease-out] text-white"
+        className="relative w-full max-w-lg bg-[#0a1424] rounded-3xl border border-white/20 shadow-2xl overflow-hidden animate-[scaleUp_0.25s_ease-out] text-white font-sans"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -103,7 +103,7 @@ export default function ModalEditBpjsItra({
               <ShieldCheck className="w-5 h-5 text-amber-400" />
             </div>
             <div>
-              <h3 className="text-base sm:text-lg font-bold font-serif text-white flex items-center gap-2">
+              <h3 className="text-base sm:text-lg font-bold font-sans text-white flex items-center gap-2">
                 <span>Update Data BPJS &amp; ITRA</span>
               </h3>
               <p className="text-[11px] text-slate-400">

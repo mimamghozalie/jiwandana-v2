@@ -255,7 +255,7 @@ function BpjsPageContent() {
   };
 
   return (
-    <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
+    <div className="space-y-6 font-sans animate-[fadeIn_0.3s_ease-out]">
       {/* 1. Header & SubNav */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-5">
         <div>
@@ -263,7 +263,7 @@ function BpjsPageContent() {
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>Pusat Data Asuransi &amp; ITRA</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight font-serif flex items-center gap-3">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight font-sans flex items-center gap-3">
             <span>Pengecekan BPJS &amp; ITRA Peserta</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-2xl">
@@ -317,7 +317,7 @@ function BpjsPageContent() {
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
           <div>
-            <h2 className="text-lg sm:text-xl font-bold font-serif text-white flex items-center gap-2.5">
+            <h2 className="text-lg sm:text-xl font-bold font-sans text-white flex items-center gap-2.5">
               <Search className="w-5 h-5 text-amber-400" />
               <span>Cek Cepat Peserta Berdasarkan Nomor BIB</span>
             </h2>
@@ -362,7 +362,7 @@ function BpjsPageContent() {
                       {selectedBibMatch.no_bib || 'BIB -'}
                     </div>
                     <div>
-                      <h3 className="text-base sm:text-lg font-bold text-white font-serif">
+                      <h3 className="text-base sm:text-lg font-bold text-white font-sans">
                         {selectedBibMatch.nama}
                       </h3>
                       <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5 flex-wrap">
@@ -522,7 +522,7 @@ function BpjsPageContent() {
             ) : (
               <div className="p-6 rounded-2xl bg-black/40 border border-white/10 text-center space-y-2">
                 <AlertTriangle className="w-6 h-6 text-amber-400 mx-auto" />
-                <h4 className="text-sm font-bold text-white">
+                <h4 className="text-sm font-bold text-white font-sans">
                   Nomor BIB "{bibQuery}" Tidak Ditemukan
                 </h4>
                 <p className="text-xs text-slate-400 max-w-md mx-auto">
