@@ -10,5 +10,6 @@ export { default as CommunityDiscountTable } from './CommunityDiscountTable';
 export { default as KelompokBatchTable } from './KelompokBatchTable';
 export { default as TrailrunSubNav } from './TrailrunSubNav';
 export { default as AdminFlashSaleModal } from './AdminFlashSaleModal';
+export { default as ModalEditBpjsItra } from './bpjs/ModalEditBpjsItra';
 
 

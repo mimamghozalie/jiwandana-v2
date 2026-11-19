@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { User, Users, RefreshCw, Trash2, Printer, Zap, BarChart3 } from 'lucide-react';
+import { User, Users, RefreshCw, Trash2, Printer, Zap, BarChart3, ShieldCheck } from 'lucide-react';
 
 interface TrailrunSubNavProps {
   individuCount: number;
@@ -30,10 +30,11 @@ export default function TrailrunSubNav({
   const isIndividu = pathname.includes('/trailrun/individu') || pathname === '/admin/trailrun';
   const isKelompok = pathname.includes('/trailrun/kelompok');
   const isStats = pathname.includes('/trailrun/stats');
+  const isBpjs = pathname.includes('/trailrun/bpjs');
 
   return (
     <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
-      {/* Tab Switcher: Individu vs Kelompok vs Statistik Fee Tiket */}
+      {/* Tab Switcher: Individu vs Kelompok vs Statistik Fee Tiket vs BPJS & ITRA */}
       <div className="flex items-center gap-2 p-1 rounded-2xl bg-black/40 border border-white/10 flex-wrap">
         <Link
           href="/admin/trailrun/individu"
@@ -84,6 +85,17 @@ export default function TrailrunSubNav({
           >
             Semua ({individuCount + totalKelompokPeserta})
           </span>
+        </Link>
+
+        <Link
+          href="/admin/trailrun/bpjs"
+          className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${isBpjs
+              ? 'bg-amber-500 text-slate-950 shadow-md font-extrabold'
+              : 'text-slate-400 hover:text-white hover:bg-white/5'
+            }`}
+        >
+          <ShieldCheck className="w-4 h-4 text-current" />
+          <span>Cek BPJS &amp; ITRA</span>
         </Link>
       </div>
 

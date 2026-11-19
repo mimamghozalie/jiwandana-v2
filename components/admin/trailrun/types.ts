@@ -23,6 +23,7 @@ export interface TrailrunRow {
   nama: string;
   nik?: string;
   kk?: string;
+  id_itra?: string | null;
   email: string;
   no_bib: string;
   no_hp: string;
@@ -161,6 +162,7 @@ export const ALL_COLUMNS: ColumnConfig[] = [
   { key: 'nama', label: 'Nama Peserta', category: 'Utama', defaultVisible: true },
   { key: 'nik', label: 'NIK / No. Passport', category: 'Utama', defaultVisible: true },
   { key: 'kk', label: 'No. KK (Opsional)', category: 'Utama', defaultVisible: true },
+  { key: 'id_itra', label: 'ID ITRA', category: 'Utama', defaultVisible: true },
   { key: 'kategori', label: 'Kategori', category: 'Utama', defaultVisible: true },
   { key: 'ukuran_jersey', label: 'Ukuran Jersey', category: 'Utama', defaultVisible: true },
   { key: 'hasil_lari', label: 'Hasil Lari', category: 'Utama', defaultVisible: true },

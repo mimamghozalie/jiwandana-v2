@@ -88,6 +88,7 @@ export function useTrailrunData() {
             nama: r.nama,
             nik: r.nik || '-',
             kk: r.kk || '-',
+            id_itra: r.id_itra || '-',
             email: r.email,
             no_bib: r.no_bib || '-',
             no_hp: r.no_hp,
