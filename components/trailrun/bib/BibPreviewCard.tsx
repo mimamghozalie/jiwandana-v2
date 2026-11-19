@@ -204,8 +204,8 @@ export default function BibPreviewCard({
   }, [bibNumber, selectedCategory]);
 
   // Dynamic text sizing for BIB number & runner name so long text stays inside safe area
-  const cleanBib = bibNumber.trim().toUpperCase();
-  const cleanName = runnerName.trim();
+  const cleanBib = (bibNumber || '').trim().toUpperCase();
+  const cleanName = (runnerName || '').trim();
 
   const [fittedBib, setFittedBib] = useState<{ fontSize: number; letterSpacing: number }>(() =>
     fitTextHeuristic(cleanBib, bibFontSize, MAX_BIB_TEXT_WIDTH, letterSpacing, 90, 0.8)
@@ -380,7 +380,6 @@ export default function BibPreviewCard({
         fill: ${currentConfig.textColor};
         text-anchor: middle;
         dominant-baseline: central;
-        text-transform: uppercase;
       }
     </style>
   </defs>
