@@ -3,24 +3,15 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
-  HeartPulse,
   Phone,
-  AlertTriangle,
   Copy,
   Check,
   Printer,
   Share2,
-  Calendar,
-  User,
-  MapPin,
-  CreditCard,
-  Hash,
-  Search,
   RefreshCw,
-  Droplet,
-  Award,
-  AlertCircle,
+  Search,
   MessageCircle,
+  AlertCircle,
 } from 'lucide-react';
 
 interface ParticipantData {
@@ -109,7 +100,6 @@ export default function BioPesertaClient() {
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
-  // Fetch data saat parameter BIB berubah
   useEffect(() => {
     if (bibParam) {
       setInputBib(bibParam);
@@ -176,416 +166,296 @@ export default function BioPesertaClient() {
   const emergencyPhoneDisplay = participant?.kontak_darurat?.trim() || '—';
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-800 font-sans print:bg-white print:p-0 flex flex-col justify-center items-center p-3 sm:p-6">
-      {/* Container Lebar Standar Medis Dossier */}
-      <div className="w-full max-w-2xl mx-auto space-y-4 font-sans">
-        {/* Loading State */}
+    <div className="min-h-screen bg-[#f0ebf8] text-[#202124] font-sans py-6 px-3 sm:px-4 print:bg-white print:p-0">
+      <div className="w-full max-w-[640px] mx-auto font-sans space-y-3">
+        {/* SEARCH BAR (Bisa digunakan untuk cari nomor BIB lain - Hidden on Print) */}
+        {/* <div className="bg-white rounded-lg border border-[#dadce0] p-3 shadow-xs print:hidden">
+          <form onSubmit={handleSearch} className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                value={inputBib}
+                onChange={(e) => setInputBib(e.target.value)}
+                placeholder="Masukkan Nomor BIB (Contoh: M-00069)"
+                className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-white border border-[#dadce0] rounded-md focus:border-[#673ab7] focus:ring-1 focus:ring-[#673ab7] outline-none font-mono font-bold uppercase"
+              />
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 bg-[#673ab7] hover:bg-[#5e35b1] text-white text-xs font-semibold rounded-md transition-colors cursor-pointer shrink-0 disabled:opacity-50"
+            >
+              {loading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : 'Cari'}
+            </button>
+          </form>
+        </div> */}
+
+        {/* LOADING STATE */}
         {loading && (
-          <div className="p-12 text-center bg-white rounded-3xl border border-slate-200 shadow-sm space-y-3 print:hidden">
-            <RefreshCw className="w-8 h-8 text-rose-600 animate-spin mx-auto" />
-            <div className="text-base font-bold text-slate-800 font-sans">
-              Mengambil Data Medis Peserta...
-            </div>
-            <p className="text-xs text-slate-400 font-mono">Nomor BIB: {inputBib}</p>
+          <div className="bg-white rounded-lg border border-[#dadce0] p-10 text-center space-y-3 shadow-xs">
+            <RefreshCw className="w-6 h-6 text-[#673ab7] animate-spin mx-auto" />
+            <div className="text-xs text-[#5f6368]">Memuat biodata peserta...</div>
           </div>
         )}
 
-        {/* Error / Not Found State */}
+        {/* ERROR / NOT FOUND */}
         {!loading && errorMsg && (
-          <div className="p-8 bg-white rounded-3xl border border-rose-200 shadow-sm text-center space-y-4 print:hidden">
-            <div className="w-14 h-14 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto border border-rose-200">
-              <AlertCircle className="w-7 h-7" />
-            </div>
-            <div className="space-y-1">
-              <div className="text-lg font-bold text-slate-900 font-sans">Data Tidak Ditemukan</div>
-              <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto">{errorMsg}</p>
-            </div>
-
-            {/* Input Pencarian Ulang */}
-            <form onSubmit={handleSearch} className="flex items-center gap-2 max-w-sm mx-auto pt-2">
-              <input
-                type="text"
-                value={inputBib}
-                onChange={(e) => setInputBib(e.target.value)}
-                placeholder="Masukkan Nomor BIB (misal: M-00069)"
-                className="flex-1 px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none font-mono font-bold uppercase"
-              />
-              <button
-                type="submit"
-                className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer shrink-0"
-              >
-                Cari
-              </button>
-            </form>
+          <div className="bg-white rounded-lg border border-[#dadce0] p-6 text-center space-y-2 shadow-xs">
+            <AlertCircle className="w-8 h-8 text-[#d93025] mx-auto" />
+            <div className="text-sm font-bold text-[#202124]">Data Tidak Ditemukan</div>
+            <div className="text-xs text-[#5f6368]">{errorMsg}</div>
           </div>
         )}
 
-        {/* No Search Initial State */}
-        {!loading && !participant && !errorMsg && (
-          <div className="p-10 bg-white rounded-3xl border border-slate-200 text-center space-y-4 shadow-sm print:hidden">
-            <div className="w-14 h-14 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center mx-auto">
-              <Search className="w-7 h-7" />
-            </div>
-            <div className="space-y-1">
-              <div className="text-lg font-bold text-slate-900 font-sans">
-                Pemeriksaan Biodata Peserta
-              </div>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                Ketik nomor dada pelari (BIB) untuk memeriksa riwayat medis, NIK, dan kontak darurat pasien.
-              </p>
-            </div>
-            <form onSubmit={handleSearch} className="flex items-center gap-2 max-w-sm mx-auto pt-2">
-              <input
-                type="text"
-                value={inputBib}
-                onChange={(e) => setInputBib(e.target.value)}
-                placeholder="Contoh: M-00069"
-                className="flex-1 px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none font-mono font-bold uppercase"
-              />
-              <button
-                type="submit"
-                className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer shrink-0"
-              >
-                Cek Data
-              </button>
-            </form>
-          </div>
-        )}
-
-        {/* PARTICIPANT FOUND: CLEAN MEDICAL PASS DOSSIER */}
+        {/* SINGLE SOLID WHITE CARD: SEMUA DATA DALAM 1 CARD TANPA GAP */}
         {!loading && participant && (
-          <div className="bg-white border-2 border-slate-900 rounded-3xl overflow-hidden shadow-2xl print:border-none print:shadow-none print:rounded-none font-sans">
-            {/* Header: Event & Race Identification */}
-            <div className=" p-5 sm:p-6 border-b border-slate-800">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="space-y-0.5">
-                  <div className="text-xl sm:text-2xl font-bold tracking-tight font-sans">
-                    {participant.nama}
-                  </div>
-                  {participant.nama_bib && participant.nama_bib !== participant.nama && (
-                    <div className="text-xs  font-semibold font-sans">
-                      Nama di BIB: <span className="font-bold">{participant.nama_bib}</span>
-                    </div>
-                  )}
-                </div>
+          <div className="bg-white rounded-lg border border-[#dadce0] shadow-xs overflow-hidden print:border-none print:shadow-none">
+            {/* Top colored stripe */}
+            <div className="h-2.5 bg-[#673ab7] w-full" />
 
-                {/* Nomor BIB & Kategori (Besar) */}
-                <div className="flex items-center gap-2 self-start sm:self-center">
-                  <div className="bg-amber-400 text-slate-950 px-4 py-2 rounded-xl text-center shadow-xs">
-                    <span className="text-[9px] uppercase tracking-wider font-extrabold block text-slate-900/70 font-sans">
-                      NOMOR BIB
-                    </span>
-                    <span className="text-xl sm:text-2xl font-black font-mono tracking-wider leading-none">
-                      {participant.no_bib}
-                    </span>
-                  </div>
-
-                  <div className="bg-slate-800 border border-slate-700 text-white px-3.5 py-2 rounded-xl text-center">
-                    <span className="text-[9px] uppercase tracking-wider font-bold block text-slate-400 font-sans">
-                      KATEGORI
-                    </span>
-                    <span className="text-lg font-bold font-mono leading-none">
-                      {participant.kategori || '12K'}
-                    </span>
-                  </div>
-                </div>
+            {/* Header Form */}
+            <div className="p-6 border-b border-[#dadce0] space-y-1">
+              <div className="text-2xl font-bold text-[#202124] tracking-tight">
+                Biodata Peserta Trailrun
+              </div>
+              <div className="text-xs text-[#5f6368] leading-relaxed">
+                Trailrun Lintas Candi Majapahit 2026 • Arsip Data Rekam Medis &amp; Rumah Sakit
               </div>
             </div>
 
-            {/* Content Body */}
-            <div className="p-5 sm:p-7 space-y-6 font-sans">
-              {/* ============================================================== */}
-              {/* SECTION 1: TRIASE DARURAT MEDIS (HIGHEST PRIORITY)            */}
-              {/* ============================================================== */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-rose-700 font-bold text-xs uppercase tracking-wider border-b border-rose-200 pb-2 font-sans">
-                  <HeartPulse className="w-4 h-4 text-rose-600" />
-                  <span>Triase &amp; Informasi Medis Darurat</span>
+            {/* Content Fields: Bersambung dalam 1 card dengan pemisah garis tipis tanpa gap */}
+            <div className="divide-y divide-[#dadce0] text-sm">
+              {/* 1. NOMOR BIB */}
+              <div className="p-4 sm:p-5 space-y-1">
+                <div className="text-xs font-semibold text-[#5f6368]">
+                  Nomor BIB <span className="text-[#d93025]">*</span>
                 </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                  {/* 1.1 GOLONGAN DARAH */}
-                  <div className="p-4 rounded-2xl bg-rose-50 border-2 border-rose-300 flex items-center gap-3.5">
-                    <div className="w-12 h-12 rounded-xl bg-rose-600 text-white flex items-center justify-center font-black text-xl shrink-0 shadow-sm">
-                      <Droplet className="w-6 h-6 fill-white" />
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-extrabold text-rose-700 uppercase tracking-wider block font-sans">
-                        GOLONGAN DARAH
-                      </span>
-                      <span className="text-2xl font-black text-rose-950 font-sans">
-                        {participant.golongan_darah || 'TIDAK DIKETAHUI'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* 1.2 USIA & TANGGAL LAHIR */}
-                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-300 space-y-1">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1 font-sans">
-                      <Calendar className="w-3.5 h-3.5 text-slate-500" />
-                      Usia / Tgl. Lahir
-                    </span>
-                    <div className="text-base font-black text-slate-900 font-sans">
-                      {calculateAge(participant.tanggal_lahir)}
-                    </div>
-                    <span className="text-[11px] text-slate-600 block font-sans">
-                      {formatDateIndo(participant.tanggal_lahir)}
-                    </span>
-                  </div>
-
-                  {/* 1.3 JENIS KELAMIN */}
-                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-300 space-y-1">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1 font-sans">
-                      <User className="w-3.5 h-3.5 text-slate-500" />
-                      Jenis Kelamin
-                    </span>
-                    <div className="text-base font-black text-slate-900 font-sans">
-                      {participant.jenis_kelamin || '—'}
-                    </div>
-                    <span className="text-[11px] text-slate-600 block font-sans">
-                      Warga: {participant.kewarganegaraan || 'Indonesia'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* 1.4 RIWAYAT PENYAKIT & ALERGI (FULL WIDTH ALERT) */}
-                <div
-                  className={`p-4 rounded-2xl border-2 ${participant.riwayat_medis &&
-                    participant.riwayat_medis.trim() !== '' &&
-                    participant.riwayat_medis !== '-'
-                    ? 'bg-amber-50 border-amber-300 text-amber-950'
-                    : 'bg-emerald-50 border-emerald-300 text-emerald-950'
-                    }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <AlertTriangle
-                      className={`w-5 h-5 shrink-0 mt-0.5 ${participant.riwayat_medis &&
-                        participant.riwayat_medis.trim() !== '' &&
-                        participant.riwayat_medis !== '-'
-                        ? 'text-amber-600'
-                        : 'text-emerald-600'
-                        }`}
-                    />
-                    <div className="space-y-1 flex-1 font-sans">
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider block opacity-80 font-sans">
-                        Catatan Riwayat Medis / Alergi / Cedera
-                      </span>
-                      <div className="text-sm sm:text-base font-bold leading-snug font-sans">
-                        {participant.riwayat_medis &&
-                          participant.riwayat_medis.trim() !== '' &&
-                          participant.riwayat_medis !== '-'
-                          ? participant.riwayat_medis
-                          : 'Tidak ada riwayat medis atau alergi tercatat.'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 1.5 KONTAK DARURAT (EMERGENCY CONTACT KELUARGA DENGAN CALL & WA BUTTON) */}
-                <div className="p-4 sm:p-5 rounded-2xl bg-rose-50 border border-rose-300 space-y-3 font-sans">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div>
-                      <span className="text-[10px] font-extrabold text-rose-800 uppercase tracking-wider block font-sans">
-                        KONTAK DARURAT (KELUARGA / KERABAT)
-                      </span>
-                      <div className="text-xl sm:text-2xl font-mono font-black text-rose-950 mt-0.5">
-                        {emergencyPhoneDisplay}
-                      </div>
-                    </div>
-
-                    {/* Action buttons (Hidden on Print) */}
-                    {emergencyPhoneClean && (
-                      <div className="flex items-center gap-2 print:hidden">
-                        <a
-                          href={`tel:${emergencyPhoneClean}`}
-                          className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl inline-flex items-center gap-1.5 shadow-xs transition-colors font-sans"
-                        >
-                          <Phone className="w-3.5 h-3.5" />
-                          <span>Panggil Telepon</span>
-                        </a>
-                        <a
-                          href={`https://wa.me/${emergencyPhoneClean}?text=${encodeURIComponent(
-                            `Halo, kami dari Tim Medis / Rumah Sakit terkait peserta Trailrun atas nama ${participant.nama} (Nomor BIB ${participant.no_bib}).`
-                          )}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl inline-flex items-center gap-1.5 shadow-xs transition-colors font-sans"
-                        >
-                          <MessageCircle className="w-3.5 h-3.5" />
-                          <span>WhatsApp</span>
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-[11px] text-rose-800/80 leading-relaxed font-sans">
-                    Nomor di atas merupakan kontak darurat utama yang didaftarkan peserta saat registrasi resmi.
-                  </p>
+                <div className="text-xl font-bold font-mono text-[#202124]">
+                  {participant.no_bib}
                 </div>
               </div>
 
-              {/* ============================================================== */}
-              {/* SECTION 2: ADMINISTRASI RS & ASURANSI BPJS                     */}
-              {/* ============================================================== */}
-              <div className="space-y-3 pt-2 font-sans">
-                <div className="flex items-center gap-2 text-slate-800 font-bold text-xs uppercase tracking-wider border-b border-slate-200 pb-2 font-sans">
-                  <CreditCard className="w-4 h-4 text-slate-700" />
-                  <span>Administrasi Pendaftaran RS &amp; Asuransi BPJS</span>
+              {/* 2. KATEGORI LARI */}
+              <div className="p-4 sm:p-5 space-y-1">
+                <div className="text-xs font-semibold text-[#5f6368]">
+                  Kategori Lari <span className="text-[#d93025]">*</span>
                 </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  {/* NIK */}
-                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-300 space-y-2 font-sans">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1 font-sans">
-                        <CreditCard className="w-3 h-3 text-slate-500" />
-                        NIK (KTP / Paspor)
-                      </span>
-                      {participant.nik && participant.nik.replace(/\D/g, '').length === 16 && (
-                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full font-sans">
-                          16 Digit ✓
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-lg sm:text-xl font-mono font-black text-slate-900 tracking-wider">
-                      {participant.nik && participant.nik !== '-' ? participant.nik : 'Belum Terisi'}
-                    </div>
-                    {participant.nik && participant.nik !== '-' && (
-                      <button
-                        type="button"
-                        onClick={() => copyToClipboard(participant.nik || '', 'nik')}
-                        className="text-xs font-semibold text-rose-600 hover:text-rose-700 flex items-center gap-1 cursor-pointer print:hidden font-sans"
-                      >
-                        {copiedField === 'nik' ? (
-                          <>
-                            <Check className="w-3.5 h-3.5 text-emerald-600" />
-                            <span className="text-emerald-700 font-bold">Tersalin ke Clipboard!</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3.5 h-3.5" />
-                            <span>Salin NIK untuk SIMRS / BPJS</span>
-                          </>
-                        )}
-                      </button>
-                    )}
-                  </div>
-
-                  {/* NO KK */}
-                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-300 space-y-2 font-sans">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1 font-sans">
-                        <Hash className="w-3 h-3 text-slate-500" />
-                        Nomor Kartu Keluarga (KK)
-                      </span>
-                      {participant.kk && participant.kk.replace(/\D/g, '').length === 16 && (
-                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full font-sans">
-                          16 Digit ✓
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-lg sm:text-xl font-mono font-black text-slate-900 tracking-wider">
-                      {participant.kk && participant.kk !== '-' ? participant.kk : 'Belum Terisi'}
-                    </div>
-                    {participant.kk && participant.kk !== '-' && (
-                      <button
-                        type="button"
-                        onClick={() => copyToClipboard(participant.kk || '', 'kk')}
-                        className="text-xs font-semibold text-rose-600 hover:text-rose-700 flex items-center gap-1 cursor-pointer print:hidden font-sans"
-                      >
-                        {copiedField === 'kk' ? (
-                          <>
-                            <Check className="w-3.5 h-3.5 text-emerald-600" />
-                            <span className="text-emerald-700 font-bold">Tersalin ke Clipboard!</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3.5 h-3.5" />
-                            <span>Salin Nomor KK</span>
-                          </>
-                        )}
-                      </button>
-                    )}
-                  </div>
+                <div className="font-bold text-[#202124]">
+                  {participant.kategori || '12K'}
                 </div>
+              </div>
 
-                {/* Optional ID ITRA */}
-                {participant.id_itra && participant.id_itra !== '-' && (
-                  <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl flex items-center justify-between text-xs text-purple-900 font-sans">
-                    <div className="flex items-center gap-2">
-                      <Award className="w-4 h-4 text-purple-600" />
-                      <span>ID ITRA:</span>
-                      <strong className="font-mono">{participant.id_itra}</strong>
-                    </div>
+              {/* 3. NAMA LENGKAP & NAMA DI BIB */}
+              <div className="p-4 sm:p-5 space-y-1">
+                <div className="text-xs font-semibold text-[#5f6368]">
+                  Nama Lengkap (Sesuai KTP) <span className="text-[#d93025]">*</span>
+                </div>
+                <div className="text-base font-bold text-[#202124]">
+                  {participant.nama}
+                </div>
+                {participant.nama_bib && participant.nama_bib !== participant.nama && (
+                  <div className="text-xs text-[#5f6368] pt-0.5">
+                    Nama di BIB: <span className="font-semibold text-[#202124]">{participant.nama_bib}</span>
                   </div>
                 )}
               </div>
 
-              {/* ============================================================== */}
-              {/* SECTION 3: IDENTITAS DOMISILI & KONTAK PESERTA                 */}
-              {/* ============================================================== */}
-              <div className="space-y-3 pt-2 font-sans">
-                <div className="flex items-center gap-2 text-slate-800 font-bold text-xs uppercase tracking-wider border-b border-slate-200 pb-2 font-sans">
-                  <MapPin className="w-4 h-4 text-slate-700" />
-                  <span>Domisili &amp; Kontak Pasien</span>
+              {/* 4. NIK (KTP / PASPOR) - TEPAT DI BAWAH NAMA */}
+              <div className="p-4 sm:p-5 space-y-1.5">
+                <div className="text-xs font-semibold text-[#5f6368]">
+                  NIK (KTP / Paspor) <span className="text-[#d93025]">*</span>
                 </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs font-sans">
-                  {/* Alamat Lengkap */}
-                  <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1 font-sans">
-                    <span className="text-[10px] text-slate-400 uppercase font-bold block font-sans">
-                      Alamat KTP / Domisili
-                    </span>
-                    <p className="font-semibold text-slate-800 leading-relaxed font-sans">
-                      {participant.alamat || '—'}
-                    </p>
-                    <p className="text-slate-500 text-[11px] font-sans">
-                      {[participant.kota, participant.provinsi].filter(Boolean).join(', ') || '—'}
-                    </p>
-                  </div>
-
-                  {/* Kontak Pribadi */}
-                  <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2 font-sans">
-                    <div>
-                      <span className="text-[10px] text-slate-400 uppercase font-bold block font-sans">
-                        No. HP / WhatsApp Pasien
-                      </span>
-                      <div className="font-mono font-bold text-slate-900 text-sm">
-                        {participant.no_hp || '—'}
-                      </div>
-                    </div>
-                    {participant.nama_komunitas && participant.nama_komunitas !== 'opsional' && (
-                      <div>
-                        <span className="text-[10px] text-slate-400 uppercase font-bold block font-sans">
-                          Komunitas / Klub Lari
-                        </span>
-                        <div className="font-semibold text-slate-800 font-sans">
-                          {participant.nama_komunitas}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-base font-mono font-bold text-[#202124]">
+                    {participant.nik && participant.nik !== '-' ? participant.nik : 'Belum Diisi'}
+                  </span>
+                  {participant.nik && participant.nik !== '-' && (
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(participant.nik || '', 'nik')}
+                      className="px-2.5 py-1 bg-white hover:bg-slate-100 border border-[#dadce0] text-xs font-semibold rounded text-[#1a73e8] inline-flex items-center gap-1 cursor-pointer print:hidden"
+                    >
+                      {copiedField === 'nik' ? (
+                        <>
+                          <Check className="w-3 h-3 text-[#188038]" />
+                          <span className="text-[#188038]">Tersalin!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3 h-3" />
+                          <span>Salin</span>
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
+
+              {/* 5. NOMOR KARTU KELUARGA (KK) - TEPAT DI BAWAH NIK */}
+              <div className="p-4 sm:p-5 space-y-1.5">
+                <div className="text-xs font-semibold text-[#5f6368]">
+                  Nomor Kartu Keluarga (KK)
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-base font-mono font-bold text-[#202124]">
+                    {participant.kk && participant.kk !== '-' ? participant.kk : 'Belum Diisi'}
+                  </span>
+                  {participant.kk && participant.kk !== '-' && (
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(participant.kk || '', 'kk')}
+                      className="px-2.5 py-1 bg-white hover:bg-slate-100 border border-[#dadce0] text-xs font-semibold rounded text-[#1a73e8] inline-flex items-center gap-1 cursor-pointer print:hidden"
+                    >
+                      {copiedField === 'kk' ? (
+                        <>
+                          <Check className="w-3 h-3 text-[#188038]" />
+                          <span className="text-[#188038]">Tersalin!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3 h-3" />
+                          <span>Salin</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* 6. GOLONGAN DARAH */}
+              <div className="p-4 sm:p-5 space-y-1.5">
+                <div className="text-xs font-semibold text-[#5f6368]">
+                  Golongan Darah <span className="text-[#d93025]">*</span>
+                </div>
+                <div>
+                  <span className="text-base font-black text-[#d93025] bg-[#fce8e6] border border-[#fad2cf] px-3 py-1 rounded inline-block">
+                    {participant.golongan_darah || 'Tidak Diketahui'}
+                  </span>
+                </div>
+              </div>
+
+              {/* 7. RIWAYAT MEDIS / ALERGI */}
+              <div className="p-4 sm:p-5 space-y-1">
+                <div className="text-xs font-semibold text-[#5f6368]">
+                  Riwayat Penyakit / Alergi / Cedera
+                </div>
+                <div className="font-medium text-[#202124] leading-relaxed">
+                  {participant.riwayat_medis &&
+                    participant.riwayat_medis.trim() !== '' &&
+                    participant.riwayat_medis !== '-'
+                    ? participant.riwayat_medis
+                    : 'Tidak ada riwayat medis atau alergi tercatat.'}
+                </div>
+              </div>
+
+              {/* 8. KONTAK DARURAT (KELUARGA) */}
+              <div className="p-4 sm:p-5 space-y-2">
+                <div className="text-xs font-semibold text-[#5f6368]">
+                  Kontak Darurat (Keluarga / Kerabat) <span className="text-[#d93025]">*</span>
+                </div>
+                <div className="text-lg font-mono font-bold text-[#202124]">
+                  {emergencyPhoneDisplay}
+                </div>
+
+                {emergencyPhoneClean && (
+                  <div className="flex items-center gap-2 pt-1 print:hidden">
+                    <a
+                      href={`tel:${emergencyPhoneClean}`}
+                      className="px-3 py-1.5 bg-[#1a73e8] hover:bg-[#1557b0] text-white text-xs font-semibold rounded inline-flex items-center gap-1.5 transition-colors"
+                    >
+                      <Phone className="w-3.5 h-3.5" />
+                      <span>Panggil Telepon</span>
+                    </a>
+                    <a
+                      href={`https://wa.me/${emergencyPhoneClean}?text=${encodeURIComponent(
+                        `Halo, kami dari Tim Medis / Rumah Sakit terkait peserta Trailrun atas nama ${participant.nama} (Nomor BIB ${participant.no_bib}).`
+                      )}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 bg-[#188038] hover:bg-[#137333] text-white text-xs font-semibold rounded inline-flex items-center gap-1.5 transition-colors"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      <span>Chat WhatsApp</span>
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              {/* 9. TANGGAL LAHIR & USIA */}
+              <div className="p-4 sm:p-5 space-y-1">
+                <div className="text-xs font-semibold text-[#5f6368]">
+                  Tanggal Lahir &amp; Usia
+                </div>
+                <div className="font-semibold text-[#202124]">
+                  {formatDateIndo(participant.tanggal_lahir)} • ({calculateAge(participant.tanggal_lahir)})
+                </div>
+              </div>
+
+              {/* 10. JENIS KELAMIN */}
+              <div className="p-4 sm:p-5 space-y-1">
+                <div className="text-xs font-semibold text-[#5f6368]">
+                  Jenis Kelamin
+                </div>
+                <div className="font-medium text-[#202124]">
+                  {participant.jenis_kelamin || '—'}
+                </div>
+              </div>
+
+              {/* 11. ALAMAT & DOMISILI */}
+              <div className="p-4 sm:p-5 space-y-1">
+                <div className="text-xs font-semibold text-[#5f6368]">
+                  Alamat KTP / Domisili
+                </div>
+                <div className="text-[#202124] leading-relaxed">
+                  {participant.alamat || '—'}
+                </div>
+                <div className="text-xs text-[#5f6368]">
+                  {[participant.kota, participant.provinsi].filter(Boolean).join(', ') || '—'}
+                </div>
+              </div>
+
+              {/* 12. NO HP PASIEN */}
+              <div className="p-4 sm:p-5 space-y-1">
+                <div className="text-xs font-semibold text-[#5f6368]">
+                  Nomor WhatsApp / HP Pasien
+                </div>
+                <div className="font-mono font-medium text-[#202124]">
+                  {participant.no_hp || '—'}
+                </div>
+              </div>
+
+              {/* 13. ID ITRA (JIKA ADA) */}
+              {participant.id_itra && participant.id_itra !== '-' && (
+                <div className="p-4 sm:p-5 space-y-1">
+                  <div className="text-xs font-semibold text-[#5f6368]">
+                    ID ITRA
+                  </div>
+                  <div className="font-mono font-bold text-[#202124]">
+                    {participant.id_itra}
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Action Bar (Print / Share) - Hidden on Print */}
-            <div className="bg-slate-50 p-4 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3 print:hidden font-sans">
+            {/* ACTION BAR DI BAGIAN BAWAH CARD (PRINT & SHARE) */}
+            <div className="bg-[#f8f9fa] p-4 border-t border-[#dadce0] flex items-center justify-between gap-2 print:hidden">
               <button
                 type="button"
                 onClick={handleShare}
-                className="px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-xl text-xs font-bold transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-xs font-sans"
+                className="px-3.5 py-2 bg-white hover:bg-slate-100 text-[#1a73e8] border border-[#dadce0] rounded text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <Share2 className="w-3.5 h-3.5" />
-                <span>{copiedField === 'link' ? 'Tautan Tersalin!' : 'Bagikan Tautan'}</span>
+                <span>{copiedField === 'link' ? 'Tersalin!' : 'Bagikan Tautan'}</span>
               </button>
 
               <button
                 type="button"
                 onClick={handlePrint}
-                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold uppercase tracking-wider inline-flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors font-sans"
+                className="px-4 py-2 bg-[#673ab7] hover:bg-[#5e35b1] text-white rounded text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
               >
-                <Printer className="w-3.5 h-3.5 text-amber-400" />
-                <span>Cetak Rekam Medis (A4)</span>
+                <Printer className="w-3.5 h-3.5" />
+                <span>Cetak Form (Print)</span>
               </button>
             </div>
           </div>
