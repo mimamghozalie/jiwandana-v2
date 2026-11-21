@@ -171,7 +171,7 @@ def render_bib_card(participant: dict, template_cache: dict) -> tuple[str, str]:
         th_n = bbox_n[3] - bbox_n[1]
 
     name_x = int(1470 - tw_n / 2)
-    name_y = int(1200 - th_n / 2)
+    name_y = int(1150 - th_n / 2)
     draw.text((name_x, name_y), name, fill=(0, 0, 0), font=font_name)
 
     # 5. Simpan Hasil ke Folder Kategori
