@@ -25,8 +25,13 @@ export default function Navbar() {
     return false;
   };
 
-  // Hide Navbar on the root portal page, all admin CMS pages, and silat page
-  if (pathname === '/' || pathname.startsWith('/admin') || pathname.startsWith('/silat')) {
+  // Hide Navbar on the root portal page, all admin CMS pages, silat page, and trailrun bio_peserta
+  if (
+    pathname === '/' ||
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/silat') ||
+    pathname.startsWith('/trailrun/bio_peserta')
+  ) {
     return null;
   }
 

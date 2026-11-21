@@ -6,8 +6,13 @@ import { usePathname } from 'next/navigation';
 export default function Footer() {
   const pathname = usePathname();
 
-  // Hide on root page, all admin CMS pages, and silat page
-  if (pathname === '/' || pathname.startsWith('/admin') || pathname.startsWith('/silat')) {
+  // Hide on root page, all admin CMS pages, silat page, and trailrun bio_peserta
+  if (
+    pathname === '/' ||
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/silat') ||
+    pathname.startsWith('/trailrun/bio_peserta')
+  ) {
     return null;
   }
 

@@ -199,7 +199,7 @@ export default function BibPreviewCard({
   useEffect(() => {
     const origin = typeof window !== 'undefined' ? window.location.origin : 'https://jiwandana.com';
     const cleanBib = encodeURIComponent(bibNumber.trim().toUpperCase());
-    setBioQrUrl(`${origin}/trailrun/peserta?bib=${cleanBib}`);
+    setBioQrUrl(`${origin}/trailrun/bio_peserta?no_bib=${cleanBib}`);
     setGpxQrUrl(`${origin}/api/trailrun/download-gpx?cat=${selectedCategory}`);
   }, [bibNumber, selectedCategory]);
 
