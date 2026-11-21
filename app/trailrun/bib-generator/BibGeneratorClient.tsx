@@ -42,7 +42,7 @@ const CATEGORIES_CONFIG: Record<CategoryType, CategoryConfig> = {
     name: '12K PAWITRA',
     badge: '12K',
     bgImage: '/bib-12-clean.jpeg',
-    textColor: '#ffffff',
+    textColor: '#000000',
     accentColor: '#da0000',
     themeColor: '#e11d48',
   },
@@ -51,7 +51,7 @@ const CATEGORIES_CONFIG: Record<CategoryType, CategoryConfig> = {
     badge: '7K',
     bgImage: '/bib-7-clean.jpeg',
     textColor: '#000000',
-    accentColor: '#fffc01',
+    accentColor: '#eab308',
     themeColor: '#eab308',
   },
   '3k': {
@@ -81,16 +81,28 @@ export default function BibGeneratorClient() {
   const [gender, setGender] = useState<'Laki-laki' | 'Perempuan'>('Laki-laki');
 
   // Styling Customization State
+  const isNewLayout = selectedCategory === '12k' || selectedCategory === '7k';
+  const bioQrX = isNewLayout ? 88 : 103;
+  const bioQrY = isNewLayout ? 714 : 554;
+  const bioQrSize = isNewLayout ? 344 : 320;
+  const textCenterX = isNewLayout ? 1470 : 1420;
+
   const [bibFontSize, setBibFontSize] = useState<number>(340);
   const [nameFontSize, setNameFontSize] = useState<number>(76);
-  const [bibOffsetY, setBibOffsetY] = useState<number>(880);
-  const [nameOffsetY, setNameOffsetY] = useState<number>(1175);
+  const [bibOffsetY, setBibOffsetY] = useState<number>(isNewLayout ? 830 : 880);
+  const [nameOffsetY, setNameOffsetY] = useState<number>(isNewLayout ? 1200 : 1175);
   const [isItalic, setIsItalic] = useState<boolean>(true);
   const [letterSpacing, setLetterSpacing] = useState<number>(14);
 
+  useEffect(() => {
+    const isNew = selectedCategory === '12k' || selectedCategory === '7k';
+    setNameOffsetY(isNew ? 1200 : 1175);
+    setBibOffsetY(isNew ? 830 : 880);
+  }, [selectedCategory]);
+
   // QR Code State
   const [showBioQr, setShowBioQr] = useState<boolean>(true);
-  const [showGpxQr, setShowGpxQr] = useState<boolean>(true);
+  const [showGpxQr, setShowGpxQr] = useState<boolean>(false);
   const [bioQrUrl, setBioQrUrl] = useState<string>(
     `https://jiwandana.com/trailrun/peserta?no_bib=${encodeURIComponent(initialBib)}`
   );
@@ -219,12 +231,12 @@ export default function BibGeneratorClient() {
           await new Promise<void>((resolve) => {
             qrBioImg.onload = () => resolve();
             qrBioImg.onerror = () => resolve();
-            qrBioImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(
+            qrBioImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=350x350&data=${encodeURIComponent(
               bioQrUrl
             )}`;
           });
           if (qrBioImg.complete && qrBioImg.naturalWidth > 0) {
-            ctx.drawImage(qrBioImg, 103, 554, 320, 320);
+            ctx.drawImage(qrBioImg, bioQrX, bioQrY, bioQrSize, bioQrSize);
           }
         } catch {
           // Lewatkan QR jika offline
@@ -259,7 +271,7 @@ export default function BibGeneratorClient() {
       const italicPrefix = isItalic ? 'italic ' : '';
       ctx.font = `${italicPrefix}900 ${bibFontSize}px "Arial Black", "Impact", "Montserrat", sans-serif`;
       ctx.letterSpacing = `${letterSpacing}px`;
-      ctx.fillText(bibNumber.trim().toUpperCase(), 1420, bibOffsetY);
+      ctx.fillText(bibNumber.trim().toUpperCase(), textCenterX, bibOffsetY);
       ctx.restore();
 
       // 5. Render Nama Pelari (Di Bawah Nomor BIB)
@@ -276,7 +288,7 @@ export default function BibGeneratorClient() {
         actualNameSize = Math.max(48, Math.floor(nameFontSize * (25 / cleanName.length)));
         ctx.font = `bold ${actualNameSize}px "Arial", "Poppins", sans-serif`;
       }
-      ctx.fillText(cleanName, 1420, nameOffsetY);
+      ctx.fillText(cleanName, textCenterX, nameOffsetY);
       ctx.restore();
 
       // 6. Ekspor ke file Blob PNG dan unduh
@@ -336,9 +348,9 @@ export default function BibGeneratorClient() {
     showBioQr
       ? `<!-- 2. QR Code BIO -->
   <g id="qr-bio">
-    <image href="https://api.qrserver.com/v1/create-qr-code/?size=320x320&amp;data=${encodeURIComponent(
+    <image href="https://api.qrserver.com/v1/create-qr-code/?size=350x350&amp;data=${encodeURIComponent(
       bioQrUrl
-    )}" x="103" y="554" width="320" height="320" preserveAspectRatio="xMidYMid meet" />
+    )}" x="${bioQrX}" y="${bioQrY}" width="${bioQrSize}" height="${bioQrSize}" preserveAspectRatio="xMidYMid meet" />
   </g>`
       : ''
   }
@@ -355,12 +367,12 @@ export default function BibGeneratorClient() {
   }
 
   <!-- 4. Nomor BIB Dinamis -->
-  <text id="bib-number" x="1420" y="${bibOffsetY}" class="bib-num" font-size="${bibFontSize}" letter-spacing="${letterSpacing}">
+  <text id="bib-number" x="${textCenterX}" y="${bibOffsetY}" class="bib-num" font-size="${bibFontSize}" letter-spacing="${letterSpacing}">
     ${bibNumber.trim().toUpperCase()}
   </text>
 
   <!-- 5. Nama Pelari Dinamis -->
-  <text id="runner-name" x="1420" y="${nameOffsetY}" class="runner-name" font-size="${nameFontSize}" letter-spacing="4">
+  <text id="runner-name" x="${textCenterX}" y="${nameOffsetY}" class="runner-name" font-size="${nameFontSize}" letter-spacing="4">
     ${cleanName}
   </text>
 </svg>`;
@@ -762,13 +774,13 @@ export default function BibGeneratorClient() {
                   {showBioQr && (
                     <g id="preview-qr-bio">
                       <image
-                        href={`https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(
+                        href={`https://api.qrserver.com/v1/create-qr-code/?size=350x350&data=${encodeURIComponent(
                           bioQrUrl
                         )}`}
-                        x="103"
-                        y="554"
-                        width="320"
-                        height="320"
+                        x={bioQrX}
+                        y={bioQrY}
+                        width={bioQrSize}
+                        height={bioQrSize}
                         preserveAspectRatio="xMidYMid meet"
                       />
                     </g>
@@ -792,7 +804,7 @@ export default function BibGeneratorClient() {
                   {/* 3. Dynamic Nomor BIB */}
                   <text
                     id="preview-bib-number"
-                    x="1420"
+                    x={textCenterX}
                     y={bibOffsetY}
                     className="svg-bib-num"
                     fontSize={bibFontSize}
@@ -804,7 +816,7 @@ export default function BibGeneratorClient() {
                   {/* 4. Dynamic Runner Name */}
                   <text
                     id="preview-runner-name"
-                    x="1420"
+                    x={textCenterX}
                     y={nameOffsetY}
                     className="svg-runner-name"
                     fontSize={

@@ -29,7 +29,7 @@ const CATEGORIES_CONFIG: Record<BibCategoryType, CategoryConfig> = {
     name: '12K PAWITRA',
     badge: '12K',
     bgImage: '/bib-12-clean.jpeg',
-    textColor: '#ffffff',
+    textColor: '#000000',
     accentColor: '#da0000',
     themeColor: '#e11d48',
   },
@@ -38,7 +38,7 @@ const CATEGORIES_CONFIG: Record<BibCategoryType, CategoryConfig> = {
     badge: '7K',
     bgImage: '/bib-7-clean.jpeg',
     textColor: '#000000',
-    accentColor: '#fffc01',
+    accentColor: '#eab308',
     themeColor: '#eab308',
   },
   '3k': {
@@ -177,12 +177,24 @@ export default function BibPreviewCard({
   }, [initialName]);
 
   // Styling Customization State (Same as bib-generator)
+  const isNewLayout = selectedCategory === '12k' || selectedCategory === '7k';
   const [bibFontSize, setBibFontSize] = useState<number>(340);
   const [nameFontSize, setNameFontSize] = useState<number>(96);
-  const [bibOffsetY, setBibOffsetY] = useState<number>(835);
-  const [nameOffsetY, setNameOffsetY] = useState<number>(1120);
+  const [bibOffsetY, setBibOffsetY] = useState<number>(isNewLayout ? 830 : 835);
+  const [nameOffsetY, setNameOffsetY] = useState<number>(isNewLayout ? 1150 : 1120);
   const [isItalic, setIsItalic] = useState<boolean>(true);
   const [letterSpacing, setLetterSpacing] = useState<number>(14);
+
+  useEffect(() => {
+    const isNew = selectedCategory === '12k' || selectedCategory === '7k';
+    setNameOffsetY(isNew ? 1150 : 1120);
+    setBibOffsetY(isNew ? 830 : 835);
+  }, [selectedCategory]);
+
+  const bioQrX = isNewLayout ? 88 : 103;
+  const bioQrY = isNewLayout ? 714 : 554;
+  const bioQrSize = isNewLayout ? 344 : 320;
+  const textCenterX = isNewLayout ? 1470 : 1420;
 
   // QR Code Options
   const [showBioQr, setShowBioQr] = useState<boolean>(true);
@@ -280,12 +292,12 @@ export default function BibPreviewCard({
           await new Promise<void>((resolve) => {
             qrBioImg.onload = () => resolve();
             qrBioImg.onerror = () => resolve();
-            qrBioImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(
+            qrBioImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=350x350&data=${encodeURIComponent(
               bioQrUrl
             )}`;
           });
           if (qrBioImg.complete && qrBioImg.naturalWidth > 0) {
-            ctx.drawImage(qrBioImg, 103, 554, 320, 320);
+            ctx.drawImage(qrBioImg, bioQrX, bioQrY, bioQrSize, bioQrSize);
           }
         } catch {
           // Lewatkan QR jika offline
@@ -320,7 +332,7 @@ export default function BibPreviewCard({
       const italicPrefix = isItalic ? 'italic ' : '';
       ctx.font = `${italicPrefix}900 ${actualBibSize}px "Arial Black", "Impact", "Montserrat", sans-serif`;
       ctx.letterSpacing = `${actualBibLetterSpacing}px`;
-      ctx.fillText(cleanBib, 1420, bibOffsetY);
+      ctx.fillText(cleanBib, textCenterX, bibOffsetY);
       ctx.restore();
 
       // 5. Render Nama Pelari
@@ -330,7 +342,7 @@ export default function BibPreviewCard({
       ctx.fillStyle = currentConfig.textColor;
       ctx.font = `bold ${actualNameSize}px "Arial", "Poppins", sans-serif`;
       ctx.letterSpacing = `${actualNameLetterSpacing}px`;
-      ctx.fillText(cleanName, 1420, nameOffsetY);
+      ctx.fillText(cleanName, textCenterX, nameOffsetY);
       ctx.restore();
 
       // 6. Download file PNG
@@ -390,9 +402,9 @@ export default function BibPreviewCard({
   ${showBioQr
           ? `<!-- 2. QR Code BIO -->
   <g id="qr-bio">
-    <image href="https://api.qrserver.com/v1/create-qr-code/?size=320x320&amp;data=${encodeURIComponent(
+    <image href="https://api.qrserver.com/v1/create-qr-code/?size=350x350&amp;data=${encodeURIComponent(
             bioQrUrl
-          )}" x="103" y="554" width="320" height="320" preserveAspectRatio="xMidYMid meet" />
+          )}" x="${bioQrX}" y="${bioQrY}" width="${bioQrSize}" height="${bioQrSize}" preserveAspectRatio="xMidYMid meet" />
   </g>`
           : ''
         }
@@ -408,12 +420,12 @@ export default function BibPreviewCard({
         }
 
   <!-- 4. Nomor BIB Dinamis -->
-  <text id="bib-number" x="1420" y="${bibOffsetY}" class="bib-num" font-size="${actualBibSize}" letter-spacing="${actualBibLetterSpacing}">
+  <text id="bib-number" x="${textCenterX}" y="${bibOffsetY}" class="bib-num" font-size="${actualBibSize}" letter-spacing="${actualBibLetterSpacing}">
     ${cleanBib}
   </text>
 
   <!-- 5. Nama Pelari Dinamis -->
-  <text id="runner-name" x="1420" y="${nameOffsetY}" class="runner-name" font-size="${actualNameSize}" letter-spacing="${actualNameLetterSpacing}">
+  <text id="runner-name" x="${textCenterX}" y="${nameOffsetY}" class="runner-name" font-size="${actualNameSize}" letter-spacing="${actualNameLetterSpacing}">
     ${cleanName}
   </text>
 </svg>`;
@@ -544,13 +556,13 @@ export default function BibPreviewCard({
               {showBioQr && (
                 <g id="preview-qr-bio">
                   <image
-                    href={`https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(
+                    href={`https://api.qrserver.com/v1/create-qr-code/?size=350x350&data=${encodeURIComponent(
                       bioQrUrl
                     )}`}
-                    x="103"
-                    y="554"
-                    width="320"
-                    height="320"
+                    x={bioQrX}
+                    y={bioQrY}
+                    width={bioQrSize}
+                    height={bioQrSize}
                     preserveAspectRatio="xMidYMid meet"
                   />
                 </g>
@@ -574,7 +586,7 @@ export default function BibPreviewCard({
 
               {/* 4. Nomor BIB Dinamis */}
               <text
-                x="1420"
+                x={textCenterX}
                 y={bibOffsetY}
                 className="bib-text-num"
                 fontSize={actualBibSize}
@@ -585,7 +597,7 @@ export default function BibPreviewCard({
 
               {/* 5. Nama Pelari Dinamis */}
               <text
-                x="1420"
+                x={textCenterX}
                 y={nameOffsetY}
                 className="bib-text-name"
                 fontSize={actualNameSize}
@@ -771,7 +783,7 @@ export default function BibPreviewCard({
                 <input
                   type="range"
                   min="1050"
-                  max="1300"
+                  max="1350"
                   step="5"
                   value={nameOffsetY}
                   onChange={(e) => setNameOffsetY(Number(e.target.value))}
