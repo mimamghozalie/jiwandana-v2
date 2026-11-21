@@ -332,7 +332,7 @@ export default function PesertaClient() {
               <h3 className="font-serif font-bold text-slate-900 text-2xl">Cek E-BIB & Data Peserta</h3>
               <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
                 Halaman ini digunakan untuk melihat dan mengunduh kartu E-BIB resmi, verifikasi data medis, serta jadwal lomba
-                <strong> Trailrun Lintas Candi Majapahit 2026</strong>.
+
               </p>
             </div>
 
@@ -448,9 +448,6 @@ export default function PesertaClient() {
                     <div className="flex items-center gap-2">
                       <span className="px-2.5 py-0.5 rounded-full bg-[#C9A227]/15 border border-[#C9A227]/30 text-[#b45309] text-[10px] font-extrabold uppercase tracking-widest">
                         OFFICIAL DOSSIER
-                      </span>
-                      <span className="text-[11px] text-slate-500 font-semibold tracking-wider uppercase">
-                        Trailrun Lintas Candi Majapahit 2026
                       </span>
                     </div>
                     <h1 className="text-xl sm:text-2xl font-serif font-bold text-slate-900 tracking-wide">

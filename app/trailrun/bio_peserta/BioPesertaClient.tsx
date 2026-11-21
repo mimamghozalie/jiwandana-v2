@@ -220,7 +220,7 @@ export default function BioPesertaClient() {
                 Biodata Peserta Trailrun
               </div>
               <div className="text-xs text-[#5f6368] leading-relaxed">
-                Trailrun Lintas Candi Majapahit 2026 • Arsip Data Rekam Medis &amp; Rumah Sakit
+                Arsip Data Rekam Medis &amp; Rumah Sakit
               </div>
             </div>
 
