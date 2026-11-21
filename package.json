@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "export:bib": "python3 scripts/export_all_bibs.py"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",

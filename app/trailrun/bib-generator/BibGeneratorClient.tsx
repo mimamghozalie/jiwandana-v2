@@ -91,7 +91,7 @@ export default function BibGeneratorClient() {
   const [nameFontSize, setNameFontSize] = useState<number>(76);
   const [bibOffsetY, setBibOffsetY] = useState<number>(isNewLayout ? 830 : 880);
   const [nameOffsetY, setNameOffsetY] = useState<number>(isNewLayout ? 1200 : 1175);
-  const [isItalic, setIsItalic] = useState<boolean>(true);
+  const [isItalic, setIsItalic] = useState<boolean>(false);
   const [letterSpacing, setLetterSpacing] = useState<number>(14);
 
   useEffect(() => {

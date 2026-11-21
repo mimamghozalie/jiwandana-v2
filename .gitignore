@@ -49,6 +49,10 @@ next-env.d.ts
 ehthumbs.db
 Thumbs.db
 
+# BIB Export & Cache
+export_bib/
+.cache_qr/
+
 # IDE & Editor files
 .idea/
 .vscode/*

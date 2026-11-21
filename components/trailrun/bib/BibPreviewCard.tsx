@@ -182,7 +182,7 @@ export default function BibPreviewCard({
   const [nameFontSize, setNameFontSize] = useState<number>(96);
   const [bibOffsetY, setBibOffsetY] = useState<number>(isNewLayout ? 830 : 835);
   const [nameOffsetY, setNameOffsetY] = useState<number>(isNewLayout ? 1150 : 1120);
-  const [isItalic, setIsItalic] = useState<boolean>(true);
+  const [isItalic, setIsItalic] = useState<boolean>(false);
   const [letterSpacing, setLetterSpacing] = useState<number>(14);
 
   useEffect(() => {
