@@ -90,13 +90,13 @@ export default function BibGeneratorClient() {
   const [bibFontSize, setBibFontSize] = useState<number>(340);
   const [nameFontSize, setNameFontSize] = useState<number>(76);
   const [bibOffsetY, setBibOffsetY] = useState<number>(isNewLayout ? 830 : 880);
-  const [nameOffsetY, setNameOffsetY] = useState<number>(isNewLayout ? 1150 : 1175);
+  const [nameOffsetY, setNameOffsetY] = useState<number>(isNewLayout ? 1070 : 1175);
   const [isItalic, setIsItalic] = useState<boolean>(false);
   const [letterSpacing, setLetterSpacing] = useState<number>(14);
 
   useEffect(() => {
     const isNew = selectedCategory === '12k' || selectedCategory === '7k';
-    setNameOffsetY(isNew ? 1150 : 1175);
+    setNameOffsetY(isNew ? 1070 : 1175);
     setBibOffsetY(isNew ? 830 : 880);
   }, [selectedCategory]);
 

@@ -181,13 +181,13 @@ export default function BibPreviewCard({
   const [bibFontSize, setBibFontSize] = useState<number>(340);
   const [nameFontSize, setNameFontSize] = useState<number>(96);
   const [bibOffsetY, setBibOffsetY] = useState<number>(isNewLayout ? 830 : 835);
-  const [nameOffsetY, setNameOffsetY] = useState<number>(isNewLayout ? 1150 : 1120);
+  const [nameOffsetY, setNameOffsetY] = useState<number>(isNewLayout ? 1070 : 1120);
   const [isItalic, setIsItalic] = useState<boolean>(false);
   const [letterSpacing, setLetterSpacing] = useState<number>(14);
 
   useEffect(() => {
     const isNew = selectedCategory === '12k' || selectedCategory === '7k';
-    setNameOffsetY(isNew ? 1150 : 1120);
+    setNameOffsetY(isNew ? 1070 : 1120);
     setBibOffsetY(isNew ? 830 : 835);
   }, [selectedCategory]);
 
