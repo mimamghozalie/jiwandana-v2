@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "export:bib": "python3 scripts/export_all_bibs.py"
+    "export:bib": "python3 scripts/export_all_bibs.py",
+    "email:preview": "python3 scripts/send_rpc_emails.py --preview",
+    "email:dry-run": "python3 scripts/send_rpc_emails.py --dry-run",
+    "email:blast": "python3 scripts/send_rpc_emails.py --blast"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",

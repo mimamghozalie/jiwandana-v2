@@ -36,13 +36,11 @@ export default function TrailrunHero({ isOpen = true }: TrailrunHeroProps) {
         {/* CTA Button */}
         <div className="pt-2 flex flex-wrap justify-center gap-3">
           <a
-            href={isOpen ? '#kategori' : '#countdown'}
+            href="https://drive.google.com/file/d/1Nhr1qO6XzFB80JNlURgBNxZf2zegBmlA/view?usp=sharing"
+            target='_blank'
             className="px-8 py-4 bg-[#C9A227] hover:bg-[#b08d20] text-[#0d1c32] font-extrabold text-xs sm:text-sm uppercase tracking-wider rounded-xl transition-all transform active:scale-95 shadow-[0_4px_24px_rgba(201,162,39,0.6)] flex items-center gap-2 cursor-pointer"
           >
-            <span className="material-symbols-outlined text-lg">
-              {isOpen ? 'directions_run' : 'timer'}
-            </span>
-            <span>{isOpen ? 'Pilih Kategori Lomba' : 'Hitung Mundur Pembukaan'}</span>
+            <span>Waiver & Surat ijin ortu</span>
           </a>
         </div>
         <div className="pt-2 flex flex-wrap justify-center gap-3">
