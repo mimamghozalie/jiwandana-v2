@@ -126,21 +126,13 @@ export default function AllPesertaClient() {
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Kembali ke Halaman Trailrun</span>
             </Link>
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full bg-[#C9A227]/15 border border-[#C9A227]/30 text-[#b45309] text-[10px] font-extrabold uppercase tracking-widest">
-                OFFICIAL ROSTER
-              </span>
-              <span className="text-xs text-slate-500 font-semibold">
-                Trailrun Lintas Candi Majapahit 2026
-              </span>
-            </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight font-sans">
               Daftar Seluruh Peserta
             </h1>
           </div>
 
           {/* Badge Total Counter */}
-          <div className="self-start sm:self-center bg-white border border-black/10 rounded-2xl px-4 py-2.5 shadow-xs flex items-center gap-3">
+          {/* <div className="self-start sm:self-center bg-white border border-black/10 rounded-2xl px-4 py-2.5 shadow-xs flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-[#C9A227]/15 text-[#b45309] flex items-center justify-center shrink-0">
               <Users className="w-5 h-5" />
             </div>
@@ -151,8 +143,8 @@ export default function AllPesertaClient() {
               <span className="text-lg font-black text-slate-900 font-mono leading-none">
                 {participants.length} Peserta
               </span>
-            </div>
-          </div>
+            </div> */}
+          {/* </div> */}
         </div>
 
         {/* 2. TOOLBAR: SEARCH & CATEGORY FILTER */}
@@ -175,36 +167,33 @@ export default function AllPesertaClient() {
               <button
                 type="button"
                 onClick={() => setCategoryFilter('all')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                  categoryFilter === 'all'
-                    ? 'bg-[#0d1c32] text-white shadow-xs'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${categoryFilter === 'all'
+                  ? 'bg-[#0d1c32] text-white shadow-xs'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
               >
                 Semua ({categoryCounts.all})
               </button>
-              <button
+              {/* <button
                 type="button"
                 onClick={() => setCategoryFilter('12k')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                  categoryFilter === '12k'
-                    ? 'bg-[#b45309] text-white shadow-xs'
-                    : 'bg-amber-50 text-amber-900 hover:bg-amber-100 border border-amber-200'
-                }`}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${categoryFilter === '12k'
+                  ? 'bg-[#b45309] text-white shadow-xs'
+                  : 'bg-amber-50 text-amber-900 hover:bg-amber-100 border border-amber-200'
+                  }`}
               >
                 12K ({categoryCounts['12k']})
               </button>
               <button
                 type="button"
                 onClick={() => setCategoryFilter('7k')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                  categoryFilter === '7k'
-                    ? 'bg-[#047857] text-white shadow-xs'
-                    : 'bg-emerald-50 text-emerald-900 hover:bg-emerald-100 border border-emerald-200'
-                }`}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${categoryFilter === '7k'
+                  ? 'bg-[#047857] text-white shadow-xs'
+                  : 'bg-emerald-50 text-emerald-900 hover:bg-emerald-100 border border-emerald-200'
+                  }`}
               >
                 7K ({categoryCounts['7k']})
-              </button>
+              </button> */}
             </div>
           </div>
         </div>
@@ -350,11 +339,10 @@ export default function AllPesertaClient() {
                         {/* Kategori */}
                         <td className="py-3.5 px-4 text-center">
                           <span
-                            className={`px-3 py-1 rounded-full text-[11px] font-extrabold uppercase font-mono tracking-wider inline-block ${
-                              is12k
-                                ? 'bg-amber-100/80 text-amber-900 border border-amber-300'
-                                : 'bg-emerald-100/80 text-emerald-900 border border-emerald-300'
-                            }`}
+                            className={`px-3 py-1 rounded-full text-[11px] font-extrabold uppercase font-mono tracking-wider inline-block ${is12k
+                              ? 'bg-amber-100/80 text-amber-900 border border-amber-300'
+                              : 'bg-emerald-100/80 text-emerald-900 border border-emerald-300'
+                              }`}
                           >
                             {item.kategori}
                           </span>
@@ -406,6 +394,6 @@ export default function AllPesertaClient() {
           )}
         </div>
       </div>
-    </div>
+    </div >
   );
 }

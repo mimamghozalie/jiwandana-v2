@@ -44,13 +44,13 @@ export default function TrailrunHero({ isOpen = true }: TrailrunHeroProps) {
           </a>
         </div>
         <div className="pt-2 flex flex-wrap justify-center gap-3">
-          <Link href="/trailrun/peserta"
+          <Link href="/trailrun/all-peserta"
             className="px-8 py-4 bg-[#C9A227] hover:bg-[#b08d20] text-[#0d1c32] font-extrabold text-xs sm:text-sm uppercase tracking-wider rounded-xl transition-all transform active:scale-95 shadow-[0_4px_24px_rgba(201,162,39,0.6)] flex items-center gap-2 cursor-pointer"
           >
             <span className="material-symbols-outlined text-lg">
               person
             </span>
-            <span>Cek data diri</span>
+            <span>Cek Peserta</span>
           </Link>
         </div>
       </div>
