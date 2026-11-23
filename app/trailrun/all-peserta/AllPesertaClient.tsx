@@ -172,7 +172,7 @@ export default function AllPesertaClient() {
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
               >
-                Semua ({categoryCounts.all})
+                Cari
               </button>
               {/* <button
                 type="button"
