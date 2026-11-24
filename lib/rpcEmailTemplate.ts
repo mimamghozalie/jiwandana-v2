@@ -47,7 +47,6 @@ export function generateRpcEmailHtml(participant: RpcParticipantData): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panduan &amp; Verifikasi Race Pack Collection (RPC)</title>
   <style>
     body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
     table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
@@ -186,18 +185,13 @@ export function generateRpcEmailHtml(participant: RpcParticipantData): string {
               </td>
             </tr>
 
-            <!-- 6. Syarat Pengambilan -->
+            <!-- 6. Catatan Pengambilan -->
             <tr>
               <td style="padding: 0 28px 28px 28px;">
                 <div style="background-color: #fffbeb; border-radius: 12px; padding: 16px; border: 1px solid #fef08a;">
-                  <h4 style="margin: 0 0 8px 0; font-size: 13px; font-weight: 800; color: #854d0e;">
-                    ⚠️ Syarat &amp; Ketentuan Wajib:
-                  </h4>
-                  <ul style="margin: 0; padding-left: 18px; font-size: 12px; line-height: 1.6; color: #713f12;">
-                    <li>Membawa <strong>e-KTP / Kartu Identitas Asli</strong> sesuai nama terdaftar.</li>
-                    <li>Menunjukkan QR Code verifikasi pada email ini (bisa berupa tangkapan layar ponsel).</li>
-                    <li>Pengambilan yang diwakilkan <strong>wajib</strong> membawa Surat Kuasa bermeterai serta salinan identitas pemberi &amp; penerima kuasa.</li>
-                  </ul>
+                  <p style="margin: 0; font-size: 13px; font-weight: 700; color: #854d0e; line-height: 1.6;">
+                    ⚠️ <strong>Catatan !!!</strong> Pengambilan yang diwakilkan wajib membawa Surat Kuasa bermeterai serta salinan identitas pemberi &amp; penerima kuasa.
+                  </p>
                 </div>
               </td>
             </tr>
@@ -253,10 +247,8 @@ Jadwal Pengambilan RPC:
 Lokasi Venue:
 Race Village — KDMP Seloliman, Kec. Trawas, Kab. Mojokerto, Jawa Timur.
 
-Syarat & Ketentuan Wajib:
-1. Membawa e-KTP / Kartu Identitas Asli sesuai nama terdaftar.
-2. Menunjukkan QR Code verifikasi pada tautan di atas.
-3. Pengambilan yang diwakilkan wajib membawa Surat Kuasa bermeterai serta salinan identitas pemberi & penerima kuasa.
+Catatan !!!
+Pengambilan yang diwakilkan wajib membawa Surat Kuasa bermeterai serta salinan identitas pemberi & penerima kuasa.
 
 Salam,
 Panitia Pawitra Trail Run Section 2026
