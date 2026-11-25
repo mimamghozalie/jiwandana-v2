@@ -36,7 +36,7 @@ Berikut adalah data registrasi & verifikasi Race Pack Collection (RPC) Anda:
 - *Ukuran Jersey:* ${ukuranJersey}
 
 *Jadwal & Lokasi Pengambilan Race Pack:*
-Waktu: 28 November pukul 10.00 WIB s/d 29 November pukul 03.00 WIB
+Waktu: 28 November pukul 14.00 WIB s/d 29 November pukul 03.00 WIB
 Lokasi: Race Village — KDMP Seloliman, Kec. Trawas, Kab. Mojokerto, Jawa Timur
 
 *Catatan Wajib:*

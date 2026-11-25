@@ -210,7 +210,7 @@ export function generateRpcEmailHtml(
                     <td style="vertical-align: top; padding-bottom: 10px;">
                       <strong>Waktu Pengambilan:</strong><br>
                       <span style="display: inline-block; background-color: #f1f5f9; padding: 4px 10px; border-radius: 6px; font-weight: 700; color: #0f172a; margin-top: 2px; border: 1px solid #e2e8f0;">
-                        28 November pukul 10.00 WIB s/d 29 November pukul 03.00 WIB
+                        28 November pukul 14.00 WIB s/d 29 November pukul 03.00 WIB
                       </span>
                     </td>
                   </tr>
@@ -275,7 +275,7 @@ Link Verifikasi & QR Code RPC:
 ${targetRpcUrl}
 
 Jadwal Pengambilan RPC:
-28 November pukul 10.00 WIB s/d 29 November pukul 03.00 WIB
+28 November pukul 14.00 WIB s/d 29 November pukul 03.00 WIB
 
 Lokasi Venue:
 Race Village — KDMP Seloliman, Kec. Trawas, Kab. Mojokerto, Jawa Timur.

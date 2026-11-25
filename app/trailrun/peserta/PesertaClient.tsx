@@ -689,7 +689,7 @@ export default function PesertaClient() {
                         <span>Waktu & Tanggal</span>
                       </div>
                       <p className="text-slate-600 text-[11px] leading-relaxed">
-                        28 november pukul 10.00 wib sd 29 november pukul 03.00 wib
+                        28 november pukul 14.00 wib sd 29 november pukul 03.00 wib
                       </p>
                     </div>
 
