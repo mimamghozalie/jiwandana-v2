@@ -278,7 +278,84 @@ export default function AdminAllPesertaClient() {
   const [tableSearch, setTableSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [sentFilter, setSentFilter] = useState<string>('all');
   const [jerseyFilter, setJerseyFilter] = useState<string>('all');
+  const [togglingSentKey, setTogglingSentKey] = useState<string | null>(null);
+
+  // Simpan / baca fallback status pengiriman lokal jika kolom DB belum dimigrasi
+  const saveLocalSentStatus = (noBib: string, patch: { wa_sent?: boolean; email_sent?: boolean }) => {
+    try {
+      const raw = localStorage.getItem('jiwandana_rpc_sent_status');
+      const map: Record<string, { wa_sent?: boolean; email_sent?: boolean }> = raw ? JSON.parse(raw) : {};
+      const key = (noBib || '').trim().toUpperCase();
+      map[key] = { ...map[key], ...patch };
+      localStorage.setItem('jiwandana_rpc_sent_status', JSON.stringify(map));
+    } catch {
+      // ignore
+    }
+  };
+
+  // Handler toggle status Sudah Dikirim (WhatsApp / Email)
+  const handleToggleSent = async (
+    row: RpcVerificationRecord,
+    channel: 'wa' | 'email',
+    forceValue?: boolean
+  ) => {
+    const currentVal = channel === 'wa' ? Boolean(row.wa_sent) : Boolean(row.email_sent);
+    const nextVal = forceValue !== undefined ? forceValue : !currentVal;
+    const key = `${channel}-${row.id || row.no_bib}`;
+    const patch = channel === 'wa' ? { wa_sent: nextVal } : { email_sent: nextVal };
+
+    setTogglingSentKey(key);
+
+    // Optimistic update UI
+    setRpcList((prev) =>
+      prev.map((r) =>
+        r.no_bib === row.no_bib || r.id === row.id ? { ...r, ...patch } : r
+      )
+    );
+    saveLocalSentStatus(row.no_bib, patch);
+
+    try {
+      const res = await fetch('/api/admin/trailrun/rpc', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: row.id,
+          no_bib: row.no_bib,
+          ...patch,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.message || 'Gagal memperbarui status kirim.');
+      }
+
+      setToastMessage({
+        type: 'success',
+        text: `${channel === 'wa' ? 'WhatsApp' : 'Email'} BIB ${row.no_bib} ditandai: ${
+          nextVal ? 'Sudah Dikirim ✓' : 'Belum Dikirim'
+        }`,
+      });
+      setTimeout(() => setToastMessage(null), 3500);
+    } catch (err: any) {
+      // Revert jika gagal jaringan
+      setRpcList((prev) =>
+        prev.map((r) =>
+          r.no_bib === row.no_bib || r.id === row.id
+            ? { ...r, ...(channel === 'wa' ? { wa_sent: currentVal } : { email_sent: currentVal }) }
+            : r
+        )
+      );
+      setToastMessage({
+        type: 'error',
+        text: err.message || 'Gagal menyimpan status pengiriman.',
+      });
+      setTimeout(() => setToastMessage(null), 4000);
+    } finally {
+      setTogglingSentKey(null);
+    }
+  };
 
   // Column Visibility state
   const [visibleColumns, setVisibleColumns] = useState<string[]>(() =>
@@ -387,7 +464,26 @@ export default function AdminAllPesertaClient() {
       if (!res.ok || !json.success) {
         throw new Error(json.message || 'Gagal memuat data verifikasi RPC.');
       }
-      setRpcList(json.data || []);
+      const rows: RpcVerificationRecord[] = json.data || [];
+      let localMap: Record<string, { wa_sent?: boolean; email_sent?: boolean }> = {};
+      try {
+        const raw = localStorage.getItem('jiwandana_rpc_sent_status');
+        if (raw) localMap = JSON.parse(raw);
+      } catch {
+        // ignore
+      }
+
+      const merged = rows.map((r) => {
+        const key = (r.no_bib || '').trim().toUpperCase();
+        const local = localMap[key];
+        return {
+          ...r,
+          wa_sent: r.wa_sent !== undefined ? Boolean(r.wa_sent) : Boolean(local?.wa_sent),
+          email_sent: r.email_sent !== undefined ? Boolean(r.email_sent) : Boolean(local?.email_sent),
+        };
+      });
+
+      setRpcList(merged);
     } catch (err: any) {
       console.error('[AdminAllPesertaClient] Fetch error:', err);
       setErrorMsg(err.message || 'Terjadi kesalahan sistem saat mengambil data RPC.');
@@ -431,8 +527,13 @@ export default function AdminAllPesertaClient() {
     let syaratKurang = 0;
     let sudahBersyarat = 0;
     let sudahLengkap = 0;
+    let waSentCount = 0;
+    let emailSentCount = 0;
 
     rpcList.forEach((r) => {
+      if (r.wa_sent) waSentCount += 1;
+      if (r.email_sent) emailSentCount += 1;
+
       switch (r.status_pengambilan) {
         case 'sudah_diambil':
           sudahLengkap += 1;
@@ -450,7 +551,7 @@ export default function AdminAllPesertaClient() {
       }
     });
 
-    return { total, belumDiambil, syaratKurang, sudahBersyarat, sudahLengkap };
+    return { total, belumDiambil, syaratKurang, sudahBersyarat, sudahLengkap, waSentCount, emailSentCount };
   }, [rpcList]);
 
   // List ukuran jersey unik untuk filter
@@ -502,14 +603,26 @@ export default function AdminAllPesertaClient() {
         }
       }
 
+      // 5. Status Pengiriman (WA & Email) Filter
+      if (sentFilter !== 'all') {
+        const waSent = Boolean(r.wa_sent);
+        const emailSent = Boolean(r.email_sent);
+        if (sentFilter === 'wa_sudah' && !waSent) return false;
+        if (sentFilter === 'wa_belum' && waSent) return false;
+        if (sentFilter === 'email_sudah' && !emailSent) return false;
+        if (sentFilter === 'email_belum' && emailSent) return false;
+        if (sentFilter === 'both_sudah' && (!waSent || !emailSent)) return false;
+        if (sentFilter === 'both_belum' && (waSent || emailSent)) return false;
+      }
+
       return true;
     });
-  }, [rpcList, tableSearch, categoryFilter, statusFilter, jerseyFilter]);
+  }, [rpcList, tableSearch, categoryFilter, statusFilter, jerseyFilter, sentFilter]);
 
   // Reset page saat filter berubah
   useEffect(() => {
     setCurrentPage(1);
-  }, [tableSearch, categoryFilter, statusFilter, jerseyFilter, pageSize]);
+  }, [tableSearch, categoryFilter, statusFilter, jerseyFilter, sentFilter, pageSize]);
 
   // Pagination calculation
   const totalItems = filteredData.length;
@@ -1005,6 +1118,31 @@ export default function AdminAllPesertaClient() {
                           <span>Kirim via WA</span>
                         </a>
                       )}
+
+                      {/* Toggle Sudah Dikirim WA */}
+                      <button
+                        type="button"
+                        onClick={() => handleToggleSent(quickLookupMatch, 'wa')}
+                        disabled={togglingSentKey === `wa-${quickLookupMatch.id || quickLookupMatch.no_bib}`}
+                        className={`px-3 py-1.5 rounded-xl font-bold text-xs inline-flex items-center gap-1.5 transition-all cursor-pointer border ${
+                          quickLookupMatch.wa_sent
+                            ? 'bg-emerald-500/25 border-emerald-500/60 text-emerald-300 shadow-sm'
+                            : 'bg-white/5 hover:bg-white/10 border-white/15 text-slate-300'
+                        }`}
+                        title="Tandai apakah WhatsApp RPC sudah dikirim ke peserta ini"
+                      >
+                        {quickLookupMatch.wa_sent ? (
+                          <>
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>WA Sudah Dikirim</span>
+                          </>
+                        ) : (
+                          <>
+                            <Clock className="w-3.5 h-3.5 text-slate-400" />
+                            <span>Tandai WA Terkirim</span>
+                          </>
+                        )}
+                      </button>
                     </div>
                   </div>
 
@@ -1103,6 +1241,31 @@ export default function AdminAllPesertaClient() {
                       >
                         <Eye className="w-3.5 h-3.5 text-amber-300" />
                         <span>Pratinjau</span>
+                      </button>
+
+                      {/* Toggle Sudah Dikirim Email */}
+                      <button
+                        type="button"
+                        onClick={() => handleToggleSent(quickLookupMatch, 'email')}
+                        disabled={togglingSentKey === `email-${quickLookupMatch.id || quickLookupMatch.no_bib}`}
+                        className={`px-3 py-1.5 rounded-xl font-bold text-xs inline-flex items-center gap-1.5 transition-all cursor-pointer border ${
+                          quickLookupMatch.email_sent
+                            ? 'bg-emerald-500/25 border-emerald-500/60 text-emerald-300 shadow-sm'
+                            : 'bg-white/5 hover:bg-white/10 border-white/15 text-slate-300'
+                        }`}
+                        title="Tandai apakah Email RPC sudah dikirim ke peserta ini"
+                      >
+                        {quickLookupMatch.email_sent ? (
+                          <>
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>Email Sudah Dikirim</span>
+                          </>
+                        ) : (
+                          <>
+                            <Clock className="w-3.5 h-3.5 text-slate-400" />
+                            <span>Tandai Email Terkirim</span>
+                          </>
+                        )}
                       </button>
                     </div>
                   </div>
@@ -1264,6 +1427,21 @@ export default function AdminAllPesertaClient() {
               <option value="sudah_diambil">🟢 Sudah Diambil</option>
             </select>
 
+            {/* Filter Status Pengiriman WA / Email */}
+            <select
+              value={sentFilter}
+              onChange={(e) => setSentFilter(e.target.value)}
+              className="px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-xs font-semibold text-slate-200 focus:border-[#C9A227] outline-none cursor-pointer"
+            >
+              <option value="all">Semua Status Kirim</option>
+              <option value="wa_belum">WA: Belum Dikirim</option>
+              <option value="wa_sudah">WA: Sudah Dikirim ✓</option>
+              <option value="email_belum">Email: Belum Dikirim</option>
+              <option value="email_sudah">Email: Sudah Dikirim ✓</option>
+              <option value="both_sudah">WA &amp; Email Terkirim ✓</option>
+              <option value="both_belum">Belum Dikirim Sama Sekali</option>
+            </select>
+
             {/* Filter Ukuran Jersey */}
             <select
               value={jerseyFilter}
@@ -1390,9 +1568,18 @@ export default function AdminAllPesertaClient() {
 
         {/* Counter Info & Keterangan Singkat 6 Syarat */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-400 border-t border-white/5 pt-3">
-          <div>
-            Menampilkan <strong className="text-white font-mono">{filteredData.length}</strong> dari{' '}
-            <strong className="text-white font-mono">{rpcList.length}</strong> peserta terdaftar
+          <div className="flex items-center gap-3 flex-wrap">
+            <span>
+              Menampilkan <strong className="text-white font-mono">{filteredData.length}</strong> dari{' '}
+              <strong className="text-white font-mono">{rpcList.length}</strong> peserta terdaftar
+            </span>
+            <span className="text-slate-600">|</span>
+            <span className="text-[11px] text-emerald-300 font-semibold">
+              WA Terkirim: <strong className="font-mono">{metrics.waSentCount}</strong>/{metrics.total}
+            </span>
+            <span className="text-[11px] text-amber-300 font-semibold">
+              Email Terkirim: <strong className="font-mono">{metrics.emailSentCount}</strong>/{metrics.total}
+            </span>
           </div>
           <div className="flex items-center gap-2 flex-wrap text-[11px] text-slate-400">
             <span className="font-semibold text-slate-300">Indikator 6 Syarat:</span>
@@ -1718,6 +1905,31 @@ export default function AdminAllPesertaClient() {
                                   <Send className="w-3 h-3" />
                                 </a>
                               )}
+
+                              {/* Toggle Sudah Dikirim WA */}
+                              <button
+                                type="button"
+                                onClick={() => handleToggleSent(row, 'wa')}
+                                disabled={togglingSentKey === `wa-${row.id || row.no_bib}`}
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold inline-flex items-center gap-1 transition-all cursor-pointer border ${
+                                  row.wa_sent
+                                    ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
+                                    : 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-400'
+                                }`}
+                                title="Klik untuk menandai WA sudah/belum dikirim"
+                              >
+                                {row.wa_sent ? (
+                                  <>
+                                    <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                                    <span>Sudah Dikirim</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Clock className="w-3 h-3" />
+                                    <span>Belum Dikirim</span>
+                                  </>
+                                )}
+                              </button>
                             </div>
                           </div>
                         </td>
@@ -1814,6 +2026,31 @@ export default function AdminAllPesertaClient() {
                                 title="Buka di Gmail Web (Compose)"
                               >
                                 <ExternalLink className="w-3 h-3" />
+                              </button>
+
+                              {/* Toggle Sudah Dikirim Email */}
+                              <button
+                                type="button"
+                                onClick={() => handleToggleSent(row, 'email')}
+                                disabled={togglingSentKey === `email-${row.id || row.no_bib}`}
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold inline-flex items-center gap-1 transition-all cursor-pointer border ${
+                                  row.email_sent
+                                    ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
+                                    : 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-400'
+                                }`}
+                                title="Klik untuk menandai Email sudah/belum dikirim"
+                              >
+                                {row.email_sent ? (
+                                  <>
+                                    <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                                    <span>Sudah Dikirim</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Clock className="w-3 h-3" />
+                                    <span>Belum Dikirim</span>
+                                  </>
+                                )}
                               </button>
                             </div>
                           </div>

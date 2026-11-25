@@ -24,6 +24,10 @@ export interface RpcVerificationRecord {
   waktu_pengambilan?: string | null;
   petugas?: string | null;
   catatan?: string | null;
+  wa_sent?: boolean;
+  wa_sent_at?: string | null;
+  email_sent?: boolean;
+  email_sent_at?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -89,6 +93,10 @@ export async function GET() {
         waktu_pengambilan: null,
         petugas: null,
         catatan: null,
+        wa_sent: false,
+        wa_sent_at: null,
+        email_sent: false,
+        email_sent_at: null,
       }));
 
       return NextResponse.json({
@@ -199,6 +207,8 @@ export async function POST(request: NextRequest) {
       status_pengambilan,
       petugas,
       catatan,
+      wa_sent,
+      email_sent,
     } = body;
 
     if (!id && !no_bib) {
@@ -242,6 +252,14 @@ export async function POST(request: NextRequest) {
     if (status_pengambilan === 'sudah_diambil_bersyarat' && !updatePayload.catatan) {
       updatePayload.catatan = 'sudah ttd';
     }
+    if (wa_sent !== undefined) {
+      updatePayload.wa_sent = Boolean(wa_sent);
+      updatePayload.wa_sent_at = Boolean(wa_sent) ? new Date().toISOString() : null;
+    }
+    if (email_sent !== undefined) {
+      updatePayload.email_sent = Boolean(email_sent);
+      updatePayload.email_sent_at = Boolean(email_sent) ? new Date().toISOString() : null;
+    }
 
     // Eksekusi update ke tabel trailrun_rpc_verifications
     let query = supabase.from('trailrun_rpc_verifications').update(updatePayload);
@@ -254,12 +272,12 @@ export async function POST(request: NextRequest) {
 
     const { data, error } = await query.select().maybeSingle();
 
-    // Jika tabel belum dibuat di database, beri respons panduan yang bersahabat
-    if (error && error.code === '42P01') {
+    // Jika tabel atau kolom baru belum dibuat di database, beri respons graceful fallback
+    if (error && (error.code === '42P01' || error.code === '42703' || error.code === 'PGRST204')) {
       return NextResponse.json({
         success: true,
         needMigration: true,
-        message: 'Tabel "trailrun_rpc_verifications" belum dibuat di database. Jalankan file migrasi SQL di folder supabase/migrations.',
+        message: 'Kolom/tabel verifikasi RPC belum dimigrasi di database. Status disimpan secara lokal.',
         data: {
           id: id || no_bib,
           no_bib,
