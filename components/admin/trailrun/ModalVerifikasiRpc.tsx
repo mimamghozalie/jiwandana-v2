@@ -20,8 +20,18 @@ import {
   CreditCard,
   Save,
   Sparkles,
+  MessageSquare,
+  QrCode,
+  Send,
+  Phone,
 } from 'lucide-react';
 import { RpcVerificationRecord } from '@/app/api/admin/trailrun/rpc/route';
+import {
+  copyRpcWhatsAppMessage,
+  copyRpcQrImageToClipboard,
+  getWhatsAppChatUrl,
+  generateRpcWhatsAppMessage,
+} from '@/lib/rpcWhatsAppHelper';
 
 interface ModalVerifikasiRpcProps {
   isOpen: boolean;
@@ -50,6 +60,50 @@ export default function ModalVerifikasiRpc({
   const [petugas, setPetugas] = useState('');
   const [catatan, setCatatan] = useState('');
   const [validationError, setValidationError] = useState('');
+
+  // State feedback copy WA & QR di modal
+  const [copiedWa, setCopiedWa] = useState(false);
+  const [copiedQr, setCopiedQr] = useState(false);
+  const [actionFeedback, setActionFeedback] = useState<string | null>(null);
+
+  const handleCopyWaModal = async () => {
+    if (!participant) return;
+    const res = await copyRpcWhatsAppMessage({
+      nama: participant.nama,
+      nama_bib: participant.nama_bib,
+      no_bib: participant.no_bib,
+      kategori: participant.kategori,
+      ukuran_jersey: participant.ukuran_jersey,
+      no_hp: participant.no_hp,
+    });
+    if (res.success) {
+      setCopiedWa(true);
+      setActionFeedback('Pesan WhatsApp disalin!');
+      setTimeout(() => setCopiedWa(false), 2500);
+      setTimeout(() => setActionFeedback(null), 4000);
+    }
+  };
+
+  const handleCopyQrModal = async () => {
+    if (!participant) return;
+    const res = await copyRpcQrImageToClipboard(participant.no_bib);
+    if (res.success) {
+      setCopiedQr(true);
+      setActionFeedback('Gambar QR Code disalin!');
+      setTimeout(() => setCopiedQr(false), 2500);
+      setTimeout(() => setActionFeedback(null), 4000);
+    } else if (res.fallbackUrl) {
+      try {
+        await navigator.clipboard.writeText(res.fallbackUrl);
+        setCopiedQr(true);
+        setActionFeedback('Link QR Code disalin!');
+        setTimeout(() => setCopiedQr(false), 2500);
+        setTimeout(() => setActionFeedback(null), 4000);
+      } catch {
+        // ignore
+      }
+    }
+  };
 
   // Sinkronkan state saat participant berubah
   useEffect(() => {
@@ -531,33 +585,96 @@ export default function ModalVerifikasiRpc({
         </form>
 
         {/* Footer Actions */}
-        <div className="p-4 sm:p-5 border-t border-white/10 bg-black/40 flex items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-semibold transition-colors cursor-pointer"
-          >
-            Batal
-          </button>
+        <div className="p-4 sm:p-5 border-t border-white/10 bg-black/40 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          {/* Quick Communication Buttons */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={handleCopyWaModal}
+              className={`px-3 py-2 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all cursor-pointer border ${
+                copiedWa
+                  ? 'bg-emerald-600 text-white border-emerald-500'
+                  : 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border-emerald-500/30'
+              }`}
+              title="Salin template teks pesan WhatsApp resmi"
+            >
+              {copiedWa ? <Check className="w-3.5 h-3.5" /> : <MessageSquare className="w-3.5 h-3.5" />}
+              <span>{copiedWa ? 'Tersalin!' : 'Salin Pesan WA'}</span>
+            </button>
 
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={isSaving}
-            className="px-6 py-2.5 rounded-xl bg-[#C9A227] hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider shadow-lg transition-all inline-flex items-center gap-2 cursor-pointer disabled:opacity-50"
-          >
-            {isSaving ? (
-              <>
-                <div className="w-3.5 h-3.5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-                <span>Menyimpan...</span>
-              </>
-            ) : (
-              <>
-                <Save className="w-3.5 h-3.5" />
-                <span>Simpan &amp; Konfirmasi</span>
-              </>
+            <button
+              type="button"
+              onClick={handleCopyQrModal}
+              className={`px-3 py-2 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all cursor-pointer border ${
+                copiedQr
+                  ? 'bg-[#C9A227] text-slate-950 border-amber-400 font-black'
+                  : 'bg-[#C9A227]/15 hover:bg-[#C9A227]/25 text-[#f5d77f] border-[#C9A227]/30'
+              }`}
+              title="Salin file gambar QR Code ke clipboard"
+            >
+              {copiedQr ? <Check className="w-3.5 h-3.5" /> : <QrCode className="w-3.5 h-3.5" />}
+              <span>{copiedQr ? 'QR Tersalin!' : 'Salin QR'}</span>
+            </button>
+
+            {participant.no_hp && (
+              <a
+                href={getWhatsAppChatUrl(
+                  participant.no_hp,
+                  generateRpcWhatsAppMessage({
+                    nama: participant.nama,
+                    nama_bib: participant.nama_bib,
+                    no_bib: participant.no_bib,
+                    kategori: participant.kategori,
+                    ukuran_jersey: participant.ukuran_jersey,
+                    no_hp: participant.no_hp,
+                  })
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white border border-white/10 text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                title={`Kirim WhatsApp ke ${participant.no_hp}`}
+              >
+                <Send className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Kirim WA</span>
+              </a>
             )}
-          </button>
+
+            {actionFeedback && (
+              <span className="text-[11px] text-emerald-400 font-semibold animate-pulse pl-1">
+                ✓ {actionFeedback}
+              </span>
+            )}
+          </div>
+
+          {/* Form Submit / Cancel */}
+          <div className="flex items-center gap-2 justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-semibold transition-colors cursor-pointer"
+            >
+              Batal
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={isSaving}
+              className="px-5 py-2.5 rounded-xl bg-[#C9A227] hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider shadow-lg transition-all inline-flex items-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              {isSaving ? (
+                <>
+                  <div className="w-3.5 h-3.5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                  <span>Menyimpan...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Simpan Verifikasi</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>

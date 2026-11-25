@@ -26,10 +26,43 @@ export function getRpcEmailSubject(no_bib?: string): string {
 }
 
 /**
- * Menghasilkan HTML email RPC yang responsif dan elegan (Light Theme)
- * Menggunakan QR Code CDN publik agar langsung tampil saat di-paste di Gmail.
+ * Menghasilkan URL gambar QR Code publik untuk verifikasi RPC
  */
-export function generateRpcEmailHtml(participant: RpcParticipantData): string {
+export function getRpcEmailQrUrl(no_bib?: string): string {
+  const cleanBib = (no_bib || '—').trim().toUpperCase();
+  const targetRpcUrl = `https://jiwandana.com/trailrun/cek_rpc?no_bib=${encodeURIComponent(cleanBib)}`;
+  return `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(targetRpcUrl)}`;
+}
+
+/**
+ * Mengunduh gambar QR dan mengonversinya ke Base64 Data URL (image/png)
+ * agar tertanam langsung (embedded) saat di-paste ke Gmail Compose dan tidak diblokir proxy email.
+ */
+async function fetchQrAsDataUrl(qrUrl: string): Promise<string | null> {
+  try {
+    const res = await fetch(qrUrl, { mode: 'cors' });
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    const pngBlob = blob.type === 'image/png' ? blob : new Blob([blob], { type: 'image/png' });
+    return await new Promise<string | null>((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(typeof reader.result === 'string' ? reader.result : null);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(pngBlob);
+    });
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Menghasilkan HTML email RPC yang responsif dan elegan (Light Theme)
+ * Mendukung qrDataUrl (Base64 inline) untuk menghindari error Google Image Proxy di email masuk.
+ */
+export function generateRpcEmailHtml(
+  participant: RpcParticipantData,
+  qrDataUrl?: string
+): string {
   const nameDisplay = (participant.nama || 'Peserta').trim();
   const noBib = (participant.no_bib || '—').trim().toUpperCase();
   const kategori = (participant.kategori || '12K').trim().toUpperCase();
@@ -40,7 +73,7 @@ export function generateRpcEmailHtml(participant: RpcParticipantData): string {
   const badgeBorder = is12k ? '#fca5a5' : '#fde68a';
 
   const targetRpcUrl = `https://jiwandana.com/trailrun/cek_rpc?no_bib=${encodeURIComponent(noBib)}`;
-  const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(targetRpcUrl)}`;
+  const qrImgUrl = qrDataUrl || getRpcEmailQrUrl(noBib);
 
   return `<!DOCTYPE html>
 <html lang="id">
@@ -263,7 +296,9 @@ export async function copyRpcEmailToClipboard(
   participant: RpcParticipantData
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const htmlContent = generateRpcEmailHtml(participant);
+    // Embed gambar QR sebagai Base64 PNG agar Gmail otomatis menyimpannya sebagai inline image
+    const qrDataUrl = await fetchQrAsDataUrl(getRpcEmailQrUrl(participant.no_bib));
+    const htmlContent = generateRpcEmailHtml(participant, qrDataUrl || undefined);
     const plainTextContent = generateRpcEmailPlainText(participant);
 
     if (typeof navigator !== 'undefined' && navigator.clipboard && typeof ClipboardItem !== 'undefined') {

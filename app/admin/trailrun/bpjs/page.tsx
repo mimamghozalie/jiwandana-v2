@@ -15,7 +15,6 @@ import {
   Filter,
   RefreshCw,
   Edit3,
-  ExternalLink,
   ChevronLeft,
   ChevronRight,
   Info,
@@ -23,23 +22,14 @@ import {
   Phone,
   Mail,
   Zap,
-  Copy,
-  Check,
-  Eye,
 } from 'lucide-react';
 import {
   useTrailrunData,
   TrailrunSubNav,
   AdminFlashSaleModal,
   ModalEditBpjsItra,
-  RpcEmailPreviewModal,
   TrailrunRow,
 } from '@/components/admin/trailrun';
-import {
-  copyRpcEmailToClipboard,
-  openGmailCompose,
-  getRpcEmailSubject,
-} from '@/lib/rpcEmailTemplate';
 
 function BpjsPageContent() {
   const { data, setData, loading, isRefreshing, fetchData, handleCleanupUnpaid, isCleaningUp } = useTrailrunData();
@@ -56,11 +46,6 @@ function BpjsPageContent() {
   const [editingParticipant, setEditingParticipant] = useState<TrailrunRow | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-
-  // Email RPC Preview Modal & Copy state
-  const [previewEmailParticipant, setPreviewEmailParticipant] = useState<TrailrunRow | null>(null);
-  const [copiedEmailId, setCopiedEmailId] = useState<string | null>(null);
-  const [copiedRpcId, setCopiedRpcId] = useState<string | null>(null);
 
   // Table Filters
   const [tableSearch, setTableSearch] = useState('');
@@ -287,56 +272,6 @@ function BpjsPageContent() {
     }
   };
 
-  // Handlers untuk Copy Email & Template RPC Gmail
-  const handleCopyEmail = async (id: string, email?: string) => {
-    if (!email) return;
-    try {
-      await navigator.clipboard.writeText(email.trim());
-      setCopiedEmailId(id);
-      setToastMessage({
-        type: 'success',
-        text: `Email "${email}" berhasil disalin ke clipboard!`,
-      });
-      setTimeout(() => setCopiedEmailId(null), 2500);
-      setTimeout(() => setToastMessage(null), 4000);
-    } catch {
-      setToastMessage({
-        type: 'error',
-        text: 'Gagal menyalin email.',
-      });
-      setTimeout(() => setToastMessage(null), 4000);
-    }
-  };
-
-  const handleCopyRpcEmail = async (row: TrailrunRow) => {
-    const res = await copyRpcEmailToClipboard({
-      nama: row.nama,
-      no_bib: row.no_bib,
-      kategori: row.kategori,
-      email: row.email,
-    });
-    if (res.success) {
-      setCopiedRpcId(row.id);
-      setToastMessage({
-        type: 'success',
-        text: `Template Email RPC untuk BIB ${row.no_bib} berhasil disalin! Siap dipaste (Ctrl+V) di Gmail.`,
-      });
-      setTimeout(() => setCopiedRpcId(null), 2500);
-      setTimeout(() => setToastMessage(null), 5000);
-    } else {
-      setToastMessage({
-        type: 'error',
-        text: res.error || 'Gagal menyalin template email.',
-      });
-      setTimeout(() => setToastMessage(null), 5000);
-    }
-  };
-
-  const handleOpenGmail = (row: TrailrunRow) => {
-    const subject = getRpcEmailSubject(row.no_bib);
-    openGmailCompose(row.email || '', subject);
-  };
-
   return (
     <div className="space-y-6 font-sans animate-[fadeIn_0.3s_ease-out]">
       {/* 1. Header & SubNav */}
@@ -456,20 +391,6 @@ function BpjsPageContent() {
                         <span className="font-mono text-slate-300 flex items-center gap-1">
                           <Mail className="w-3 h-3 text-amber-400" />
                           <span>{selectedBibMatch.email || '(Email Kosong)'}</span>
-                          {selectedBibMatch.email && (
-                            <button
-                              type="button"
-                              onClick={() => handleCopyEmail('quick-header', selectedBibMatch.email)}
-                              className="p-0.5 rounded hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer"
-                              title="Salin Alamat Email"
-                            >
-                              {copiedEmailId === 'quick-header' ? (
-                                <Check className="w-3 h-3 text-emerald-400" />
-                              ) : (
-                                <Copy className="w-3 h-3" />
-                              )}
-                            </button>
-                          )}
                         </span>
                         {selectedBibMatch.no_hp && (
                           <>
@@ -621,84 +542,6 @@ function BpjsPageContent() {
                       </div>
                     );
                   })()}
-                </div>
-
-                {/* Bar Aksi Email RPC & Gmail */}
-                <div className="pt-3 border-t border-white/10 flex flex-wrap items-center justify-between gap-3 bg-black/30 -mx-5 sm:-mx-6 -mb-5 sm:-mb-6 p-4 sm:p-5 rounded-b-2xl">
-                  <div className="flex items-center gap-2 text-xs text-slate-300">
-                    <Mail className="w-4 h-4 text-amber-400 shrink-0" />
-                    <span className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">
-                      Email Peserta:
-                    </span>
-                    <span className="font-mono font-bold text-white bg-white/5 px-2 py-0.5 rounded border border-white/10 text-xs truncate max-w-[220px]">
-                      {selectedBibMatch.email || '(Belum diisi)'}
-                    </span>
-                    {selectedBibMatch.email && (
-                      <button
-                        type="button"
-                        onClick={() => handleCopyEmail('quick-bar', selectedBibMatch.email)}
-                        className="px-2 py-0.5 rounded bg-white/10 hover:bg-white/20 text-slate-200 text-[11px] font-semibold inline-flex items-center gap-1 transition-colors cursor-pointer"
-                        title="Salin Alamat Email"
-                      >
-                        {copiedEmailId === 'quick-bar' ? (
-                          <>
-                            <Check className="w-3 h-3 text-emerald-400" />
-                            <span className="text-emerald-400">Tersalin</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3 h-3" />
-                            <span>Salin Email</span>
-                          </>
-                        )}
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <button
-                      type="button"
-                      onClick={() => handleCopyRpcEmail(selectedBibMatch)}
-                      className={`px-3.5 py-1.5 rounded-xl font-bold text-xs uppercase tracking-wider shadow-sm transition-all inline-flex items-center gap-1.5 cursor-pointer ${
-                        copiedRpcId === selectedBibMatch.id
-                          ? 'bg-emerald-600 text-white'
-                          : 'bg-[#C9A227] hover:bg-amber-400 text-[#0d1c32]'
-                      }`}
-                      title="Salin template email RPC dinamis dalam format Rich HTML (siap paste di Gmail)"
-                    >
-                      {copiedRpcId === selectedBibMatch.id ? (
-                        <>
-                          <Check className="w-3.5 h-3.5" />
-                          <span>Template Tersalin!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3.5 h-3.5" />
-                          <span>Salin Email RPC (HTML)</span>
-                        </>
-                      )}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleOpenGmail(selectedBibMatch)}
-                      className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/10 text-xs font-bold uppercase tracking-wider inline-flex items-center gap-1.5 transition-all cursor-pointer"
-                      title="Buka tab baru Gmail Web dengan penerima & subjek terisi"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5 text-rose-400" />
-                      <span>Buka Gmail</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setPreviewEmailParticipant(selectedBibMatch)}
-                      className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 border border-white/10 text-xs font-semibold inline-flex items-center gap-1.5 transition-all cursor-pointer"
-                      title="Lihat Pratinjau Tampilan Email"
-                    >
-                      <Eye className="w-3.5 h-3.5 text-amber-300" />
-                      <span>Pratinjau</span>
-                    </button>
-                  </div>
                 </div>
               </div>
             ) : (
@@ -885,7 +728,6 @@ function BpjsPageContent() {
                 <th className="py-3.5 px-3">No. BIB</th>
                 <th className="py-3.5 px-4">Nama Lengkap</th>
                 <th className="py-3.5 px-3">Kategori</th>
-                <th className="py-3.5 px-4">Email &amp; RPC</th>
                 <th className="py-3.5 px-4">NIK (KTP)</th>
                 <th className="py-3.5 px-4">Nomor KK</th>
                 <th className="py-3.5 px-3">ID ITRA</th>
@@ -896,7 +738,7 @@ function BpjsPageContent() {
             <tbody className="divide-y divide-white/5 text-slate-200">
               {loading ? (
                 <tr>
-                  <td colSpan={10} className="py-12 text-center text-slate-400">
+                  <td colSpan={9} className="py-12 text-center text-slate-400">
                     <div className="flex items-center justify-center gap-2">
                       <RefreshCw className="w-5 h-5 animate-spin text-[#C9A227]" />
                       <span>Memuat data peserta BPJS &amp; ITRA...</span>
@@ -905,7 +747,7 @@ function BpjsPageContent() {
                 </tr>
               ) : paginatedData.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="py-12 text-center text-slate-400">
+                  <td colSpan={9} className="py-12 text-center text-slate-400">
                     Tidak ada data peserta yang cocok dengan kriteria filter.
                   </td>
                 </tr>
@@ -961,77 +803,6 @@ function BpjsPageContent() {
                         >
                           {row.kategori || '12K'}
                         </span>
-                      </td>
-
-                      {/* Email & RPC */}
-                      <td className="py-3.5 px-4">
-                        <div className="space-y-1.5 min-w-[190px]">
-                          <div className="flex items-center justify-between gap-1.5">
-                            <span
-                              className="font-mono text-slate-200 text-[11px] truncate max-w-[145px] block font-medium"
-                              title={row.email || '-'}
-                            >
-                              {row.email || '-'}
-                            </span>
-                            {row.email && (
-                              <button
-                                type="button"
-                                onClick={() => handleCopyEmail(row.id, row.email)}
-                                className="p-1 rounded hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer shrink-0"
-                                title="Salin Alamat Email"
-                              >
-                                {copiedEmailId === row.id ? (
-                                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                                ) : (
-                                  <Copy className="w-3.5 h-3.5" />
-                                )}
-                              </button>
-                            )}
-                          </div>
-
-                          <div className="flex items-center gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => handleCopyRpcEmail(row)}
-                              className={`px-2 py-0.5 rounded text-[10px] font-bold inline-flex items-center gap-1 transition-all cursor-pointer ${
-                                copiedRpcId === row.id
-                                  ? 'bg-emerald-600 text-white'
-                                  : 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30'
-                              }`}
-                              title="Salin template email RPC dinamis (Rich HTML) siap dipaste di Gmail"
-                            >
-                              {copiedRpcId === row.id ? (
-                                <>
-                                  <Check className="w-3 h-3" />
-                                  <span>Tersalin!</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Copy className="w-3 h-3" />
-                                  <span>Copy RPC</span>
-                                </>
-                              )}
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => setPreviewEmailParticipant(row)}
-                              className="p-1 rounded bg-white/5 hover:bg-white/15 text-slate-300 hover:text-white border border-white/10 transition-colors cursor-pointer"
-                              title="Pratinjau Tampilan Email RPC"
-                            >
-                              <Eye className="w-3 h-3" />
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => handleOpenGmail(row)}
-                              className="p-1 rounded bg-white/5 hover:bg-white/15 text-slate-300 hover:text-rose-400 border border-white/10 transition-colors cursor-pointer"
-                              title="Buka di Gmail Web (Compose)"
-                            >
-                              <ExternalLink className="w-3 h-3" />
-                            </button>
-                          </div>
-                        </div>
                       </td>
 
                       {/* NIK */}
@@ -1167,13 +938,6 @@ function BpjsPageContent() {
           onClose={() => setShowFlashSaleModal(false)}
         />
       )}
-
-      {/* Modal Preview Email RPC */}
-      <RpcEmailPreviewModal
-        isOpen={Boolean(previewEmailParticipant)}
-        onClose={() => setPreviewEmailParticipant(null)}
-        participant={previewEmailParticipant}
-      />
     </div>
   );
 }

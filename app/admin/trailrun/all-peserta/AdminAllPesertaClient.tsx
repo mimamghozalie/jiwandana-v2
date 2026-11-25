@@ -26,14 +26,57 @@ import {
   Sparkles,
   Check,
   Filter,
+  MessageSquare,
+  QrCode,
+  Copy,
+  Phone,
+  Send,
+  SlidersHorizontal,
+  Columns,
+  Mail,
+  Eye,
 } from 'lucide-react';
 import {
   useTrailrunData,
   TrailrunSubNav,
   AdminFlashSaleModal,
   ModalVerifikasiRpc,
+  RpcEmailPreviewModal,
 } from '@/components/admin/trailrun';
 import { RpcVerificationRecord } from '@/app/api/admin/trailrun/rpc/route';
+import {
+  copyRpcWhatsAppMessage,
+  copyRpcQrImageToClipboard,
+  getRpcQrImageUrl,
+  getWhatsAppChatUrl,
+  generateRpcWhatsAppMessage,
+} from '@/lib/rpcWhatsAppHelper';
+import {
+  copyRpcEmailToClipboard,
+  openGmailCompose,
+  getRpcEmailSubject,
+} from '@/lib/rpcEmailTemplate';
+
+export interface RpcTableColumn {
+  key: string;
+  label: string;
+  defaultVisible: boolean;
+}
+
+export const RPC_TABLE_COLUMNS: RpcTableColumn[] = [
+  { key: 'no', label: 'No', defaultVisible: true },
+  { key: 'no_bib', label: 'No. BIB', defaultVisible: true },
+  { key: 'nama', label: 'Nama Lengkap & BIB', defaultVisible: true },
+  { key: 'kategori', label: 'Kategori', defaultVisible: true },
+  { key: 'ukuran_jersey', label: 'Ukuran Jersey', defaultVisible: true },
+  { key: 'syarat_rpc', label: '6 Syarat Verifikasi', defaultVisible: true },
+  { key: 'status_pengambilan', label: 'Status Pengambilan', defaultVisible: true },
+  { key: 'petugas_catatan', label: 'Petugas & Catatan', defaultVisible: true },
+  { key: 'wa_rpc', label: 'WA & QR', defaultVisible: true },
+  { key: 'email_rpc', label: 'Email & RPC', defaultVisible: true },
+  { key: 'kontak', label: 'No. WhatsApp & Email', defaultVisible: false },
+  { key: 'aksi', label: 'Aksi', defaultVisible: true },
+];
 
 export default function AdminAllPesertaClient() {
   // Global trailrun data untuk SubNav (counter individu, kelompok, cleanup, flash sale)
@@ -64,11 +107,242 @@ export default function AdminAllPesertaClient() {
   const [isSavingVerification, setIsSavingVerification] = useState(false);
   const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // State feedback copy WA & QR
+  const [copiedWaId, setCopiedWaId] = useState<string | null>(null);
+  const [copiedQrId, setCopiedQrId] = useState<string | null>(null);
+  const [copiedPhoneId, setCopiedPhoneId] = useState<string | null>(null);
+
+  // Handler Salin Nomor WhatsApp
+  const handleCopyPhone = async (id: string, phone?: string | null) => {
+    if (!phone) return;
+    try {
+      await navigator.clipboard.writeText(phone.trim());
+      setCopiedPhoneId(id);
+      setToastMessage({
+        type: 'success',
+        text: `Nomor WhatsApp "${phone}" berhasil disalin!`,
+      });
+      setTimeout(() => setCopiedPhoneId(null), 2500);
+      setTimeout(() => setToastMessage(null), 4000);
+    } catch {
+      setToastMessage({
+        type: 'error',
+        text: 'Gagal menyalin nomor WhatsApp.',
+      });
+      setTimeout(() => setToastMessage(null), 4000);
+    }
+  };
+
+  // State Email RPC Preview Modal & Copy
+  const [previewEmailParticipant, setPreviewEmailParticipant] = useState<RpcVerificationRecord | null>(null);
+  const [copiedEmailId, setCopiedEmailId] = useState<string | null>(null);
+  const [copiedSubjectId, setCopiedSubjectId] = useState<string | null>(null);
+  const [copiedRpcId, setCopiedRpcId] = useState<string | null>(null);
+
+  // Handler Salin Alamat Email
+  const handleCopyEmail = async (id: string, email?: string | null) => {
+    if (!email) return;
+    try {
+      await navigator.clipboard.writeText(email.trim());
+      setCopiedEmailId(id);
+      setToastMessage({
+        type: 'success',
+        text: `Email "${email}" berhasil disalin ke clipboard!`,
+      });
+      setTimeout(() => setCopiedEmailId(null), 2500);
+      setTimeout(() => setToastMessage(null), 4000);
+    } catch {
+      setToastMessage({
+        type: 'error',
+        text: 'Gagal menyalin email.',
+      });
+      setTimeout(() => setToastMessage(null), 4000);
+    }
+  };
+
+  // Handler Salin Subjek Email RPC
+  const handleCopyEmailSubject = async (sourceId: string, noBib?: string) => {
+    const subject = getRpcEmailSubject(noBib);
+    try {
+      await navigator.clipboard.writeText(subject);
+      setCopiedSubjectId(sourceId);
+      setToastMessage({
+        type: 'success',
+        text: `Subjek email "${subject}" berhasil disalin!`,
+      });
+      setTimeout(() => setCopiedSubjectId(null), 2500);
+      setTimeout(() => setToastMessage(null), 4000);
+    } catch {
+      setToastMessage({
+        type: 'error',
+        text: 'Gagal menyalin subjek email.',
+      });
+      setTimeout(() => setToastMessage(null), 4000);
+    }
+  };
+
+  // Handler Salin Template Email RPC (Rich HTML)
+  const handleCopyRpcEmail = async (row: RpcVerificationRecord, sourceId = row.id || row.no_bib) => {
+    const res = await copyRpcEmailToClipboard({
+      nama: row.nama,
+      no_bib: row.no_bib,
+      kategori: row.kategori || undefined,
+      email: row.email || undefined,
+    });
+    if (res.success) {
+      setCopiedRpcId(sourceId);
+      setToastMessage({
+        type: 'success',
+        text: `Template Email RPC untuk BIB ${row.no_bib} berhasil disalin! Siap dipaste (Ctrl+V) di Gmail.`,
+      });
+      setTimeout(() => setCopiedRpcId(null), 2500);
+      setTimeout(() => setToastMessage(null), 5000);
+    } else {
+      setToastMessage({
+        type: 'error',
+        text: res.error || 'Gagal menyalin template email.',
+      });
+      setTimeout(() => setToastMessage(null), 5000);
+    }
+  };
+
+  // Handler Buka Gmail Compose
+  const handleOpenGmail = (row: RpcVerificationRecord) => {
+    const subject = getRpcEmailSubject(row.no_bib);
+    openGmailCompose(row.email || '', subject);
+  };
+
+  // Handler Salin Pesan WhatsApp
+  const handleCopyWa = async (row: RpcVerificationRecord, sourceId = row.id || row.no_bib) => {
+    const res = await copyRpcWhatsAppMessage({
+      nama: row.nama,
+      nama_bib: row.nama_bib,
+      no_bib: row.no_bib,
+      kategori: row.kategori,
+      ukuran_jersey: row.ukuran_jersey,
+      no_hp: row.no_hp,
+    });
+    if (res.success) {
+      setCopiedWaId(sourceId);
+      setToastMessage({
+        type: 'success',
+        text: `Pesan WhatsApp untuk BIB ${row.no_bib} berhasil disalin! Siap dipaste (Ctrl+V) di WhatsApp.`,
+      });
+      setTimeout(() => setCopiedWaId(null), 2500);
+      setTimeout(() => setToastMessage(null), 5000);
+    } else {
+      setToastMessage({
+        type: 'error',
+        text: res.error || 'Gagal menyalin pesan WhatsApp.',
+      });
+      setTimeout(() => setToastMessage(null), 5000);
+    }
+  };
+
+  // Handler Salin Gambar QR Code
+  const handleCopyQr = async (row: RpcVerificationRecord, sourceId = row.id || row.no_bib) => {
+    const res = await copyRpcQrImageToClipboard(row.no_bib);
+    if (res.success) {
+      setCopiedQrId(sourceId);
+      setToastMessage({
+        type: 'success',
+        text: `Gambar QR Code BIB ${row.no_bib} berhasil disalin ke clipboard! Silakan paste (Ctrl+V) langsung ke chat WhatsApp.`,
+      });
+      setTimeout(() => setCopiedQrId(null), 2500);
+      setTimeout(() => setToastMessage(null), 5000);
+    } else {
+      if (res.fallbackUrl) {
+        try {
+          await navigator.clipboard.writeText(res.fallbackUrl);
+          setCopiedQrId(sourceId);
+          setToastMessage({
+            type: 'success',
+            text: `Link QR Code disalin: ${res.fallbackUrl}`,
+          });
+          setTimeout(() => setCopiedQrId(null), 2500);
+          setTimeout(() => setToastMessage(null), 6000);
+          return;
+        } catch {
+          // ignore
+        }
+      }
+      setToastMessage({
+        type: 'error',
+        text: res.error || 'Gagal menyalin gambar QR Code.',
+      });
+      setTimeout(() => setToastMessage(null), 5000);
+    }
+  };
+
   // Filter Table
   const [tableSearch, setTableSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [jerseyFilter, setJerseyFilter] = useState<string>('all');
+
+  // Column Visibility state
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(() =>
+    RPC_TABLE_COLUMNS.filter((c) => c.defaultVisible).map((c) => c.key)
+  );
+  const [showColumnFilter, setShowColumnFilter] = useState(false);
+  const columnFilterRef = React.useRef<HTMLDivElement>(null);
+
+  // Load visibleColumns from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('jiwandana_rpc_visible_columns');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setVisibleColumns(parsed);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  // Save visibleColumns to localStorage
+  const updateVisibleColumns = (newCols: string[]) => {
+    setVisibleColumns(newCols);
+    try {
+      localStorage.setItem('jiwandana_rpc_visible_columns', JSON.stringify(newCols));
+    } catch {
+      // ignore
+    }
+  };
+
+  const toggleColumn = (key: string) => {
+    const updated = visibleColumns.includes(key)
+      ? visibleColumns.filter((k) => k !== key)
+      : [...visibleColumns, key];
+    if (updated.length > 0) {
+      updateVisibleColumns(updated);
+    }
+  };
+
+  const selectAllColumns = () => {
+    updateVisibleColumns(RPC_TABLE_COLUMNS.map((c) => c.key));
+  };
+
+  const resetDefaultColumns = () => {
+    updateVisibleColumns(RPC_TABLE_COLUMNS.filter((c) => c.defaultVisible).map((c) => c.key));
+  };
+
+  // Close column dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (columnFilterRef.current && !columnFilterRef.current.contains(e.target as Node)) {
+        setShowColumnFilter(false);
+      }
+    };
+    if (showColumnFilter) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showColumnFilter]);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -644,6 +918,195 @@ export default function AdminAllPesertaClient() {
                     </span>
                   </div>
                 )}
+
+                {/* Bar Aksi Komunikasi WhatsApp, QR Code & Email RPC */}
+                <div className="pt-3 border-t border-white/10 bg-black/30 -mx-5 sm:-mx-6 -mb-5 sm:-mb-6 p-4 sm:p-5 rounded-b-2xl space-y-3">
+                  {/* Baris 1: WhatsApp & QR Code */}
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 text-xs text-slate-300 flex-wrap">
+                      <Phone className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">
+                        WhatsApp:
+                      </span>
+                      <span className="font-mono font-bold text-white bg-white/5 px-2 py-0.5 rounded border border-white/10 text-xs truncate max-w-[200px]">
+                        {quickLookupMatch.no_hp || '(No. HP Kosong)'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {/* Tombol Salin Pesan WA */}
+                      <button
+                        type="button"
+                        onClick={() => handleCopyWa(quickLookupMatch, 'quick-wa')}
+                        className={`px-3.5 py-1.5 rounded-xl font-bold text-xs uppercase tracking-wider shadow-sm transition-all inline-flex items-center gap-1.5 cursor-pointer ${
+                          copiedWaId === 'quick-wa'
+                            ? 'bg-emerald-600 text-white'
+                            : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40'
+                        }`}
+                        title="Salin template pesan WhatsApp konfirmasi RPC"
+                      >
+                        {copiedWaId === 'quick-wa' ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-white" />
+                            <span>Pesan Tersalin!</span>
+                          </>
+                        ) : (
+                          <>
+                            <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>Salin Pesan WA</span>
+                          </>
+                        )}
+                      </button>
+
+                      {/* Tombol Salin Gambar QR */}
+                      <button
+                        type="button"
+                        onClick={() => handleCopyQr(quickLookupMatch, 'quick-qr')}
+                        className={`px-3.5 py-1.5 rounded-xl font-bold text-xs uppercase tracking-wider shadow-sm transition-all inline-flex items-center gap-1.5 cursor-pointer ${
+                          copiedQrId === 'quick-qr'
+                            ? 'bg-[#C9A227] text-slate-950 font-black'
+                            : 'bg-[#C9A227]/20 hover:bg-[#C9A227]/30 text-[#f5d77f] border border-[#C9A227]/40'
+                        }`}
+                        title="Salin gambar QR Code (image/png) ke clipboard. Siap dipaste (Ctrl+V) di WhatsApp"
+                      >
+                        {copiedQrId === 'quick-qr' ? (
+                          <>
+                            <Check className="w-3.5 h-3.5" />
+                            <span>QR Tersalin!</span>
+                          </>
+                        ) : (
+                          <>
+                            <QrCode className="w-3.5 h-3.5 text-[#C9A227]" />
+                            <span>Salin Gambar QR</span>
+                          </>
+                        )}
+                      </button>
+
+                      {/* Tombol Buka WhatsApp Chat (wa.me) */}
+                      {quickLookupMatch.no_hp && (
+                        <a
+                          href={getWhatsAppChatUrl(
+                            quickLookupMatch.no_hp,
+                            generateRpcWhatsAppMessage({
+                              nama: quickLookupMatch.nama,
+                              nama_bib: quickLookupMatch.nama_bib,
+                              no_bib: quickLookupMatch.no_bib,
+                              kategori: quickLookupMatch.kategori,
+                              ukuran_jersey: quickLookupMatch.ukuran_jersey,
+                              no_hp: quickLookupMatch.no_hp,
+                            })
+                          )}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/10 text-xs font-bold uppercase tracking-wider inline-flex items-center gap-1.5 transition-all cursor-pointer"
+                          title="Buka Chat WhatsApp Web dengan nomor dan pesan terisi"
+                        >
+                          <Send className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Kirim via WA</span>
+                        </a>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Baris 2: Email & RPC (Klik Email untuk Copy, Copy Subjek, Copy HTML RPC, Buka Gmail, Pratinjau) */}
+                  <div className="pt-3 border-t border-white/10 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 text-xs text-slate-300 flex-wrap">
+                      <Mail className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">
+                        Email:
+                      </span>
+                      {quickLookupMatch.email ? (
+                        <button
+                          type="button"
+                          onClick={() => handleCopyEmail('quick-email', quickLookupMatch.email)}
+                          className={`font-mono font-bold px-2.5 py-1 rounded border text-xs truncate max-w-[260px] inline-flex items-center gap-1.5 transition-all cursor-pointer ${
+                            copiedEmailId === 'quick-email'
+                              ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+                              : 'bg-white/5 hover:bg-white/15 border-white/10 hover:border-amber-400/50 text-white'
+                          }`}
+                          title="Klik untuk menyalin alamat email"
+                        >
+                          <span className="truncate">{quickLookupMatch.email}</span>
+                          {copiedEmailId === 'quick-email' && (
+                            <Check className="w-3 h-3 text-emerald-400 shrink-0" />
+                          )}
+                        </button>
+                      ) : (
+                        <span className="font-mono font-bold text-slate-500 bg-white/5 px-2 py-0.5 rounded border border-white/10 text-xs">
+                          (Email Kosong)
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => handleCopyEmailSubject('quick-subject', quickLookupMatch.no_bib)}
+                        className={`px-3.5 py-1.5 rounded-xl font-bold text-xs uppercase tracking-wider shadow-sm transition-all inline-flex items-center gap-1.5 cursor-pointer ${
+                          copiedSubjectId === 'quick-subject'
+                            ? 'bg-emerald-600 text-white'
+                            : 'bg-white/10 hover:bg-white/20 text-slate-200 border border-white/15'
+                        }`}
+                        title={`Salin subjek email: ${getRpcEmailSubject(quickLookupMatch.no_bib)}`}
+                      >
+                        {copiedSubjectId === 'quick-subject' ? (
+                          <>
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Subjek Tersalin!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5 text-amber-300" />
+                            <span>Salin Subjek</span>
+                          </>
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleCopyRpcEmail(quickLookupMatch, 'quick-rpc')}
+                        className={`px-3.5 py-1.5 rounded-xl font-bold text-xs uppercase tracking-wider shadow-sm transition-all inline-flex items-center gap-1.5 cursor-pointer ${
+                          copiedRpcId === 'quick-rpc'
+                            ? 'bg-emerald-600 text-white'
+                            : 'bg-[#C9A227] hover:bg-amber-400 text-[#0d1c32]'
+                        }`}
+                        title="Salin template email RPC dinamis dalam format Rich HTML (siap paste di Gmail)"
+                      >
+                        {copiedRpcId === 'quick-rpc' ? (
+                          <>
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Template Tersalin!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5" />
+                            <span>Salin Email RPC (HTML)</span>
+                          </>
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleOpenGmail(quickLookupMatch)}
+                        className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/10 text-xs font-bold uppercase tracking-wider inline-flex items-center gap-1.5 transition-all cursor-pointer"
+                        title="Buka tab baru Gmail Web dengan penerima & subjek terisi"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5 text-rose-400" />
+                        <span>Buka Gmail</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setPreviewEmailParticipant(quickLookupMatch)}
+                        className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 border border-white/10 text-xs font-semibold inline-flex items-center gap-1.5 transition-all cursor-pointer"
+                        title="Lihat Pratinjau Tampilan Email"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-amber-300" />
+                        <span>Pratinjau</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="p-6 rounded-2xl bg-black/40 border border-white/10 text-center space-y-2">
@@ -827,6 +1290,91 @@ export default function AdminAllPesertaClient() {
               <option value={-1}>Tampilkan Semua</option>
             </select>
 
+            {/* Filter Kolom Dropdown */}
+            <div className="relative" ref={columnFilterRef}>
+              <button
+                type="button"
+                onClick={() => setShowColumnFilter((prev) => !prev)}
+                className={`px-3 py-2 rounded-xl text-xs font-semibold border flex items-center gap-1.5 transition-all cursor-pointer ${
+                  showColumnFilter
+                    ? 'bg-amber-500/20 border-amber-500 text-amber-300 ring-2 ring-amber-500/30'
+                    : 'bg-black/40 border-white/10 text-slate-300 hover:bg-white/5'
+                }`}
+                title="Pilih kolom tabel yang ingin ditampilkan"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5 text-amber-400" />
+                <span>Kolom</span>
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  {visibleColumns.length}
+                </span>
+              </button>
+
+              {/* Popup Checklist Kolom */}
+              {showColumnFilter && (
+                <div className="absolute right-0 top-full mt-2 w-64 p-3 rounded-2xl bg-[#0e1d30] border border-white/15 shadow-2xl z-50 space-y-2.5 animate-[fadeIn_0.15s_ease-out]">
+                  <div className="flex items-center justify-between pb-2 border-b border-white/10">
+                    <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <Columns className="w-3.5 h-3.5 text-amber-400" />
+                      Filter Kolom
+                    </span>
+                    <div className="flex items-center gap-1 text-[10px]">
+                      <button
+                        type="button"
+                        onClick={selectAllColumns}
+                        className="px-2 py-0.5 rounded bg-white/5 hover:bg-white/10 text-slate-300 cursor-pointer transition-colors"
+                      >
+                        Semua
+                      </button>
+                      <button
+                        type="button"
+                        onClick={resetDefaultColumns}
+                        className="px-2 py-0.5 rounded bg-white/5 hover:bg-white/10 text-slate-300 cursor-pointer transition-colors"
+                      >
+                        Default
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="max-h-60 overflow-y-auto space-y-1 pr-1 divide-y divide-white/5">
+                    {RPC_TABLE_COLUMNS.map((col) => {
+                      const isChecked = visibleColumns.includes(col.key);
+                      return (
+                        <label
+                          key={col.key}
+                          className={`flex items-center justify-between p-2 rounded-xl text-xs cursor-pointer select-none transition-colors ${
+                            isChecked
+                              ? 'bg-amber-500/10 text-white font-medium border border-amber-500/30'
+                              : 'hover:bg-white/5 text-slate-400 border border-transparent'
+                          }`}
+                        >
+                          <span className="truncate">{col.label}</span>
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => toggleColumn(col.key)}
+                            className="w-4 h-4 rounded border-white/20 text-amber-500 focus:ring-0 accent-amber-500 cursor-pointer"
+                          />
+                        </label>
+                      );
+                    })}
+                  </div>
+
+                  <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400">
+                    <span>
+                      {visibleColumns.length} dari {RPC_TABLE_COLUMNS.length} aktif
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowColumnFilter(false)}
+                      className="px-3 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs cursor-pointer transition-all"
+                    >
+                      Tutup
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Tombol Refresh */}
             <button
               type="button"
@@ -895,30 +1443,57 @@ export default function AdminAllPesertaClient() {
             <table className="w-full text-left text-xs">
               <thead className="bg-black/60 text-slate-400 uppercase text-[10px] tracking-wider font-bold border-b border-white/10">
                 <tr>
-                  <th className="py-3.5 px-3 text-center w-12">No</th>
-                  <th className="py-3.5 px-3">No. BIB</th>
-                  <th className="py-3.5 px-4 min-w-[200px]">Nama Lengkap &amp; Nama BIB</th>
-                  <th className="py-3.5 px-3">Kategori</th>
-                  <th className="py-3.5 px-3 text-center min-w-[120px]">
-                    <span className="inline-flex items-center gap-1 text-[#f5d77f]">
-                      <Shirt className="w-3.5 h-3.5" />
-                      Ukuran Jersey
-                    </span>
-                  </th>
-                  <th className="py-3.5 px-3 text-center min-w-[210px]">
-                    <span>6 Syarat Verifikasi</span>
-                    <div className="grid grid-cols-6 gap-1 text-[9px] text-slate-500 font-mono mt-1 font-normal">
-                      <span>MG</span>
-                      <span>WV</span>
-                      <span>SS</span>
-                      <span>IO</span>
-                      <span>ST</span>
-                      <span>ID</span>
-                    </div>
-                  </th>
-                  <th className="py-3.5 px-4 min-w-[170px]">Status Pengambilan</th>
-                  <th className="py-3.5 px-3 min-w-[140px]">Petugas &amp; Catatan</th>
-                  <th className="py-3.5 px-3 text-center w-28">Aksi</th>
+                  {visibleColumns.includes('no') && (
+                    <th className="py-3.5 px-3 text-center w-12">No</th>
+                  )}
+                  {visibleColumns.includes('no_bib') && (
+                    <th className="py-3.5 px-3">No. BIB</th>
+                  )}
+                  {visibleColumns.includes('nama') && (
+                    <th className="py-3.5 px-4 min-w-[200px]">Nama Lengkap &amp; Nama BIB</th>
+                  )}
+                  {visibleColumns.includes('kategori') && (
+                    <th className="py-3.5 px-3">Kategori</th>
+                  )}
+                  {visibleColumns.includes('ukuran_jersey') && (
+                    <th className="py-3.5 px-3 text-center min-w-[120px]">
+                      <span className="inline-flex items-center gap-1 text-[#f5d77f]">
+                        <Shirt className="w-3.5 h-3.5" />
+                        Ukuran Jersey
+                      </span>
+                    </th>
+                  )}
+                  {visibleColumns.includes('syarat_rpc') && (
+                    <th className="py-3.5 px-3 text-center min-w-[210px]">
+                      <span>6 Syarat Verifikasi</span>
+                      <div className="grid grid-cols-6 gap-1 text-[9px] text-slate-500 font-mono mt-1 font-normal">
+                        <span>MG</span>
+                        <span>WV</span>
+                        <span>SS</span>
+                        <span>IO</span>
+                        <span>ST</span>
+                        <span>ID</span>
+                      </div>
+                    </th>
+                  )}
+                  {visibleColumns.includes('status_pengambilan') && (
+                    <th className="py-3.5 px-4 min-w-[170px]">Status Pengambilan</th>
+                  )}
+                  {visibleColumns.includes('petugas_catatan') && (
+                    <th className="py-3.5 px-3 min-w-[140px]">Petugas &amp; Catatan</th>
+                  )}
+                  {visibleColumns.includes('wa_rpc') && (
+                    <th className="py-3.5 px-4 min-w-[195px]">WA &amp; QR</th>
+                  )}
+                  {visibleColumns.includes('email_rpc') && (
+                    <th className="py-3.5 px-4 min-w-[195px]">Email &amp; RPC</th>
+                  )}
+                  {visibleColumns.includes('kontak') && (
+                    <th className="py-3.5 px-3 min-w-[150px]">Kontak (WA &amp; Email)</th>
+                  )}
+                  {visibleColumns.includes('aksi') && (
+                    <th className="py-3.5 px-3 text-center min-w-[130px]">Aksi</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
@@ -947,112 +1522,347 @@ export default function AdminAllPesertaClient() {
                       className="hover:bg-white/[0.02] transition-colors group"
                     >
                       {/* No */}
-                      <td className="py-3.5 px-3 text-center font-mono text-slate-500 text-[11px]">
-                        {absoluteIndex}
-                      </td>
+                      {visibleColumns.includes('no') && (
+                        <td className="py-3.5 px-3 text-center font-mono text-slate-500 text-[11px]">
+                          {absoluteIndex}
+                        </td>
+                      )}
 
                       {/* No. BIB */}
-                      <td className="py-3.5 px-3 whitespace-nowrap">
-                        <span className="px-2.5 py-1 rounded-lg bg-black/40 border border-white/10 font-mono font-bold text-white text-xs tracking-wider shadow-xs group-hover:border-emerald-500/40">
-                          {row.no_bib || '—'}
-                        </span>
-                      </td>
+                      {visibleColumns.includes('no_bib') && (
+                        <td className="py-3.5 px-3 whitespace-nowrap">
+                          <span className="px-2.5 py-1 rounded-lg bg-black/40 border border-white/10 font-mono font-bold text-white text-xs tracking-wider shadow-xs group-hover:border-emerald-500/40">
+                            {row.no_bib || '—'}
+                          </span>
+                        </td>
+                      )}
 
                       {/* Nama Lengkap & Nama BIB */}
-                      <td className="py-3.5 px-4">
-                        <div className="font-bold text-white text-xs tracking-tight">
-                          {row.nama}
-                        </div>
-                        {row.nama_bib && row.nama_bib !== row.nama ? (
-                          <div className="text-[11px] text-amber-300 font-medium font-mono truncate">
-                            BIB: {row.nama_bib}
+                      {visibleColumns.includes('nama') && (
+                        <td className="py-3.5 px-4">
+                          <div className="font-bold text-white text-xs tracking-tight">
+                            {row.nama}
                           </div>
-                        ) : null}
-                      </td>
+                          {row.nama_bib && row.nama_bib !== row.nama ? (
+                            <div className="text-[11px] text-amber-300 font-medium font-mono truncate">
+                              BIB: {row.nama_bib}
+                            </div>
+                          ) : null}
+                        </td>
+                      )}
 
                       {/* Kategori */}
-                      <td className="py-3.5 px-3 whitespace-nowrap">
-                        <span
-                          className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
-                            is12K
-                              ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
-                              : 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
-                          }`}
-                        >
-                          {row.kategori || '12K'}
-                        </span>
-                      </td>
+                      {visibleColumns.includes('kategori') && (
+                        <td className="py-3.5 px-3 whitespace-nowrap">
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+                              is12K
+                                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                                : 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
+                            }`}
+                          >
+                            {row.kategori || '12K'}
+                          </span>
+                        </td>
+                      )}
 
                       {/* Ukuran Jersey (Sangat Menonjol) */}
-                      <td className="py-3.5 px-3 text-center whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#C9A227]/20 border border-[#C9A227]/50 text-[#f5d77f] font-mono font-black text-xs shadow-sm">
-                          <Shirt className="w-3.5 h-3.5 text-[#C9A227]" />
-                          <span>{row.ukuran_jersey || '—'}</span>
-                        </span>
-                      </td>
+                      {visibleColumns.includes('ukuran_jersey') && (
+                        <td className="py-3.5 px-3 text-center whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#C9A227]/20 border border-[#C9A227]/50 text-[#f5d77f] font-mono font-black text-xs shadow-sm">
+                            <Shirt className="w-3.5 h-3.5 text-[#C9A227]" />
+                            <span>{row.ukuran_jersey || '—'}</span>
+                          </span>
+                        </td>
+                      )}
 
                       {/* 6 Syarat Pemeriksaan Mini Badges */}
-                      <td className="py-3.5 px-3 text-center whitespace-nowrap">
-                        <div className="grid grid-cols-6 gap-1 max-w-[190px] mx-auto">
-                          {/* 1. MG */}
-                          {renderCheckItem('Mandatory Gear', row.mandatory_gear)}
-                          {/* 2. WV */}
-                          {renderCheckItem('Waiver', row.waiver)}
-                          {/* 3. SS (wajib) */}
-                          {renderCheckItem('Surat Sehat (Wajib)', row.surat_sehat)}
-                          {/* 4. IO */}
-                          {renderCheckItem('Izin Ortu (<17 Th)', row.surat_izin_ortu, !isUnder17)}
-                          {/* 5. ST */}
-                          {renderCheckItem('Strava 5K (Khusus 12K)', row.strava_12k, !is12K)}
-                          {/* 6. ID */}
-                          {renderCheckItem('Menunjukkan Data Diri', row.menunjukan_data_diri)}
-                        </div>
-                      </td>
+                      {visibleColumns.includes('syarat_rpc') && (
+                        <td className="py-3.5 px-3 text-center whitespace-nowrap">
+                          <div className="grid grid-cols-6 gap-1 max-w-[190px] mx-auto">
+                            {/* 1. MG */}
+                            {renderCheckItem('Mandatory Gear', row.mandatory_gear)}
+                            {/* 2. WV */}
+                            {renderCheckItem('Waiver', row.waiver)}
+                            {/* 3. SS (wajib) */}
+                            {renderCheckItem('Surat Sehat (Wajib)', row.surat_sehat)}
+                            {/* 4. IO */}
+                            {renderCheckItem('Izin Ortu (<17 Th)', row.surat_izin_ortu, !isUnder17)}
+                            {/* 5. ST */}
+                            {renderCheckItem('Strava 5K (Khusus 12K)', row.strava_12k, !is12K)}
+                            {/* 6. ID */}
+                            {renderCheckItem('Menunjukkan Data Diri', row.menunjukan_data_diri)}
+                          </div>
+                        </td>
+                      )}
 
                       {/* Status Pengambilan */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        {renderStatusBadge(row.status_pengambilan, row.waktu_pengambilan)}
-                      </td>
+                      {visibleColumns.includes('status_pengambilan') && (
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          {renderStatusBadge(row.status_pengambilan, row.waktu_pengambilan)}
+                        </td>
+                      )}
 
                       {/* Petugas & Catatan */}
-                      <td className="py-3.5 px-3">
-                        <div className="text-[11px] font-semibold text-slate-300">
-                          {row.petugas ? `Petugas: ${row.petugas}` : <span className="text-slate-500">—</span>}
-                        </div>
-                        {row.catatan && (
-                          <div
-                            className="text-[10px] text-amber-300/90 truncate max-w-[180px] mt-0.5"
-                            title={row.catatan}
-                          >
-                            {row.catatan}
+                      {visibleColumns.includes('petugas_catatan') && (
+                        <td className="py-3.5 px-3">
+                          <div className="text-[11px] font-semibold text-slate-300">
+                            {row.petugas ? `Petugas: ${row.petugas}` : <span className="text-slate-500">—</span>}
                           </div>
-                        )}
-                      </td>
+                          {row.catatan && (
+                            <div
+                              className="text-[10px] text-amber-300/90 truncate max-w-[180px] mt-0.5"
+                              title={row.catatan}
+                            >
+                              {row.catatan}
+                            </div>
+                          )}
+                        </td>
+                      )}
+
+                      {/* WA & QR */}
+                      {visibleColumns.includes('wa_rpc') && (
+                        <td className="py-3.5 px-4">
+                          <div className="space-y-1.5 min-w-[190px]">
+                            <div>
+                              {row.no_hp ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopyPhone(`table-phone-${row.id || row.no_bib}`, row.no_hp)}
+                                  className={`font-mono text-[11px] truncate max-w-[180px] inline-flex items-center gap-1.5 px-2 py-0.5 rounded border transition-all cursor-pointer font-medium ${
+                                    copiedPhoneId === `table-phone-${row.id || row.no_bib}`
+                                      ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+                                      : 'bg-white/[0.03] hover:bg-white/10 border-white/10 hover:border-emerald-400/50 text-slate-200 hover:text-white'
+                                  }`}
+                                  title={`Klik untuk menyalin nomor WA: ${row.no_hp}`}
+                                >
+                                  <Phone className="w-3 h-3 text-emerald-400 shrink-0" />
+                                  <span className="truncate">{row.no_hp}</span>
+                                  {copiedPhoneId === `table-phone-${row.id || row.no_bib}` && (
+                                    <Check className="w-3 h-3 text-emerald-400 shrink-0" />
+                                  )}
+                                </button>
+                              ) : (
+                                <span className="font-mono text-slate-500 text-[11px]">-</span>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {/* Tombol Salin Pesan WA */}
+                              <button
+                                type="button"
+                                onClick={() => handleCopyWa(row, `table-wa-${row.id || row.no_bib}`)}
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold inline-flex items-center gap-1 transition-all cursor-pointer ${
+                                  copiedWaId === `table-wa-${row.id || row.no_bib}`
+                                    ? 'bg-emerald-600 text-white'
+                                    : 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30'
+                                }`}
+                                title="Salin Pesan WhatsApp"
+                              >
+                                {copiedWaId === `table-wa-${row.id || row.no_bib}` ? (
+                                  <>
+                                    <Check className="w-3 h-3" />
+                                    <span>Tersalin!</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <MessageSquare className="w-3 h-3" />
+                                    <span>Copy WA</span>
+                                  </>
+                                )}
+                              </button>
+
+                              {/* Tombol Salin Gambar QR */}
+                              <button
+                                type="button"
+                                onClick={() => handleCopyQr(row, `table-qr-${row.id || row.no_bib}`)}
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold inline-flex items-center gap-1 transition-all cursor-pointer ${
+                                  copiedQrId === `table-qr-${row.id || row.no_bib}`
+                                    ? 'bg-[#C9A227] text-slate-950'
+                                    : 'bg-[#C9A227]/15 hover:bg-[#C9A227]/25 text-[#f5d77f] border border-[#C9A227]/30'
+                                }`}
+                                title="Salin Gambar QR Code (image/png) ke Clipboard"
+                              >
+                                {copiedQrId === `table-qr-${row.id || row.no_bib}` ? (
+                                  <>
+                                    <Check className="w-3 h-3" />
+                                    <span>QR ✓</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <QrCode className="w-3 h-3" />
+                                    <span>Copy QR</span>
+                                  </>
+                                )}
+                              </button>
+
+                              {/* Tombol Kirim / Buka WA (wa.me) jika ada no_hp */}
+                              {row.no_hp && (
+                                <a
+                                  href={getWhatsAppChatUrl(
+                                    row.no_hp,
+                                    generateRpcWhatsAppMessage({
+                                      nama: row.nama,
+                                      nama_bib: row.nama_bib,
+                                      no_bib: row.no_bib,
+                                      kategori: row.kategori,
+                                      ukuran_jersey: row.ukuran_jersey,
+                                      no_hp: row.no_hp,
+                                    })
+                                  )}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="p-1 rounded bg-white/5 hover:bg-white/15 text-emerald-400 hover:text-white border border-white/10 transition-colors inline-flex items-center justify-center cursor-pointer"
+                                  title={`Buka Chat WhatsApp (${row.no_hp})`}
+                                >
+                                  <Send className="w-3 h-3" />
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                      )}
+
+                      {/* Email & RPC */}
+                      {visibleColumns.includes('email_rpc') && (
+                        <td className="py-3.5 px-4">
+                          <div className="space-y-1.5 min-w-[215px]">
+                            <div>
+                              {row.email ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopyEmail(`table-email-${row.id || row.no_bib}`, row.email)}
+                                  className={`font-mono text-[11px] truncate max-w-[205px] inline-flex items-center gap-1.5 px-2 py-0.5 rounded border transition-all cursor-pointer font-medium ${
+                                    copiedEmailId === `table-email-${row.id || row.no_bib}`
+                                      ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+                                      : 'bg-white/[0.03] hover:bg-white/10 border-white/10 hover:border-amber-400/50 text-slate-200 hover:text-white'
+                                  }`}
+                                  title={`Klik untuk menyalin email: ${row.email}`}
+                                >
+                                  <span className="truncate">{row.email}</span>
+                                  {copiedEmailId === `table-email-${row.id || row.no_bib}` && (
+                                    <Check className="w-3 h-3 text-emerald-400 shrink-0" />
+                                  )}
+                                </button>
+                              ) : (
+                                <span className="font-mono text-slate-500 text-[11px]">-</span>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleCopyEmailSubject(`table-subject-${row.id || row.no_bib}`, row.no_bib)
+                                }
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold inline-flex items-center gap-1 transition-all cursor-pointer ${
+                                  copiedSubjectId === `table-subject-${row.id || row.no_bib}`
+                                    ? 'bg-emerald-600 text-white'
+                                    : 'bg-white/5 hover:bg-white/15 text-slate-200 border border-white/10'
+                                }`}
+                                title={`Salin subjek: ${getRpcEmailSubject(row.no_bib)}`}
+                              >
+                                {copiedSubjectId === `table-subject-${row.id || row.no_bib}` ? (
+                                  <>
+                                    <Check className="w-3 h-3" />
+                                    <span>Subjek ✓</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="w-3 h-3 text-amber-300" />
+                                    <span>Subjek</span>
+                                  </>
+                                )}
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleCopyRpcEmail(row, `table-rpc-${row.id || row.no_bib}`)}
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold inline-flex items-center gap-1 transition-all cursor-pointer ${
+                                  copiedRpcId === `table-rpc-${row.id || row.no_bib}`
+                                    ? 'bg-emerald-600 text-white'
+                                    : 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30'
+                                }`}
+                                title="Salin template email RPC dinamis (Rich HTML) siap dipaste di Gmail"
+                              >
+                                {copiedRpcId === `table-rpc-${row.id || row.no_bib}` ? (
+                                  <>
+                                    <Check className="w-3 h-3" />
+                                    <span>Tersalin!</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="w-3 h-3" />
+                                    <span>Copy RPC</span>
+                                  </>
+                                )}
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => setPreviewEmailParticipant(row)}
+                                className="p-1 rounded bg-white/5 hover:bg-white/15 text-slate-300 hover:text-white border border-white/10 transition-colors cursor-pointer"
+                                title="Pratinjau Tampilan Email RPC"
+                              >
+                                <Eye className="w-3 h-3" />
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleOpenGmail(row)}
+                                className="p-1 rounded bg-white/5 hover:bg-white/15 text-slate-300 hover:text-rose-400 border border-white/10 transition-colors cursor-pointer"
+                                title="Buka di Gmail Web (Compose)"
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
+                        </td>
+                      )}
+
+                      {/* Kontak (No. WA & Email) */}
+                      {visibleColumns.includes('kontak') && (
+                        <td className="py-3.5 px-3">
+                          <div className="font-mono text-white text-[11px] flex items-center gap-1">
+                            <Phone className="w-3 h-3 text-emerald-400 shrink-0" />
+                            <span className="truncate">{row.no_hp || '—'}</span>
+                          </div>
+                          {row.email && (
+                            <div className="text-[10px] text-slate-400 truncate max-w-[140px]" title={row.email}>
+                              {row.email}
+                            </div>
+                          )}
+                        </td>
+                      )}
 
                       {/* Aksi */}
-                      <td className="py-3.5 px-3 text-center whitespace-nowrap">
-                        <div className="flex items-center justify-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => setSelectedForVerification(row)}
-                            className="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500 text-emerald-300 hover:text-slate-950 font-bold text-[11px] inline-flex items-center gap-1 transition-all cursor-pointer border border-emerald-500/40"
-                            title="Buka Formulir Verifikasi RPC"
-                          >
-                            <ClipboardCheck className="w-3.5 h-3.5" />
-                            <span>Verifikasi</span>
-                          </button>
+                      {visibleColumns.includes('aksi') && (
+                        <td className="py-3.5 px-3 text-center whitespace-nowrap">
+                          <div className="flex items-center justify-center gap-1.5">
+                            {/* Tombol Verifikasi Modal */}
+                            <button
+                              type="button"
+                              onClick={() => setSelectedForVerification(row)}
+                              className="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500 text-emerald-300 hover:text-slate-950 font-bold text-[11px] inline-flex items-center gap-1 transition-all cursor-pointer border border-emerald-500/40"
+                              title="Buka Formulir Verifikasi RPC"
+                            >
+                              <ClipboardCheck className="w-3.5 h-3.5" />
+                              <span>Verifikasi</span>
+                            </button>
 
-                          <a
-                            href={`/trailrun/tiket?q=${encodeURIComponent(row.no_bib)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors border border-white/10 inline-flex items-center justify-center cursor-pointer"
-                            title="Buka Halaman Tiket / E-BIB"
-                          >
-                            <ExternalLink className="w-3.5 h-3.5" />
-                          </a>
-                        </div>
-                      </td>
+                            {/* Tombol E-BIB */}
+                            <a
+                              href={`/trailrun/tiket?q=${encodeURIComponent(row.no_bib)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors border border-white/10 inline-flex items-center justify-center cursor-pointer"
+                              title="Buka Halaman Tiket / E-BIB"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </a>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   );
                 })}
@@ -1111,6 +1921,13 @@ export default function AdminAllPesertaClient() {
       <AdminFlashSaleModal
         isOpen={showFlashSaleModal}
         onClose={() => setShowFlashSaleModal(false)}
+      />
+
+      {/* 9. Modal Preview Email RPC */}
+      <RpcEmailPreviewModal
+        isOpen={Boolean(previewEmailParticipant)}
+        onClose={() => setPreviewEmailParticipant(null)}
+        participant={previewEmailParticipant}
       />
     </div>
   );

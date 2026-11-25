@@ -12,7 +12,6 @@ import {
   Calendar,
   Eye,
 } from 'lucide-react';
-import { TrailrunRow } from '../types';
 import {
   generateRpcEmailHtml,
   getRpcEmailSubject,
@@ -20,10 +19,17 @@ import {
   openGmailCompose,
 } from '@/lib/rpcEmailTemplate';
 
+export interface RpcEmailPreviewParticipant {
+  nama: string;
+  no_bib: string;
+  kategori?: string | null;
+  email?: string | null;
+}
+
 interface RpcEmailPreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
-  participant: TrailrunRow | null;
+  participant: RpcEmailPreviewParticipant | null;
 }
 
 export default function RpcEmailPreviewModal({
@@ -42,8 +48,8 @@ export default function RpcEmailPreviewModal({
   const htmlContent = generateRpcEmailHtml({
     nama: participant.nama,
     no_bib: participant.no_bib,
-    kategori: participant.kategori,
-    email: participant.email,
+    kategori: participant.kategori || undefined,
+    email: participant.email || undefined,
   });
 
   const showToast = (text: string) => {
@@ -78,8 +84,8 @@ export default function RpcEmailPreviewModal({
     const res = await copyRpcEmailToClipboard({
       nama: participant.nama,
       no_bib: participant.no_bib,
-      kategori: participant.kategori,
-      email: participant.email,
+      kategori: participant.kategori || undefined,
+      email: participant.email || undefined,
     });
     if (res.success) {
       setCopiedHtml(true);

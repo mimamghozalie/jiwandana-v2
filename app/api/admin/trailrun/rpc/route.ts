@@ -12,6 +12,8 @@ export interface RpcVerificationRecord {
   kategori: string;
   ukuran_jersey?: string | null;
   tanggal_lahir?: string | null;
+  no_hp?: string | null;
+  email?: string | null;
   mandatory_gear: boolean;
   waiver: boolean;
   surat_sehat: boolean;
@@ -38,7 +40,7 @@ export async function GET() {
     // 1. Ambil seluruh data pendaftaran resmi yang memiliki no_bib
     const { data: regRows, error: regErr } = await supabase
       .from('trailrun_registrations')
-      .select('id, no_bib, nama, nama_bib, kategori, ukuran_jersey, tanggal_lahir')
+      .select('id, no_bib, nama, nama_bib, kategori, ukuran_jersey, tanggal_lahir, no_hp, email')
       .not('no_bib', 'is', null)
       .order('no_bib', { ascending: true });
 
@@ -75,6 +77,8 @@ export async function GET() {
         kategori: r.kategori || '12K',
         ukuran_jersey: r.ukuran_jersey || '—',
         tanggal_lahir: r.tanggal_lahir || null,
+        no_hp: r.no_hp || null,
+        email: r.email || null,
         mandatory_gear: false,
         waiver: false,
         surat_sehat: false,
@@ -144,7 +148,7 @@ export async function GET() {
       }
     }
 
-    // Map dan gabungkan data tanggal_lahir untuk penentuan umur (Izin Ortu)
+    // Map dan gabungkan data tanggal_lahir, no_hp, email untuk penentuan umur dan kontak
     const finalizedData: RpcVerificationRecord[] = mergedRpcRows.map((r) => {
       const cleanBib = (r.no_bib || '').trim().toUpperCase();
       const reg = regMap.get(cleanBib);
@@ -154,6 +158,8 @@ export async function GET() {
         tanggal_lahir: reg?.tanggal_lahir || r.tanggal_lahir || null,
         ukuran_jersey: r.ukuran_jersey || reg?.ukuran_jersey || '—',
         nama_bib: r.nama_bib || reg?.nama_bib || r.nama,
+        no_hp: reg?.no_hp || r.no_hp || null,
+        email: reg?.email || r.email || null,
       };
     });
 
