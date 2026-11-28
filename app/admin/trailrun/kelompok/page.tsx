@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Users, FileSpreadsheet } from 'lucide-react';
+import { Users, FileSpreadsheet, UserPlus } from 'lucide-react';
 
 import {
   TrailrunRow,
@@ -12,6 +12,7 @@ import {
   TrailrunSubNav,
   KelompokBatchTable,
   AdminFlashSaleModal,
+  ModalTambahKelompokDirect,
 } from '@/components/admin/trailrun';
 import { GroupRegistrationBatch } from '@/components/admin/trailrun/trailrunExport';
 
@@ -39,6 +40,9 @@ export default function PesertaKelompokPage() {
 
   // Flash Sale modal
   const [showFlashSaleModal, setShowFlashSaleModal] = useState(false);
+
+  // Tambah Kelompok Direct modal
+  const [showAddDirectModal, setShowAddDirectModal] = useState(false);
 
   // Pisahkan data transaksi kelompok per batch / per pendaftaran PIC
   const { batches, individuCount, totalKelompokPeserta } = useMemo(() => {
@@ -121,22 +125,29 @@ export default function PesertaKelompokPage() {
       const pendingCount = count - paidCount;
       const isFullyPaid = paidCount > 0 && paidCount === count;
 
+      const isDirectPayment =
+        first.payment?.payment_method?.toLowerCase() === 'direct' ||
+        first.payment?.total_payment === 0 ||
+        orderIdKey.startsWith('TR-BULK-DIRECT');
+
       // Logika Diskon Promo 10 Orang per Pendaftaran Rombongan:
-      // Setiap kelipatan 10 orang mendapatkan diskon Rp 320.000
-      const hasDiscount = count >= 10;
-      const discountMultiplier = Math.floor(count / 10);
+      // Setiap kelipatan 10 orang mendapatkan diskon Rp 320.000 (tidak berlaku untuk Direct Rp 0)
+      const hasDiscount = !isDirectPayment && count >= 10;
+      const discountMultiplier = hasDiscount ? Math.floor(count / 10) : 0;
       const discountAmount = hasDiscount ? discountMultiplier * 320000 : 0;
 
-      // Hitung subtotal harga normal tiket
+      // Hitung subtotal harga normal tiket (0 jika direct)
       let rawTicketTotal = 0;
-      participants.forEach((p) => {
-        const is12k = (p.kategori || '').toLowerCase().includes('12');
-        rawTicketTotal += is12k ? 320000 : 270000;
-      });
+      if (!isDirectPayment) {
+        participants.forEach((p) => {
+          const is12k = (p.kategori || '').toLowerCase().includes('12');
+          rawTicketTotal += is12k ? 320000 : 270000;
+        });
+      }
 
-      const finalTicketTotal = Math.max(0, rawTicketTotal - discountAmount);
-      const adminFeeTotal = count * 3000; // Rp 3.000 / orang
-      const calculatedTotalPayment = finalTicketTotal + adminFeeTotal;
+      const finalTicketTotal = isDirectPayment ? 0 : Math.max(0, rawTicketTotal - discountAmount);
+      const adminFeeTotal = isDirectPayment ? 0 : count * 3000; // Rp 3.000 / orang
+      const calculatedTotalPayment = isDirectPayment ? 0 : finalTicketTotal + adminFeeTotal;
 
       resultBatches.push({
         orderId: first.payment?.order_id || orderIdKey,
@@ -153,8 +164,8 @@ export default function PesertaKelompokPage() {
         hasDiscount,
         finalTicketTotal,
         adminFeeTotal,
-        totalPayment: first.payment?.total_payment || calculatedTotalPayment,
-        paymentMethod: first.payment?.payment_method?.toUpperCase() || 'QRIS',
+        totalPayment: isDirectPayment ? 0 : (first.payment?.total_payment ?? calculatedTotalPayment),
+        paymentMethod: isDirectPayment ? 'DIRECT' : (first.payment?.payment_method?.toUpperCase() || 'QRIS'),
         paymentStatus: isFullyPaid ? 'paid' : 'pending',
         participants,
         createdAt: first.created_at,
@@ -246,6 +257,16 @@ export default function PesertaKelompokPage() {
         <div className="flex items-center gap-2.5 self-start md:self-auto flex-wrap">
           <button
             type="button"
+            onClick={() => setShowAddDirectModal(true)}
+            className="px-4 py-2.5 bg-[#C9A227] hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-extrabold flex items-center gap-2 shadow-md transition-all cursor-pointer"
+            title="Tambah peserta kelompok baru secara langsung (Nominal Rp 0, Tipe Direct, Status Paid)"
+          >
+            <UserPlus className="w-4 h-4" />
+            <span>Tambah Kelompok (Direct Rp 0)</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => exportKelompokToExcel(batches)}
             disabled={batches.length === 0}
             className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-md transition-all cursor-pointer border border-emerald-500/30 disabled:opacity-50"
@@ -303,6 +324,13 @@ export default function PesertaKelompokPage() {
         onClose={() => setShowFlashSaleModal(false)}
         onSaved={fetchData}
         hideQuota={true}
+      />
+
+      {/* 7. Modal Tambah Kelompok Direct (Nominal Rp 0) */}
+      <ModalTambahKelompokDirect
+        isOpen={showAddDirectModal}
+        onClose={() => setShowAddDirectModal(false)}
+        onSuccess={fetchData}
       />
     </div>
   );

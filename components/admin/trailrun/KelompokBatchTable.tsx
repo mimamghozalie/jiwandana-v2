@@ -338,8 +338,17 @@ export default function KelompokBatchTable({
                               MENUNGGU BAYAR
                             </span>
                           )}
-                          <div className="text-[10px] text-slate-400 mt-1 font-mono">
-                            Total: <strong className="text-white">{formatCurrency(batch.totalPayment)}</strong> ({batch.paymentMethod || 'QRIS'})
+                          <div className="text-[10px] text-slate-400 mt-1 font-mono flex items-center gap-1.5 flex-wrap">
+                            <span>
+                              Total: <strong className="text-white">{formatCurrency(batch.totalPayment)}</strong>
+                            </span>
+                            {batch.paymentMethod === 'DIRECT' ? (
+                              <span className="px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 font-bold text-[9px] uppercase">
+                                DIRECT
+                              </span>
+                            ) : (
+                              <span>({batch.paymentMethod || 'QRIS'})</span>
+                            )}
                           </div>
                         </td>
 

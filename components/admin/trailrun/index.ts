@@ -13,5 +13,6 @@ export { default as AdminFlashSaleModal } from './AdminFlashSaleModal';
 export { default as ModalEditBpjsItra } from './bpjs/ModalEditBpjsItra';
 export { default as RpcEmailPreviewModal } from './bpjs/RpcEmailPreviewModal';
 export { default as ModalVerifikasiRpc } from './ModalVerifikasiRpc';
+export { default as ModalTambahKelompokDirect } from './ModalTambahKelompokDirect';
 
 

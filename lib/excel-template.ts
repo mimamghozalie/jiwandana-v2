@@ -103,6 +103,14 @@ export function normalizeDate(val: any): string {
     return date.toISOString().split('T')[0];
   }
   const str = String(val).trim();
+  // Check if Excel serial date string (e.g. "35031")
+  if (/^\d{4,6}$/.test(str)) {
+    const serial = Number(str);
+    if (!isNaN(serial) && serial > 1000) {
+      const date = new Date(Math.round((serial - 25569) * 86400 * 1000));
+      return date.toISOString().split('T')[0];
+    }
+  }
   // Check if already YYYY-MM-DD
   if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
   // If DD/MM/YYYY or DD-MM-YYYY
@@ -212,13 +220,15 @@ export async function parseTrailrunExcelFile(
     }
 
     // Ukuran Jersey normalization
-    let normalizedJersey = 'M';
+    let normalizedJersey = '-';
     if (rawJersey) {
       const jClean = rawJersey.toUpperCase().replace(/\s+/g, '');
-      if (['S', 'M', 'L', 'XL', 'XXL', 'XXXL', '2XL', '3XL', '4XL'].includes(jClean)) {
+      if (jClean === '-' || jClean === 'UNSELECTED') {
+        normalizedJersey = '-';
+      } else if (['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', '2XL', '3XL', '4XL'].includes(jClean)) {
         normalizedJersey = jClean === '2XL' ? 'XXL' : jClean === '3XL' ? 'XXXL' : jClean;
       } else {
-        normalizedJersey = 'M';
+        normalizedJersey = '-';
       }
     }
 
@@ -251,8 +261,8 @@ export async function parseTrailrunExcelFile(
     if (!kontak_darurat) errors.push('Kontak darurat wajib diisi');
 
     // Blood type normalization
-    let normalizedBlood = '';
-    const bUpper = rawBlood.toUpperCase();
+    let normalizedBlood = '-';
+    const bUpper = rawBlood.toUpperCase().trim();
     if (['A', 'B', 'AB', 'O'].includes(bUpper)) {
       normalizedBlood = bUpper;
     }
